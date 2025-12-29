@@ -1,0 +1,6 @@
+
+{
+  "name": "WeightWords",
+  "description": "A smart calorie and nutrition tracker that uses AI to estimate calories from natural food descriptions and calculates personalized goals based on your physical profile.",
+  "requestFramePermissions": []
+}
