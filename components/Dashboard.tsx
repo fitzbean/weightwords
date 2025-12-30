@@ -23,6 +23,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
   const [editingName, setEditingName] = useState('');
   const [spouseEmail, setSpouseEmail] = useState('');
   const [spouseError, setSpouseError] = useState('');
+  const [selectedDate, setSelectedDate] = useState(new Date());
   
   // Use external modal state if provided, otherwise use internal state
   const showSpouseModal = externalShowSpouseModal ?? false;
@@ -49,9 +50,15 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
     }
   }, [profile?.timezone]);
 
+  useEffect(() => {
+    if (user && profile) {
+      loadEntries();
+    }
+  }, [selectedDate]);
+
   const loadEntries = async () => {
     if (!user) return;
-    const logs = await getFoodLogs(user.id, new Date(), profile?.timezone);
+    const logs = await getFoodLogs(user.id, selectedDate, profile?.timezone);
     const entries: FoodEntry[] = logs.map(log => ({
       id: log.id,
       timestamp: log.date.getTime(),
@@ -545,21 +552,65 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
              <div className="p-6 border-b border-gray-700 flex justify-between items-center">
                 <div>
                   <h2 className="text-lg font-black text-gray-100">Daily Log</h2>
-                  <p className="text-[10px] text-gray-500 font-black uppercase tracking-wider mt-0.5">
-                    {new Date().toLocaleDateString('en-US', { 
-                      weekday: 'short', 
-                      month: 'short', 
-                      day: 'numeric',
-                      timeZone: profile?.timezone || 'UTC'
-                    })}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <button
+                      onClick={() => {
+                        const newDate = new Date(selectedDate);
+                        newDate.setDate(newDate.getDate() - 1);
+                        setSelectedDate(newDate);
+                      }}
+                      className="p-1 text-gray-400 hover:text-gray-200 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-wider">
+                      {selectedDate.toLocaleDateString('en-US', { 
+                        weekday: 'short', 
+                        month: 'short', 
+                        day: 'numeric',
+                        timeZone: profile?.timezone || 'UTC'
+                      })}
+                    </p>
+                    <button
+                      onClick={() => {
+                        const newDate = new Date(selectedDate);
+                        newDate.setDate(newDate.getDate() + 1);
+                        setSelectedDate(newDate);
+                      }}
+                      className="p-1 text-gray-400 hover:text-gray-200 transition-colors"
+                      disabled={selectedDate.toDateString() === new Date().toDateString()}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                    {selectedDate.toDateString() !== new Date().toDateString() && (
+                      <button
+                        onClick={() => setSelectedDate(new Date())}
+                        className="px-2 py-1 text-[10px] font-black text-green-500 hover:text-green-400 transition-colors"
+                      >
+                        Today
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{entries.length} Items</span>
              </div>
              <div className="divide-y divide-gray-700 flex-1 overflow-y-auto">
                 {entries.length === 0 ? (
                   <div className="p-10 text-center">
-                    <p className="text-gray-600 text-sm font-bold italic">No meals logged today.</p>
+                    <p className="text-gray-600 text-sm font-bold italic">
+                      {selectedDate.toDateString() === new Date().toDateString() 
+                        ? 'No meals logged today.' 
+                        : `No meals logged on ${selectedDate.toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric',
+                            timeZone: profile?.timezone || 'UTC'
+                          })}.`
+                      }
+                    </p>
                   </div>
                 ) : (
                   entries.map((entry) => (

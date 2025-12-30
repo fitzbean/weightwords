@@ -106,12 +106,8 @@ export const updateProfile = async (userId: string, profile: UserProfile) => {
 };
 
 // Helper functions for timezone handling
-const getLocalDate = (timezone: string): Date => {
-  return new Date(new Date().toLocaleString("en-US", { timeZone: timezone }));
-};
-
-const getLocalDateString = (timezone: string): string => {
-  return getLocalDate(timezone).toISOString().split('T')[0];
+const getLocalDateString = (date: Date, timezone: string): string => {
+  return new Date(date.toLocaleString("en-US", { timeZone: timezone })).toISOString().split('T')[0];
 };
 
 // Food log functions
@@ -125,7 +121,7 @@ export const getFoodLogs = async (userId: string, date?: Date, timezone?: string
   if (date) {
     // Use timezone to get the correct date string
     const dateStr = timezone 
-      ? getLocalDateString(timezone)
+      ? getLocalDateString(date, timezone)
       : date.toISOString().split('T')[0];
     query = query.eq('date', dateStr);
   }
@@ -157,7 +153,7 @@ export const addFoodLog = async (userId: string, log: Omit<FoodLog, 'id' | 'date
       carbs: log.carbs,
       fat: log.fat,
       description: log.description,
-      date: timezone ? getLocalDateString(timezone) : new Date().toISOString().split('T')[0],
+      date: timezone ? getLocalDateString(new Date(), timezone) : new Date().toISOString().split('T')[0],
     })
     .select()
     .single();
