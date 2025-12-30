@@ -73,10 +73,11 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
         (text) => {
           setFoodInput(prev => prev ? `${prev} ${text}` : text);
         },
-        () => {
+        (finalText) => {
           setIsListening(false);
           // Auto-trigger estimation when recording completes
-          if (foodInput.trim()) {
+          if (finalText.trim()) {
+            setFoodInput(finalText);
             handleEstimate();
           }
         },

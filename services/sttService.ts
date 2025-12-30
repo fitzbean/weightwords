@@ -13,7 +13,7 @@ export class STTService {
     }
   }
 
-  start(onResult: (text: string) => void, onEnd: () => void, onError: (error: any) => void) {
+  start(onResult: (text: string) => void, onEnd: (finalText?: string) => void, onError: (error: any) => void) {
     if (!this.recognition) {
       onError('Speech recognition not supported in this browser');
       return;
@@ -21,14 +21,17 @@ export class STTService {
 
     if (this.isListening) return;
 
+    let finalTranscript = '';
+
     this.recognition.onresult = (event: any) => {
       const text = event.results[0][0].transcript;
+      finalTranscript = text;
       onResult(text);
     };
 
     this.recognition.onend = () => {
       this.isListening = false;
-      onEnd();
+      onEnd(finalTranscript);
     };
 
     this.recognition.onerror = (event: any) => {
