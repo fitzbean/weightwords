@@ -74,6 +74,7 @@ export const getProfile = async (userId: string): Promise<UserProfile | null> =>
     activityLevel: data.activity_level as ActivityLevel,
     profileCompleted: data.profile_completed ?? false,
     spouseId: data.spouse_id,
+    timezone: data.timezone ?? 'UTC',
   };
   
   console.log('Mapped profile:', profile);
@@ -94,6 +95,7 @@ export const updateProfile = async (userId: string, profile: UserProfile) => {
       daily_calorie_target: profile.dailyCalorieTarget,
       activity_level: profile.activityLevel.toString(),
       profile_completed: true,
+      timezone: profile.timezone || 'UTC',
       updated_at: new Date().toISOString(),
     })
     .eq('id', userId)
@@ -103,8 +105,17 @@ export const updateProfile = async (userId: string, profile: UserProfile) => {
   return { data, error };
 };
 
+// Helper functions for timezone handling
+const getLocalDate = (timezone: string): Date => {
+  return new Date(new Date().toLocaleString("en-US", { timeZone: timezone }));
+};
+
+const getLocalDateString = (timezone: string): string => {
+  return getLocalDate(timezone).toISOString().split('T')[0];
+};
+
 // Food log functions
-export const getFoodLogs = async (userId: string, date?: Date): Promise<FoodLog[]> => {
+export const getFoodLogs = async (userId: string, date?: Date, timezone?: string): Promise<FoodLog[]> => {
   let query = supabase
     .from('food_logs')
     .select('*')
@@ -112,7 +123,10 @@ export const getFoodLogs = async (userId: string, date?: Date): Promise<FoodLog[
     .order('created_at', { ascending: false });
   
   if (date) {
-    const dateStr = date.toISOString().split('T')[0];
+    // Use timezone to get the correct date string
+    const dateStr = timezone 
+      ? getLocalDateString(timezone)
+      : date.toISOString().split('T')[0];
     query = query.eq('date', dateStr);
   }
   
@@ -132,7 +146,7 @@ export const getFoodLogs = async (userId: string, date?: Date): Promise<FoodLog[
   }));
 };
 
-export const addFoodLog = async (userId: string, log: Omit<FoodLog, 'id' | 'date'>) => {
+export const addFoodLog = async (userId: string, log: Omit<FoodLog, 'id' | 'date'>, timezone?: string) => {
   const { data, error } = await supabase
     .from('food_logs')
     .insert({
@@ -143,7 +157,7 @@ export const addFoodLog = async (userId: string, log: Omit<FoodLog, 'id' | 'date
       carbs: log.carbs,
       fat: log.fat,
       description: log.description,
-      date: new Date().toISOString().split('T')[0],
+      date: timezone ? getLocalDateString(timezone) : new Date().toISOString().split('T')[0],
     })
     .select()
     .single();

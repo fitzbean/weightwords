@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { UserProfile, FoodEntry, NutritionEstimate, FoodItemEstimate, FavoritedBreakdown } from '../types';
+import { UserProfile, FoodEntry, FoodLog, NutritionEstimate, FoodItemEstimate, FavoritedBreakdown } from '../types';
 import { estimateNutrition } from '../services/geminiService';
 import { getFoodLogs, addFoodLog, deleteFoodLog, supabase, getFavoritedBreakdowns, addFavoritedBreakdown, deleteFavoritedBreakdown, updateFavoritedBreakdown, getSharedFavoritedBreakdowns, addSpouse, removeSpouse } from '../services/supabaseService';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
@@ -43,9 +43,15 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
     }
   }, [user]);
 
+  useEffect(() => {
+    if (user && profile) {
+      loadEntries();
+    }
+  }, [profile?.timezone]);
+
   const loadEntries = async () => {
     if (!user) return;
-    const logs = await getFoodLogs(user.id, new Date());
+    const logs = await getFoodLogs(user.id, new Date(), profile?.timezone);
     const entries: FoodEntry[] = logs.map(log => ({
       id: log.id,
       timestamp: log.date.getTime(),
@@ -84,20 +90,19 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
     }
   };
 
-  const addEntries = async () => {
-    if (!lastEstimate || !user) return;
-    
-    for (const item of lastEstimate.items) {
-      await addFoodLog(user.id, {
-        name: item.name,
-        calories: item.calories,
-        protein: item.protein,
-        carbs: item.carbs,
-        fat: item.fat,
-        description: foodInput,
-      });
-    }
+  const addEntry = async () => {
+    if (!user || !lastEstimate) return;
 
+    const log: Omit<FoodLog, 'id' | 'date'> = {
+      name: foodInput,
+      calories: lastEstimate.totalCalories,
+      protein: lastEstimate.items.reduce((sum, item) => sum + item.protein, 0),
+      carbs: lastEstimate.items.reduce((sum, item) => sum + item.carbs, 0),
+      fat: lastEstimate.items.reduce((sum, item) => sum + item.fat, 0),
+      description: foodInput,
+    };
+
+    await addFoodLog(user.id, log, profile?.timezone);
     await loadEntries();
     setFoodInput('');
     setLastEstimate(null);
@@ -472,7 +477,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
 
                 <div className="flex gap-4">
                     <button
-                        onClick={addEntries}
+                        onClick={addEntry}
                         className="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-green-700 shadow-xl shadow-black/50 transition-all active:scale-95"
                     >
                         Confirm {lastEstimate.items.length > 1 ? 'all items' : 'entry'}
@@ -538,7 +543,17 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
         <div className="flex flex-col">
           <div className="bg-gray-800 rounded-3xl shadow-sm border border-gray-700 overflow-hidden flex-1 flex flex-col">
              <div className="p-6 border-b border-gray-700 flex justify-between items-center">
-                <h2 className="text-lg font-black text-gray-100">Daily Log</h2>
+                <div>
+                  <h2 className="text-lg font-black text-gray-100">Daily Log</h2>
+                  <p className="text-[10px] text-gray-500 font-black uppercase tracking-wider mt-0.5">
+                    {new Date().toLocaleDateString('en-US', { 
+                      weekday: 'short', 
+                      month: 'short', 
+                      day: 'numeric',
+                      timeZone: profile?.timezone || 'UTC'
+                    })}
+                  </p>
+                </div>
                 <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{entries.length} Items</span>
              </div>
              <div className="divide-y divide-gray-700 flex-1 overflow-y-auto">

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { UserProfile, Gender, ActivityLevel, WeightGoal } from '../types';
 import { ACTIVITY_LEVEL_OPTIONS, GOAL_OPTIONS, calculateTDEE } from '../constants';
+import { timezones } from '../constants/timezones';
 
 interface ProfileFormProps {
   onSave: (profile: UserProfile) => void;
@@ -18,6 +19,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ onSave, initialData }) => {
     heightIn: initialData?.heightIn?.toString() || '9',
     activityLevel: initialData?.activityLevel || ActivityLevel.SEDENTARY,
     weightGoal: initialData?.weightGoal || WeightGoal.MAINTAIN,
+    timezone: initialData?.timezone || 'UTC',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -48,7 +50,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ onSave, initialData }) => {
       heightIn,
       activityLevel: formData.activityLevel,
       weightGoal: formData.weightGoal,
-      dailyCalorieTarget: target 
+      dailyCalorieTarget: target,
+      timezone: formData.timezone,
     });
   };
 
@@ -157,6 +160,20 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ onSave, initialData }) => {
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
+      </div>
+
+      <div>
+        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Timezone</label>
+        <select
+          value={formData.timezone}
+          onChange={(e) => handleChange('timezone', e.target.value)}
+          className={inputClasses}
+        >
+          {timezones.map((tz) => (
+            <option key={tz.value} value={tz.value}>{tz.label}</option>
+          ))}
+        </select>
+        <p className="text-[10px] text-gray-500 mt-1">This determines when your daily log resets</p>
       </div>
 
       <button

@@ -31,6 +31,7 @@ export interface UserProfile {
   dailyCalorieTarget: number;
   profileCompleted?: boolean;
   spouseId?: string;
+  timezone?: string;
 }
 
 export interface FoodEntry {

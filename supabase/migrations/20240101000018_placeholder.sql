@@ -1,0 +1,3 @@
+-- Placeholder migration to skip past migration history issues
+-- Previous migrations 10-17 were cleaned up locally but still exist in remote history
+-- Future migrations should start from 19 to avoid conflicts
