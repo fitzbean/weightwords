@@ -6,6 +6,7 @@ import { getFoodLogs, addFoodLog, deleteFoodLog, supabase, getFavoritedBreakdown
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { getWeekDates } from '../utils/dateUtils';
 import { sttService } from '../services/sttService';
+import NutritionLabelScanner from './NutritionLabelScanner';
 
 interface DashboardProps {
   profile: UserProfile;
@@ -32,6 +33,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
   const [selectedItem, setSelectedItem] = useState<FoodItemEstimate | null>(null);
   const [itemInsight, setItemInsight] = useState<ItemInsight | null>(null);
   const [isLoadingInsight, setIsLoadingInsight] = useState(false);
+  const [showLabelScanner, setShowLabelScanner] = useState(false);
   
   // Use external modal state if provided, otherwise use internal state
   const showSpouseModal = externalShowSpouseModal ?? false;
@@ -160,6 +162,12 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
     } finally {
       setIsEstimating(false);
     }
+  };
+
+  const handleLabelScan = async (nutritionText: string) => {
+    setFoodInput(nutritionText);
+    setShowLabelScanner(false);
+    await handleEstimate(nutritionText);
   };
 
   const addEntry = async () => {
@@ -494,6 +502,16 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                     </svg>
                   </button>
                 )}
+                <button
+                  onClick={() => setShowLabelScanner(true)}
+                  className="p-3 rounded-xl bg-gray-600 text-gray-300 hover:bg-gray-500 transition-all shadow-xl shadow-black/50 active:scale-95"
+                  title="Scan nutrition label"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                </button>
                 <button
                   onClick={() => handleEstimate()}
                   disabled={isEstimating || !foodInput}
@@ -1025,6 +1043,13 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
           </div>
         </div>
       )}
+
+      {/* Nutrition Label Scanner Modal */}
+      <NutritionLabelScanner
+        isOpen={showLabelScanner}
+        onClose={() => setShowLabelScanner(false)}
+        onScan={handleLabelScan}
+      />
         </>
       )}
     </div>

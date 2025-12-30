@@ -14,7 +14,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { description, type, item } = body;
+    const { description, type, item, image } = body;
     
     const ai = new GoogleGenAI({ apiKey: Deno.env.get('GEMINI_API_KEY') });
     
@@ -116,8 +116,46 @@ serve(async (req) => {
       });
     }
 
+    if (type === 'nutrition-label') {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                inlineData: {
+                  mimeType: 'image/jpeg',
+                  data: image,
+                },
+              },
+              {
+                text: `Look at this nutrition facts label image and extract the key nutrition information.
+                
+                Return a simple text description that includes:
+                - Serving size (if visible)
+                - Calories per serving
+                - Any other visible macros (protein, carbs, fat)
+                
+                Format it as a natural description like: "1 serving (28g), 150 calories, 3g protein, 15g carbs, 9g fat"
+                
+                If you cannot read the label clearly, return null.`,
+              },
+            ],
+          },
+        ],
+      });
+
+      const nutritionText = response.text?.trim() || null;
+      
+      return new Response(JSON.stringify({ nutritionText }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
     if (type === 'advice') {
-      const { profile, recentLogs } = await req.json();
+      const { profile, recentLogs } = body;
       const logsSummary = recentLogs.map((l: any) => `${l.name} (${l.calories}kcal)`).join(', ');
       const prompt = `
         User Profile:
