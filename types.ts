@@ -76,6 +76,7 @@ export interface FavoritedBreakdown {
   breakdown: FoodItemEstimate[];
   totalCalories: number;
   createdAt: number;
+  userId?: string;
 }
 
 export interface ItemInsight {

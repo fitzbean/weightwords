@@ -544,27 +544,30 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                             className="px-4 py-2 pr-16 bg-gray-700 text-gray-300 rounded-xl text-sm font-medium transition-all border border-gray-600 active:scale-95 active:bg-gray-500"
                           >
                             <span className="text-gray-300">{favorite.name}</span>
-                            <span className="text-xs text-gray-500 ml-2">({favorite.totalCalories} kcal)</span>
                           </button>
                           <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">
-                            <button
-                              onClick={() => handleRename(favorite)}
-                              className="p-1 text-gray-400 sm:opacity-0 sm:group-hover:opacity-60 transition-all rounded-md hover:bg-gray-600"
-                              title="Rename favorite"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                              </svg>
-                            </button>
-                            <button
-                              onClick={() => handleDeleteFavorite(favorite.id)}
-                              className="p-1 text-gray-400 sm:opacity-0 sm:group-hover:opacity-60 transition-all rounded-md hover:bg-red-900/40"
-                              title="Remove from favorites"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path>
-                              </svg>
-                            </button>
+                            {favorite.userId === user?.id && (
+                              <>
+                                <button
+                                  onClick={() => handleRename(favorite)}
+                                  className="p-1 text-gray-400 sm:opacity-0 sm:group-hover:opacity-60 transition-all rounded-md hover:bg-gray-600"
+                                  title="Rename favorite"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteFavorite(favorite.id)}
+                                  className="p-1 text-gray-400 sm:opacity-0 sm:group-hover:opacity-60 transition-all rounded-md hover:bg-red-900/40"
+                                  title="Remove from favorites"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                                  </svg>
+                                </button>
+                              </>
+                            )}
                           </div>
                         </>
                       )}

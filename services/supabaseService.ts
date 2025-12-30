@@ -241,6 +241,7 @@ export const getFavoritedBreakdowns = async (userId: string): Promise<FavoritedB
     breakdown: item.breakdown as FoodItemEstimate[],
     totalCalories: item.total_calories,
     createdAt: new Date(item.created_at).getTime(),
+    userId: item.user_id,
   }));
 };
 
@@ -337,6 +338,7 @@ export const getSharedFavoritedBreakdowns = async (userId: string): Promise<Favo
     breakdown: item.breakdown as FoodItemEstimate[],
     totalCalories: item.total_calories,
     createdAt: new Date(item.created_at).getTime(),
+    userId: item.user_id,
   }));
 };
 
