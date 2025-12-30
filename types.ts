@@ -30,6 +30,7 @@ export interface UserProfile {
   weightGoal: WeightGoal;
   dailyCalorieTarget: number;
   profileCompleted?: boolean;
+  spouseId?: string;
 }
 
 export interface FoodEntry {

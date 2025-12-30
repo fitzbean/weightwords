@@ -14,6 +14,7 @@ const App: React.FC = () => {
   const [authView, setAuthView] = useState<'signin' | 'signup'>('signin');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [showSpouseModal, setShowSpouseModal] = useState(false);
 
   useEffect(() => {
     let isInitialized = false;
@@ -258,6 +259,18 @@ const App: React.FC = () => {
                         </svg>
                         Edit Profile
                       </button>
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          setShowSpouseModal(true);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 flex items-center gap-3"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                        </svg>
+                        {profile?.spouseId ? 'Remove Spouse' : 'Add Spouse'}
+                      </button>
                       <hr className="my-1 border-gray-700" />
                       <button
                         onClick={handleLogout}
@@ -289,7 +302,12 @@ const App: React.FC = () => {
             <ProfileForm onSave={handleSaveProfile} initialData={profile} />
           </div>
         ) : (
-          <Dashboard profile={profile} onLogout={handleLogout} />
+          <Dashboard 
+            profile={profile} 
+            onLogout={handleLogout} 
+            showSpouseModal={showSpouseModal}
+            setShowSpouseModal={setShowSpouseModal}
+          />
         )}
       </main>
 

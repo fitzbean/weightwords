@@ -2,15 +2,17 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, FoodEntry, NutritionEstimate, FoodItemEstimate, FavoritedBreakdown } from '../types';
 import { estimateNutrition } from '../services/geminiService';
-import { getFoodLogs, addFoodLog, deleteFoodLog, supabase, getFavoritedBreakdowns, addFavoritedBreakdown, deleteFavoritedBreakdown, updateFavoritedBreakdown } from '../services/supabaseService';
+import { getFoodLogs, addFoodLog, deleteFoodLog, supabase, getFavoritedBreakdowns, addFavoritedBreakdown, deleteFavoritedBreakdown, updateFavoritedBreakdown, getSharedFavoritedBreakdowns, addSpouse, removeSpouse } from '../services/supabaseService';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 interface DashboardProps {
   profile: UserProfile;
   onLogout: () => void;
+  showSpouseModal?: boolean;
+  setShowSpouseModal?: (show: boolean) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
+const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externalShowSpouseModal, setShowSpouseModal: externalSetShowSpouseModal }) => {
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [foodInput, setFoodInput] = useState('');
   const [isEstimating, setIsEstimating] = useState(false);
@@ -19,6 +21,12 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
   const [favoritedBreakdowns, setFavoritedBreakdowns] = useState<FavoritedBreakdown[]>([]);
   const [editingFavorite, setEditingFavorite] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [spouseEmail, setSpouseEmail] = useState('');
+  const [spouseError, setSpouseError] = useState('');
+  
+  // Use external modal state if provided, otherwise use internal state
+  const showSpouseModal = externalShowSpouseModal ?? false;
+  const setShowSpouseModal = externalSetShowSpouseModal ?? (() => {});
 
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -52,7 +60,10 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
 
   const loadFavoritedBreakdowns = async () => {
     if (!user) return;
-    const favorites = await getFavoritedBreakdowns(user.id);
+    // Use shared favorites if user has a spouse, otherwise use personal favorites
+    const favorites = profile.spouseId 
+      ? await getSharedFavoritedBreakdowns(user.id)
+      : await getFavoritedBreakdowns(user.id);
     setFavoritedBreakdowns(favorites);
   };
 
@@ -141,6 +152,29 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
   const cancelRename = () => {
     setEditingFavorite(null);
     setEditingName('');
+  };
+
+  const handleAddSpouse = async () => {
+    setSpouseError('');
+    if (!spouseEmail.trim()) {
+      setSpouseError('Please enter an email address');
+      return;
+    }
+    
+    const { error } = await addSpouse(user.id, spouseEmail);
+    if (error) {
+      setSpouseError(error.message || 'Failed to add spouse');
+    } else {
+      setShowSpouseModal(false);
+      setSpouseEmail('');
+      // Reload profile to get spouse info
+      window.location.reload();
+    }
+  };
+
+  const handleRemoveSpouse = async () => {
+    await removeSpouse(user.id);
+    window.location.reload();
   };
 
   const getFoodEmoji = (foodName: string): string => {
@@ -287,9 +321,9 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
         {/* Left Column: Input & AI */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 flex flex-col">
           <div className="bg-gray-800 p-3 rounded-3xl shadow-sm border border-gray-700">
             <h2 className="text-xl font-black text-gray-100 mb-4 flex items-center gap-2">
                 <div className="w-2 h-6 bg-green-500 rounded-full"></div>
@@ -454,15 +488,60 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
             )}
           </div>
 
+          {/* Calorie Progress - Under Log Your Meal */}
+          <div className="mt-6 lg:mt-8 bg-gray-800 p-4 rounded-3xl shadow-sm border border-gray-700">
+            <h2 className="text-base font-black text-gray-100 mb-3">Calorie Progress</h2>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-xs font-black text-gray-500 uppercase tracking-wider">Consumed</p>
+                  <p className="text-2xl font-black text-gray-100">{totalCalories}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-black text-gray-500 uppercase tracking-wider">Target</p>
+                  <p className="text-2xl font-black text-gray-100">{profile.dailyCalorieTarget}</p>
+                </div>
+              </div>
+              
+              <div className="relative">
+                <div className="w-full bg-gray-700 rounded-full h-4 overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-1000 ease-out rounded-full ${caloriesRemaining < 0 ? 'bg-red-500' : 'bg-green-500'}`}
+                    style={{ width: `${Math.min(100, progressPercent)}%` }}
+                  ></div>
+                </div>
+                {caloriesRemaining < 0 && (
+                  <div 
+                    className="absolute top-0 left-0 bg-red-600/30 h-4 rounded-full border-l-2 border-red-500"
+                    style={{ width: `${Math.abs((caloriesRemaining / profile.dailyCalorieTarget) * 100)}%`, marginLeft: '100%' }}
+                  ></div>
+                )}
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className={`text-xs font-black ${caloriesRemaining < 0 ? 'text-red-400' : 'text-green-500'}`}>
+                    {caloriesRemaining < 0 ? 'Over by' : 'Remaining'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-black text-gray-100">
+                    {Math.round(Math.abs(caloriesRemaining))} kcal
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Right Column: Daily Log only */}
-        <div className="space-y-6">
-          {/* Daily Log - Now after Calorie Progress */}
-          <div className="bg-gray-800 rounded-3xl shadow-sm border border-gray-700 overflow-hidden">
+        <div className="flex flex-col">
+          <div className="bg-gray-800 rounded-3xl shadow-sm border border-gray-700 overflow-hidden flex-1 flex flex-col">
              <div className="p-6 border-b border-gray-700 flex justify-between items-center">
                 <h2 className="text-lg font-black text-gray-100">Daily Log</h2>
                 <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{entries.length} Items</span>
              </div>
-             <div className="divide-y divide-gray-700 max-h-[400px] overflow-y-auto">
+             <div className="divide-y divide-gray-700 flex-1 overflow-y-auto">
                 {entries.length === 0 ? (
                   <div className="p-10 text-center">
                     <p className="text-gray-600 text-sm font-bold italic">No meals logged today.</p>
@@ -470,17 +549,17 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
                 ) : (
                   entries.map((entry) => (
                     <div key={entry.id} className={`p-4 flex justify-between items-center group transition-all ${getHealthColor(entry.name, entry.calories, entry.protein)}`}>
-                      <div className="flex gap-3 items-center">
+                      <div className="flex gap-3 items-center min-w-0 flex-1">
                         <div className="w-8 h-8 rounded-lg bg-gray-800/50 flex items-center justify-center text-lg shrink-0">
                             {getFoodEmoji(entry.name)}
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="font-bold text-gray-100 text-sm truncate">{entry.name}</p>
                           <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest mt-0.5">{new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-right shrink-0">
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="text-right">
                             <span className="font-black text-gray-100 text-sm">{entry.calories}</span>
                             <span className="text-[8px] font-black text-gray-500 uppercase ml-0.5">kcal</span>
                         </div>
@@ -499,81 +578,71 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
         </div>
       </div>
 
-      {/* Calorie Progress - Above AI Health Tip */}
-      <div className="bg-gray-800 p-8 rounded-3xl shadow-sm border border-gray-700">
-        <h2 className="text-xl font-black text-gray-100 mb-2">Calorie Progress</h2>
-        <div className="h-64 w-full relative">
-            <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                    <Pie
-                        data={data}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={70}
-                        outerRadius={90}
-                        paddingAngle={8}
-                        dataKey="value"
-                        startAngle={90}
-                        endAngle={450}
-                        stroke="none"
-                    >
-                        {data.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} cornerRadius={10} />
-                        ))}
-                    </Pie>
-                </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-4xl font-black text-gray-100">{totalCalories}</span>
-                <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-1">Eaten Today</span>
-            </div>
-        </div>
-        
-        <div className="mt-6 space-y-4">
-            <div className="flex justify-between items-end">
-                <div>
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Status</p>
-                    <p className={`text-lg font-black ${caloriesRemaining < 0 ? 'text-red-400' : 'text-green-500'}`}>
-                        {caloriesRemaining < 0 ? 'Surplus' : 'On Track'}
-                    </p>
+      {/* Spouse Modal */}
+      {showSpouseModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-3xl shadow-xl border border-gray-700 w-full max-w-md">
+            <h3 className="text-xl font-black text-gray-100 mb-4">
+              {profile.spouseId ? 'Remove Spouse' : 'Add Spouse'}
+            </h3>
+            {!profile.spouseId ? (
+              <React.Fragment>
+                <p className="text-gray-400 mb-4">
+                  Enter your spouse's email address to share favorites with each other.
+                </p>
+                <input
+                  type="email"
+                  value={spouseEmail}
+                  onChange={(e) => setSpouseEmail(e.target.value)}
+                  placeholder="spouse@example.com"
+                  className="w-full p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
+                />
+                {spouseError && (
+                  <p className="text-red-400 text-sm mt-2">{spouseError}</p>
+                )}
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={handleAddSpouse}
+                    className="flex-1 py-3 bg-green-600 text-white rounded-xl font-black uppercase tracking-widest text-sm hover:bg-green-700"
+                  >
+                    Add Spouse
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowSpouseModal(false);
+                      setSpouseEmail('');
+                      setSpouseError('');
+                    }}
+                    className="flex-1 py-3 bg-gray-700 text-gray-300 rounded-xl font-bold hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
                 </div>
-                <div className="text-right">
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Remaining</p>
-                    <p className="text-lg font-black text-gray-100">
-                        {Math.round(Math.abs(caloriesRemaining))} <span className="text-xs">kcal</span>
-                    </p>
-                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">
-                        {Math.round((caloriesRemaining / profile.dailyCalorieTarget) * 100)}%
-                    </p>
+              </React.Fragment>
+            ) : (
+              <React.Fragment>
+                <p className="text-gray-400 mb-6">
+                  Are you sure you want to remove your spouse? This will stop sharing favorites.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleRemoveSpouse}
+                    className="flex-1 py-3 bg-red-600 text-white rounded-xl font-black uppercase tracking-widest text-sm hover:bg-red-700"
+                  >
+                    Remove Spouse
+                  </button>
+                  <button
+                    onClick={() => setShowSpouseModal(false)}
+                    className="flex-1 py-3 bg-gray-700 text-gray-300 rounded-xl font-bold hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
                 </div>
-            </div>
-            <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
-                <div
-                    className={`h-full transition-all duration-1000 ease-out rounded-full ${caloriesRemaining < 0 ? 'bg-red-500' : 'bg-green-500'}`}
-                    style={{ width: `${progressPercent}%` }}
-                ></div>
-            </div>
+              </React.Fragment>
+            )}
+          </div>
         </div>
-      </div>
-
-      {/* AI Health Tip - Moved to bottom for mobile */}
-      <div className="bg-gradient-to-br from-green-600 to-green-800 p-8 rounded-3xl shadow-2xl text-white relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-4 opacity-10 transform translate-x-4 -translate-y-4 group-hover:translate-x-0 group-hover:translate-y-0 transition-all duration-700">
-            <svg className="w-32 h-32" fill="currentColor" viewBox="0 0 20 20"><path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z"></path></svg>
-        </div>
-        <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-4">
-               <div className="bg-white/20 p-2.5 rounded-xl backdrop-blur-md">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-               </div>
-               <h3 className="font-black text-lg tracking-tight">AI Health Tip</h3>
-            </div>
-            <p className="text-green-50 text-sm leading-relaxed font-bold opacity-90">
-              Stay focused on your journey! Consistency in logging every snack and meal is the key to mastering your nutrition goals.
-            </p>
-        </div>
-      </div>
-      </div>
+      )}
     </div>
   );
 };

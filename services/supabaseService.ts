@@ -73,6 +73,7 @@ export const getProfile = async (userId: string): Promise<UserProfile | null> =>
     dailyCalorieTarget: data.daily_calorie_target,
     activityLevel: data.activity_level as ActivityLevel,
     profileCompleted: data.profile_completed ?? false,
+    spouseId: data.spouse_id,
   };
   
   console.log('Mapped profile:', profile);
@@ -220,4 +221,87 @@ export const updateFavoritedBreakdown = async (breakdownId: string, updates: { n
     .single();
   
   return { data, error };
+};
+
+// Spouse functions
+export const addSpouse = async (userId: string, spouseEmail: string) => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  
+  // Find user by email using edge function
+  const response = await fetch(`${supabaseUrl}/functions/v1/find-user-by-email`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify({ email: spouseEmail }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    return { data: null, error: new Error(error.error || 'User not found') };
+  }
+
+  const { userId: spouseProfileId } = await response.json();
+  
+  // Update current user's profile with spouse ID
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .update({ spouse_id: spouseProfileId })
+    .eq('id', userId)
+    .select()
+    .single();
+  
+  // Also update spouse's profile to create bidirectional relationship
+  if (data) {
+    await supabase
+      .from('user_profiles')
+      .update({ spouse_id: userId })
+      .eq('id', spouseProfileId);
+  }
+  
+  return { data, error };
+};
+
+export const getSharedFavoritedBreakdowns = async (userId: string): Promise<FavoritedBreakdown[]> => {
+  const { data, error } = await supabase
+    .rpc('get_shared_favorites', { 
+      current_user_id: userId 
+    });
+  
+  console.log('Shared favorites query:', { data, error, userId });
+  
+  if (error || !data) return [];
+  
+  return data.map(item => ({
+    id: item.id,
+    name: item.name,
+    breakdown: item.breakdown as FoodItemEstimate[],
+    totalCalories: item.total_calories,
+    createdAt: new Date(item.created_at).getTime(),
+  }));
+};
+
+export const removeSpouse = async (userId: string) => {
+  // Get current profile to find spouse
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('spouse_id')
+    .eq('id', userId)
+    .single();
+  
+  if (profile?.spouse_id) {
+    // Remove spouse reference from both users
+    await supabase
+      .from('user_profiles')
+      .update({ spouse_id: null })
+      .eq('id', userId);
+    
+    await supabase
+      .from('user_profiles')
+      .update({ spouse_id: null })
+      .eq('id', profile.spouse_id);
+  }
+  
+  return { error: null };
 };
