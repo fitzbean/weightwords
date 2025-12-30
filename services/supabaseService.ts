@@ -1,5 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
-import { UserProfile, FoodLog, Gender, ActivityLevel, WeightGoal } from '../types';
+import { 
+  UserProfile, 
+  FoodLog, 
+  FoodEntry, 
+  NutritionEstimate, 
+  FoodItemEstimate,
+  FavoritedBreakdown,
+  Gender,
+  WeightGoal,
+  ActivityLevel
+} from '../types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -154,4 +164,47 @@ export const onAuthStateChange = (callback: (user: any) => void) => {
   return supabase.auth.onAuthStateChange((_event, session) => {
     callback(session?.user ?? null);
   });
+};
+
+// Favorited breakdown functions
+export const getFavoritedBreakdowns = async (userId: string): Promise<FavoritedBreakdown[]> => {
+  const { data, error } = await supabase
+    .from('favorited_breakdowns')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  
+  if (error || !data) return [];
+  
+  return data.map(item => ({
+    id: item.id,
+    name: item.name,
+    breakdown: item.breakdown as FoodItemEstimate[],
+    totalCalories: item.total_calories,
+    createdAt: new Date(item.created_at).getTime(),
+  }));
+};
+
+export const addFavoritedBreakdown = async (userId: string, breakdown: Omit<FavoritedBreakdown, 'id' | 'createdAt'>) => {
+  const { data, error } = await supabase
+    .from('favorited_breakdowns')
+    .insert({
+      user_id: userId,
+      name: breakdown.name,
+      breakdown: breakdown.breakdown,
+      total_calories: breakdown.totalCalories,
+    })
+    .select()
+    .single();
+  
+  return { data, error };
+};
+
+export const deleteFavoritedBreakdown = async (breakdownId: string) => {
+  const { error } = await supabase
+    .from('favorited_breakdowns')
+    .delete()
+    .eq('id', breakdownId);
+  
+  return { error };
 };

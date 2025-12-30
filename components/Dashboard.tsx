@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { UserProfile, FoodEntry, NutritionEstimate, FoodItemEstimate } from '../types';
+import { UserProfile, FoodEntry, NutritionEstimate, FoodItemEstimate, FavoritedBreakdown } from '../types';
 import { estimateNutrition } from '../services/geminiService';
-import { getFoodLogs, addFoodLog, deleteFoodLog, supabase } from '../services/supabaseService';
+import { getFoodLogs, addFoodLog, deleteFoodLog, supabase, getFavoritedBreakdowns, addFavoritedBreakdown, deleteFavoritedBreakdown } from '../services/supabaseService';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 interface DashboardProps {
@@ -16,6 +16,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
   const [isEstimating, setIsEstimating] = useState(false);
   const [lastEstimate, setLastEstimate] = useState<NutritionEstimate | null>(null);
   const [user, setUser] = useState<any>(null);
+  const [favoritedBreakdowns, setFavoritedBreakdowns] = useState<FavoritedBreakdown[]>([]);
 
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -28,6 +29,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
   useEffect(() => {
     if (user) {
       loadEntries();
+      loadFavoritedBreakdowns();
     }
   }, [user]);
 
@@ -44,6 +46,12 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
       fat: log.fat,
     }));
     setEntries(entries);
+  };
+
+  const loadFavoritedBreakdowns = async () => {
+    if (!user) return;
+    const favorites = await getFavoritedBreakdowns(user.id);
+    setFavoritedBreakdowns(favorites);
   };
 
   const totalCalories = entries.reduce((sum, entry) => sum + entry.calories, 0);
@@ -87,6 +95,33 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
     await loadEntries();
   };
 
+  const favoriteBreakdown = async () => {
+    if (!lastEstimate || !user) return;
+    
+    const favorite: Omit<FavoritedBreakdown, 'id' | 'createdAt'> = {
+      name: foodInput.slice(0, 50) + (foodInput.length > 50 ? '...' : ''),
+      breakdown: lastEstimate.items,
+      totalCalories: lastEstimate.totalCalories,
+    };
+    
+    await addFavoritedBreakdown(user.id, favorite);
+    await loadFavoritedBreakdowns();
+  };
+
+  const useFavoritedBreakdown = (favorite: FavoritedBreakdown) => {
+    setLastEstimate({
+      items: favorite.breakdown,
+      totalCalories: favorite.totalCalories,
+      confidence: 1,
+    });
+    setFoodInput(favorite.name);
+  };
+
+  const handleDeleteFavorite = async (id: string) => {
+    await deleteFavoritedBreakdown(id);
+    await loadFavoritedBreakdowns();
+  };
+
   const data = [
     { name: 'Consumed', value: totalCalories },
     { name: 'Remaining', value: Math.max(0, caloriesRemaining) },
@@ -124,6 +159,38 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
               </button>
             </div>
 
+            {/* Favorited Breakdowns */}
+            {favoritedBreakdowns.length > 0 && (
+              <div className="mt-6">
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Quick Add</p>
+                <div className="flex flex-wrap gap-2">
+                  {favoritedBreakdowns.slice(0, 6).map((favorite) => (
+                    <div
+                      key={favorite.id}
+                      className="relative group"
+                    >
+                      <button
+                        onClick={() => useFavoritedBreakdown(favorite)}
+                        className="px-4 py-2 pr-10 bg-gray-700 text-gray-300 rounded-xl text-sm font-medium hover:bg-gray-600 transition-all border border-gray-600 hover:border-green-500/50"
+                      >
+                        <span className="group-hover:text-green-400 transition-colors">{favorite.name}</span>
+                        <span className="text-xs text-gray-500 ml-2">({favorite.totalCalories} kcal)</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteFavorite(favorite.id)}
+                        className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all rounded-md hover:bg-red-900/20"
+                        title="Remove from favorites"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {lastEstimate && (
               <div className="mt-8 p-8 bg-green-900/20 rounded-3xl border border-green-800 animate-in fade-in zoom-in-95 duration-300">
                 <div className="flex justify-between items-center mb-6">
@@ -131,9 +198,20 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
                     <h3 className="text-xl font-black text-green-400 uppercase tracking-tight">Breakdown</h3>
                     <p className="text-xs font-bold text-green-500 uppercase tracking-widest mt-1">AI Detected {lastEstimate.items.length} items</p>
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-black text-green-400">{lastEstimate.totalCalories}</div>
-                    <div className="text-[10px] font-black uppercase text-green-500 tracking-tighter">Total KCAL</div>
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={favoriteBreakdown}
+                      className="p-2 text-gray-400 hover:text-red-500 transition-colors group"
+                      title="Save to favorites"
+                    >
+                      <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                      </svg>
+                    </button>
+                    <div className="text-right">
+                      <div className="text-2xl font-black text-green-400">{lastEstimate.totalCalories}</div>
+                      <div className="text-[10px] font-black uppercase text-green-500 tracking-tighter">Total KCAL</div>
+                    </div>
                   </div>
                 </div>
 

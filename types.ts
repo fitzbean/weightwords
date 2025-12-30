@@ -65,4 +65,13 @@ export interface FoodLog {
   fat: number;
   description: string;
   date: Date;
+  breakdown?: FoodItemEstimate[];
+}
+
+export interface FavoritedBreakdown {
+  id: string;
+  name: string;
+  breakdown: FoodItemEstimate[];
+  totalCalories: number;
+  createdAt: number;
 }
