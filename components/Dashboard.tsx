@@ -34,6 +34,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
   const [itemInsight, setItemInsight] = useState<ItemInsight | null>(null);
   const [isLoadingInsight, setIsLoadingInsight] = useState(false);
   const [showLabelScanner, setShowLabelScanner] = useState(false);
+  const [breakdownItems, setBreakdownItems] = useState<FoodItemEstimate[]>([]);
   
   // Use external modal state if provided, otherwise use internal state
   const showSpouseModal = externalShowSpouseModal ?? false;
@@ -156,7 +157,17 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
     setIsEstimating(true);
     try {
       const estimate = await estimateNutrition(textToEstimate);
-      setLastEstimate(estimate);
+      // Add new items to existing breakdown
+      setBreakdownItems(prev => [...prev, ...estimate.items]);
+      // Update last estimate with combined items
+      const combinedItems = [...breakdownItems, ...estimate.items];
+      setLastEstimate({
+        items: combinedItems,
+        totalCalories: combinedItems.reduce((sum, item) => sum + item.calories, 0),
+        confidence: estimate.confidence,
+      });
+      // Clear the input after adding
+      setFoodInput('');
     } catch (error) {
       alert("Failed to estimate calories. Please try again.");
     } finally {
@@ -165,7 +176,6 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
   };
 
   const handleLabelScan = async (nutritionText: string) => {
-    setFoodInput(nutritionText);
     setShowLabelScanner(false);
     await handleEstimate(nutritionText);
   };
@@ -204,6 +214,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
     await loadWeeklyData();
     setFoodInput('');
     setLastEstimate(null);
+    setBreakdownItems([]);
   };
 
   const deleteEntry = async (id: string) => {
@@ -231,11 +242,27 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
     setItemInsight(null);
   };
 
+  const removeBreakdownItem = (index: number) => {
+    const newItems = breakdownItems.filter((_, i) => i !== index);
+    setBreakdownItems(newItems);
+    
+    // Update last estimate
+    if (newItems.length > 0) {
+      setLastEstimate({
+        items: newItems,
+        totalCalories: newItems.reduce((sum, item) => sum + item.calories, 0),
+        confidence: 1,
+      });
+    } else {
+      setLastEstimate(null);
+    }
+  };
+
   const favoriteBreakdown = async () => {
     if (!lastEstimate || !user) return;
     
     const favorite: Omit<FavoritedBreakdown, 'id' | 'createdAt'> = {
-      name: foodInput,
+      name: breakdownItems.map(item => item.name).join(', '),
       breakdown: lastEstimate.items,
       totalCalories: lastEstimate.totalCalories,
     };
@@ -250,7 +277,8 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
       totalCalories: favorite.totalCalories,
       confidence: 1,
     });
-    setFoodInput(favorite.name);
+    setBreakdownItems(favorite.breakdown);
+    setFoodInput('');
   };
 
   const handleDeleteFavorite = async (id: string) => {
@@ -468,7 +496,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
               <textarea
                 value={foodInput}
                 onChange={(e) => setFoodInput(e.target.value)}
-                placeholder="Describe your meal (e.g. '3 scrambled eggs with a side of bacon and black coffee')"
+                placeholder="Type (e.g. '2 slices of toast'), Speak (e.g. 'two slices of toast'), or Scan label and nutrition facts"
                 className="w-full p-4 pr-12 h-48 border border-gray-600 rounded-2xl focus:ring-4 focus:ring-green-500/10 outline-none resize-none transition-all bg-gray-700 text-gray-100 placeholder-gray-500 font-medium"
               />
               {foodInput && (
@@ -632,13 +660,15 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                 </div>
 
                 <div className="space-y-3 mb-8">
-                  {lastEstimate.items.map((item, idx) => (
+                  {breakdownItems.map((item, idx) => (
                     <div 
                       key={idx} 
-                      onClick={() => handleItemClick(item)}
-                      className="bg-gray-800/60 p-4 rounded-2xl flex justify-between items-center border border-green-800/50 cursor-pointer hover:bg-gray-700/60 hover:border-green-700 transition-all active:scale-[0.98]"
+                      className="bg-gray-800/60 p-4 rounded-2xl flex justify-between items-center border border-green-800/50 hover:bg-gray-700/60 hover:border-green-700 transition-all"
                     >
-                      <div className="flex-1">
+                      <div 
+                        className="flex-1 cursor-pointer"
+                        onClick={() => handleItemClick(item)}
+                      >
                         <p className="font-bold text-gray-100">{item.name}</p>
                         <div className="flex gap-3 mt-1">
                           <span className="text-[10px] text-gray-500 font-black">P: {item.protein}g</span>
@@ -651,9 +681,18 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                           <span className="font-black text-gray-100">{item.calories}</span>
                           <span className="text-[10px] font-black text-gray-500 uppercase ml-1">kcal</span>
                         </div>
-                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeBreakdownItem(idx);
+                          }}
+                          className="p-1 text-gray-400 hover:text-red-500 transition-colors rounded-md hover:bg-red-900/20"
+                          title="Remove item"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                          </svg>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -664,10 +703,13 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                         onClick={addEntry}
                         className="flex-1 py-4 bg-green-600 text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-green-700 shadow-xl shadow-black/50 transition-all active:scale-95"
                     >
-                        Confirm {lastEstimate.items.length > 1 ? 'all items' : 'entry'}
+                        Confirm {breakdownItems.length > 1 ? 'all items' : 'entry'}
                     </button>
                     <button
-                        onClick={() => setLastEstimate(null)}
+                        onClick={() => {
+                            setLastEstimate(null);
+                            setBreakdownItems([]);
+                        }}
                         className="px-6 py-4 bg-gray-700 text-gray-300 rounded-2xl font-bold border border-gray-600 hover:bg-gray-600 transition-all"
                     >
                         Discard
