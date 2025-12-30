@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { UserProfile, FoodEntry, FoodLog, NutritionEstimate, FoodItemEstimate, FavoritedBreakdown } from '../types';
-import { estimateNutrition } from '../services/geminiService';
+import { UserProfile, FoodEntry, FoodLog, NutritionEstimate, FoodItemEstimate, FavoritedBreakdown, ItemInsight } from '../types';
+import { estimateNutrition, getItemInsight } from '../services/geminiService';
 import { getFoodLogs, addFoodLog, deleteFoodLog, supabase, getFavoritedBreakdowns, addFavoritedBreakdown, deleteFavoritedBreakdown, updateFavoritedBreakdown, getSharedFavoritedBreakdowns, addSpouse, removeSpouse, getWeeklyFoodLogs } from '../services/supabaseService';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { getWeekDates } from '../utils/dateUtils';
@@ -29,6 +29,9 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
   const [weeklyData, setWeeklyData] = useState<{ date: string; totalCalories: number }[]>([]);
   const [isListening, setIsListening] = useState(false);
   const currentInputRef = useRef('');
+  const [selectedItem, setSelectedItem] = useState<FoodItemEstimate | null>(null);
+  const [itemInsight, setItemInsight] = useState<ItemInsight | null>(null);
+  const [isLoadingInsight, setIsLoadingInsight] = useState(false);
   
   // Use external modal state if provided, otherwise use internal state
   const showSpouseModal = externalShowSpouseModal ?? false;
@@ -199,6 +202,25 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
     await deleteFoodLog(id);
     await loadEntries();
     await loadWeeklyData();
+  };
+
+  const handleItemClick = async (item: FoodItemEstimate) => {
+    setSelectedItem(item);
+    setItemInsight(null);
+    setIsLoadingInsight(true);
+    try {
+      const insight = await getItemInsight(item);
+      setItemInsight(insight);
+    } catch (error) {
+      console.error('Failed to get item insight:', error);
+    } finally {
+      setIsLoadingInsight(false);
+    }
+  };
+
+  const closeInsightModal = () => {
+    setSelectedItem(null);
+    setItemInsight(null);
   };
 
   const favoriteBreakdown = async () => {
@@ -578,7 +600,11 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
 
                 <div className="space-y-3 mb-8">
                   {lastEstimate.items.map((item, idx) => (
-                    <div key={idx} className="bg-gray-800/60 p-4 rounded-2xl flex justify-between items-center border border-green-800/50">
+                    <div 
+                      key={idx} 
+                      onClick={() => handleItemClick(item)}
+                      className="bg-gray-800/60 p-4 rounded-2xl flex justify-between items-center border border-green-800/50 cursor-pointer hover:bg-gray-700/60 hover:border-green-700 transition-all active:scale-[0.98]"
+                    >
                       <div className="flex-1">
                         <p className="font-bold text-gray-100">{item.name}</p>
                         <div className="flex gap-3 mt-1">
@@ -587,9 +613,14 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                           <span className="text-[10px] text-gray-500 font-black">F: {item.fat}g</span>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <span className="font-black text-gray-100">{item.calories}</span>
-                        <span className="text-[10px] font-black text-gray-500 uppercase ml-1">kcal</span>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <span className="font-black text-gray-100">{item.calories}</span>
+                          <span className="text-[10px] font-black text-gray-500 uppercase ml-1">kcal</span>
+                        </div>
+                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                       </div>
                     </div>
                   ))}
@@ -897,6 +928,84 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                   </button>
                 </div>
               </React.Fragment>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Item Insight Modal */}
+      {selectedItem && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={closeInsightModal}>
+          <div 
+            className="bg-gray-800 rounded-3xl p-6 max-w-md w-full border border-gray-700 animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-xl font-black text-gray-100">{selectedItem.name}</h3>
+                <div className="flex gap-3 mt-1">
+                  <span className="text-xs text-gray-500 font-bold">{selectedItem.calories} kcal</span>
+                  <span className="text-xs text-gray-500">P: {selectedItem.protein}g</span>
+                  <span className="text-xs text-gray-500">C: {selectedItem.carbs}g</span>
+                  <span className="text-xs text-gray-500">F: {selectedItem.fat}g</span>
+                </div>
+              </div>
+              <button
+                onClick={closeInsightModal}
+                className="p-1 text-gray-400 hover:text-gray-200 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {isLoadingInsight ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <svg className="animate-spin h-8 w-8 text-green-500 mb-3" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="text-gray-400 text-sm">Getting AI insights...</p>
+              </div>
+            ) : itemInsight ? (
+              <div className="space-y-4">
+                <div className={`inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                  itemInsight.verdict === 'healthy' ? 'bg-green-900/50 text-green-400' :
+                  itemInsight.verdict === 'moderate' ? 'bg-yellow-900/50 text-yellow-400' :
+                  'bg-red-900/50 text-red-400'
+                }`}>
+                  {itemInsight.verdict}
+                </div>
+
+                <p className="text-gray-300 text-sm leading-relaxed">{itemInsight.summary}</p>
+
+                <div className="space-y-2">
+                  {itemInsight.highlights.map((highlight, idx) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <span className={`mt-0.5 ${highlight.isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                        {highlight.isPositive ? (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                        )}
+                      </span>
+                      <span className="text-gray-400 text-sm">{highlight.text}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-gray-700/50 rounded-xl p-3 mt-4">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">💡 Tip</p>
+                  <p className="text-gray-300 text-sm">{itemInsight.tip}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-400 text-center py-4">Failed to load insights. Tap to try again.</p>
             )}
           </div>
         </div>

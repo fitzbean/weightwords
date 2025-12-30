@@ -13,7 +13,8 @@ serve(async (req) => {
   }
 
   try {
-    const { description, type } = await req.json();
+    const body = await req.json();
+    const { description, type, item } = body;
     
     const ai = new GoogleGenAI({ apiKey: Deno.env.get('GEMINI_API_KEY') });
     
@@ -70,6 +71,51 @@ serve(async (req) => {
       });
     }
     
+    if (type === 'item-insight') {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: `Provide a quick nutritional insight for: "${item.name}" (${item.calories} kcal, P: ${item.protein}g, C: ${item.carbs}g, F: ${item.fat}g).
+        
+        Give a brief, engaging summary that includes:
+        1. A one-line verdict (is this generally healthy, moderate, or indulgent?)
+        2. 2-3 key nutritional highlights (good or bad)
+        3. A quick tip for making it healthier or pairing it well
+        
+        Keep it concise and friendly - max 3-4 sentences total.`,
+        config: {
+          thinkingConfig: {
+            thinkingLevel: ThinkingLevel.MINIMAL,
+          },
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              verdict: { type: Type.STRING, description: 'One word: healthy, moderate, or indulgent' },
+              summary: { type: Type.STRING, description: 'Brief 2-3 sentence nutritional insight' },
+              highlights: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    text: { type: Type.STRING, description: 'The highlight text' },
+                    isPositive: { type: Type.BOOLEAN, description: 'True if this is a positive/good thing' },
+                  },
+                  required: ["text", "isPositive"],
+                }
+              },
+              tip: { type: Type.STRING, description: 'Quick tip for improvement or pairing' },
+            },
+            required: ["verdict", "summary", "highlights", "tip"],
+          },
+        },
+      });
+
+      return new Response(JSON.stringify(JSON.parse(response.text)), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
     if (type === 'advice') {
       const { profile, recentLogs } = await req.json();
       const logsSummary = recentLogs.map((l: any) => `${l.name} (${l.calories}kcal)`).join(', ');

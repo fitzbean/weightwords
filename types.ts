@@ -77,3 +77,10 @@ export interface FavoritedBreakdown {
   totalCalories: number;
   createdAt: number;
 }
+
+export interface ItemInsight {
+  verdict: 'healthy' | 'moderate' | 'indulgent';
+  summary: string;
+  highlights: { text: string; isPositive: boolean }[];
+  tip: string;
+}

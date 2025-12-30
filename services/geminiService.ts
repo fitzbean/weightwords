@@ -1,5 +1,5 @@
 
-import { NutritionEstimate } from "../types";
+import { NutritionEstimate, FoodItemEstimate, ItemInsight } from "../types";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
@@ -36,4 +36,21 @@ export const getHealthAdvice = async (profile: any, recentLogs: any[]): Promise<
 
   const data = await response.json();
   return data.advice || "Keep up the good work!";
+};
+
+export const getItemInsight = async (item: FoodItemEstimate): Promise<ItemInsight> => {
+  const response = await fetch(`${supabaseUrl}/functions/v1/nutrition-ai`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify({ item, type: 'item-insight' }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to get item insight');
+  }
+
+  return await response.json();
 };
