@@ -85,8 +85,8 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId }) 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
+      <div className="bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+        <div className="flex justify-between items-center p-6 pb-0">
           <h2 className="text-2xl font-black text-gray-100">Weigh-ins</h2>
           <button
             onClick={onClose}
@@ -95,6 +95,7 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId }) 
             ×
           </button>
         </div>
+        <div className="flex-1 overflow-y-auto px-6 pb-6">
 
         {weighIns.length > 0 && (
           <div className="mb-8">
@@ -228,6 +229,7 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId }) 
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
