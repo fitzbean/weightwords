@@ -134,15 +134,15 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
   const loadFavoritedBreakdowns = async () => {
     if (!user) return;
     // Use shared favorites if user has a spouse, otherwise use personal favorites
-    const favorites = profile.spouseId 
+    const favorites = profile?.spouseId 
       ? await getSharedFavoritedBreakdowns(user.id)
       : await getFavoritedBreakdowns(user.id);
     setFavoritedBreakdowns(favorites);
   };
 
   const totalCalories = entries.reduce((sum, entry) => sum + entry.calories, 0);
-  const caloriesRemaining = profile.dailyCalorieTarget - totalCalories;
-  const progressPercent = Math.min(100, (totalCalories / profile.dailyCalorieTarget) * 100);
+  const caloriesRemaining = (profile?.dailyCalorieTarget || 2000) - totalCalories;
+  const progressPercent = Math.min(100, (totalCalories / (profile?.dailyCalorieTarget || 2000)) * 100);
 
   const handleEstimate = async (textOverride?: string) => {
     // Use textOverride if provided (for voice recordings), otherwise use state
@@ -186,7 +186,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
         fat: log.fat,
         description: log.description,
         date: profile?.timezone 
-          ? new Date(selectedDate.toLocaleString("en-US", { timeZone: profile.timezone })).toISOString().split('T')[0]
+          ? new Date(selectedDate.toLocaleString("en-US", { timeZone: profile?.timezone })).toISOString().split('T')[0]
           : selectedDate.toISOString().split('T')[0],
       })
       .select()
@@ -436,6 +436,18 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {!profile ? (
+        <div className="bg-gray-800 rounded-2xl p-8 text-center">
+          <h2 className="text-2xl font-black text-gray-100 mb-4">Complete Your Profile</h2>
+          <p className="text-gray-400 mb-6">
+            Please complete your profile to start tracking your nutrition and calories.
+          </p>
+          <p className="text-sm text-gray-500">
+            The profile setup modal should appear automatically. If it doesn't, please refresh the page.
+          </p>
+        </div>
+      ) : (
+        <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
         {/* Left Column: Input & AI */}
         <div className="lg:col-span-2 flex flex-col">
@@ -658,7 +670,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                 </div>
                 <div className="text-right">
                   <p className="text-xs font-black text-gray-500 uppercase tracking-wider">Target</p>
-                  <p className="text-2xl font-black text-gray-100">{profile.dailyCalorieTarget}</p>
+                  <p className="text-2xl font-black text-gray-100">{profile?.dailyCalorieTarget || 2000}</p>
                 </div>
               </div>
               
@@ -875,9 +887,9 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-3xl shadow-xl border border-gray-700 w-full max-w-md">
             <h3 className="text-xl font-black text-gray-100 mb-4">
-              {profile.spouseId ? 'Remove Spouse' : 'Add Spouse'}
+              {profile?.spouseId ? 'Remove Spouse' : 'Add Spouse'}
             </h3>
-            {!profile.spouseId ? (
+            {!profile?.spouseId ? (
               <React.Fragment>
                 <p className="text-gray-400 mb-4">
                   Enter your spouse's email address to share favorites with each other.
@@ -1012,6 +1024,8 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
             )}
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

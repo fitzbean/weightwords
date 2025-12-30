@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from './types';
-import ProfileForm from './components/ProfileForm';
+import ProfileModal from './components/ProfileModal';
 import Dashboard from './components/Dashboard';
 import AuthForm from './components/AuthForm';
 import WeighInModal from './components/WeighInModal';
@@ -18,6 +18,8 @@ const App: React.FC = () => {
   const [showSpouseModal, setShowSpouseModal] = useState(false);
   const [spouseEmail, setSpouseEmail] = useState<string | null>(null);
   const [showWeighInModal, setShowWeighInModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
     let isInitialized = false;
@@ -45,9 +47,17 @@ const App: React.FC = () => {
           // Set both user and profile together to avoid flash
           const profileToSet = userProfile.profileCompleted ? userProfile : null;
           
-          // Batch state updates
-          setProfile(profileToSet);
+          // Always set the user if authenticated
           setUser(currentUser);
+          
+          // Check if user needs to complete profile
+          if (currentUser && !userProfile.profileCompleted) {
+            setIsNewUser(true);
+            setShowProfileModal(true);
+          }
+          
+          // Set profile (will be null if not completed)
+          setProfile(profileToSet);
         } else {
           // No valid user - ensure clean state
           setUser(null);
@@ -72,23 +82,23 @@ const App: React.FC = () => {
       if (!isInitialized) return;
       
       // Only set user if email is confirmed
-      if (authUser && authUser.email_confirmed_at) {
+      if (authUser) {
         const userProfile = await getProfile(authUser.id);
         
-        // If user exists but profile doesn't, there's a stale session - sign out
-        if (!userProfile) {
-          console.log('Stale session detected in auth change - signing out');
-          await signOut();
-          setUser(null);
-          setProfile(null);
-          return;
+        // Set both user and profile together to avoid flash
+        const profileToSet = userProfile?.profileCompleted ? userProfile : null;
+        
+        // Always set the user if authenticated
+        setUser(authUser);
+        
+        // Check if user needs to complete profile
+        if (authUser && userProfile && !userProfile.profileCompleted) {
+          setIsNewUser(true);
+          setShowProfileModal(true);
         }
         
-        const profileToSet = (userProfile && userProfile.profileCompleted) ? userProfile : null;
-        
-        // Batch state updates
+        // Set profile (will be null if not completed)
         setProfile(profileToSet);
-        setUser(authUser);
       } else {
         setUser(null);
         setProfile(null);
@@ -166,7 +176,9 @@ const App: React.FC = () => {
 
     if (!error) {
       setProfile(newProfile);
+      setShowProfileModal(false);
       setIsEditingProfile(false);
+      setIsNewUser(false);
     } else {
       console.error('Error saving profile:', error);
       alert('Failed to save profile. Please try again.');
@@ -189,7 +201,8 @@ const App: React.FC = () => {
   };
 
   const handleEditProfile = () => {
-    setIsEditingProfile(true);
+    setIsNewUser(false);
+    setShowProfileModal(true);
     setShowUserMenu(false);
   };
 
@@ -327,8 +340,15 @@ const App: React.FC = () => {
         </div>
       </nav>
 
-      <main className="py-8 px-4" key={profile ? 'dashboard' : 'profile-form'}>
-        {!profile || isEditingProfile ? (
+      <main className="py-8 px-4">
+        {user ? (
+          <Dashboard 
+            profile={profile} 
+            onLogout={handleLogout} 
+            showSpouseModal={showSpouseModal}
+            setShowSpouseModal={setShowSpouseModal}
+          />
+        ) : (
           <div className="animate-in fade-in duration-500 translate-y-0">
             <div className="text-center mb-12 max-w-2xl mx-auto">
                 <h1 className="text-4xl md:text-6xl font-black text-gray-100 mb-6 leading-tight tracking-tight">
@@ -337,17 +357,22 @@ const App: React.FC = () => {
                 </h1>
                 <p className="text-lg text-gray-400 font-medium">{APP_CONFIG.hero.description}</p>
             </div>
-            <ProfileForm onSave={handleSaveProfile} initialData={profile} />
+            <AuthForm 
+              view={authView} 
+              onViewChange={setAuthView}
+              onAuthSuccess={() => {}} // Auth state is handled by useEffect
+            />
           </div>
-        ) : (
-          <Dashboard 
-            profile={profile} 
-            onLogout={handleLogout} 
-            showSpouseModal={showSpouseModal}
-            setShowSpouseModal={setShowSpouseModal}
-          />
         )}
       </main>
+
+      <ProfileModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        onSave={handleSaveProfile}
+        initialData={profile}
+        isNewUser={isNewUser}
+      />
 
       <WeighInModal
         isOpen={showWeighInModal}
