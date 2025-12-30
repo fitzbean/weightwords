@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, FoodEntry, FoodLog, NutritionEstimate, FoodItemEstimate, FavoritedBreakdown } from '../types';
 import { estimateNutrition } from '../services/geminiService';
-import { getFoodLogs, addFoodLog, deleteFoodLog, supabase, getFavoritedBreakdowns, addFavoritedBreakdown, deleteFavoritedBreakdown, updateFavoritedBreakdown, getSharedFavoritedBreakdowns, addSpouse, removeSpouse } from '../services/supabaseService';
+import { getFoodLogs, addFoodLog, deleteFoodLog, supabase, getFavoritedBreakdowns, addFavoritedBreakdown, deleteFavoritedBreakdown, updateFavoritedBreakdown, getSharedFavoritedBreakdowns, addSpouse, removeSpouse, getWeeklyFoodLogs } from '../services/supabaseService';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { getWeekDates } from '../utils/dateUtils';
 
 interface DashboardProps {
   profile: UserProfile;
@@ -24,6 +25,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
   const [spouseEmail, setSpouseEmail] = useState('');
   const [spouseError, setSpouseError] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [weeklyData, setWeeklyData] = useState<{ date: string; totalCalories: number }[]>([]);
   
   // Use external modal state if provided, otherwise use internal state
   const showSpouseModal = externalShowSpouseModal ?? false;
@@ -41,6 +43,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
     if (user) {
       loadEntries();
       loadFavoritedBreakdowns();
+      loadWeeklyData();
     }
   }, [user]);
 
@@ -53,8 +56,16 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
   useEffect(() => {
     if (user && profile) {
       loadEntries();
+      loadWeeklyData();
     }
   }, [selectedDate]);
+
+  const loadWeeklyData = async () => {
+    if (!user) return;
+    const weekDates = getWeekDates(selectedDate, profile?.timezone);
+    const data = await getWeeklyFoodLogs(user.id, weekDates, profile?.timezone);
+    setWeeklyData(data.map(d => ({ date: d.date, totalCalories: d.totalCalories })));
+  };
 
   const loadEntries = async () => {
     if (!user) return;
@@ -109,8 +120,26 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
       description: foodInput,
     };
 
-    await addFoodLog(user.id, log, profile?.timezone);
+    // Create a modified addFoodLog that accepts a specific date
+    const { data, error } = await supabase
+      .from('food_logs')
+      .insert({
+        user_id: user.id,
+        name: log.name,
+        calories: log.calories,
+        protein: log.protein,
+        carbs: log.carbs,
+        fat: log.fat,
+        description: log.description,
+        date: profile?.timezone 
+          ? new Date(selectedDate.toLocaleString("en-US", { timeZone: profile.timezone })).toISOString().split('T')[0]
+          : selectedDate.toISOString().split('T')[0],
+      })
+      .select()
+      .single();
+    
     await loadEntries();
+    await loadWeeklyData();
     setFoodInput('');
     setLastEstimate(null);
   };
@@ -118,6 +147,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
   const deleteEntry = async (id: string) => {
     await deleteFoodLog(id);
     await loadEntries();
+    await loadWeeklyData();
   };
 
   const favoriteBreakdown = async () => {
@@ -522,12 +552,6 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                     style={{ width: `${Math.min(100, progressPercent)}%` }}
                   ></div>
                 </div>
-                {caloriesRemaining < 0 && (
-                  <div 
-                    className="absolute top-0 left-0 bg-red-600/30 h-4 rounded-full border-l-2 border-red-500"
-                    style={{ width: `${Math.abs((caloriesRemaining / profile.dailyCalorieTarget) * 100)}%`, marginLeft: '100%' }}
-                  ></div>
-                )}
               </div>
               
               <div className="flex justify-between items-center">
@@ -542,6 +566,91 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Weekly Calorie Tracker */}
+          <div className="mt-6 lg:mt-8 bg-gray-800 p-4 rounded-3xl shadow-sm border border-gray-700">
+            <h2 className="text-base font-black text-gray-100 mb-3">Weekly Progress</h2>
+            <div className="space-y-2">
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => {
+                const dayData = weeklyData[index];
+                const isToday = selectedDate.toDateString() === new Date().toDateString() && 
+                               new Date(selectedDate).getDay() === (index === 6 ? 0 : index + 1);
+                const calories = dayData?.totalCalories || 0;
+                const percent = Math.min(100, (calories / (profile?.dailyCalorieTarget || 2000)) * 100);
+                
+                return (
+                  <div key={day} className="flex items-center gap-3">
+                    <span className={`text-xs font-black w-8 ${isToday ? 'text-green-500' : 'text-gray-500'}`}>
+                      {day}
+                    </span>
+                    <div className="flex-1 relative">
+                      <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-500 ease-out rounded-full ${
+                            calories > (profile?.dailyCalorieTarget || 2000) 
+                              ? 'bg-red-500' 
+                              : isToday 
+                                ? 'bg-green-500' 
+                                : 'bg-blue-500'
+                          }`}
+                          style={{ width: `${Math.min(100, percent)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    <span className={`text-xs font-black text-right w-12 ${isToday ? 'text-green-500' : 'text-gray-400'}`}>
+                      {calories}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-3 pt-3 border-t border-gray-700 space-y-2">
+              {(() => {
+                const currentDayOfWeek = new Date().getDay(); // 0 = Sunday, 1 = Monday, etc.
+                const todayIndex = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1; // Convert to 0-6 (Mon-Sun)
+                const daysBeforeToday = todayIndex; // Number of days before today
+                const weeklyTotalBeforeToday = weeklyData.slice(0, todayIndex).reduce((sum, day) => sum + day.totalCalories, 0);
+                const weeklyTargetBeforeToday = (profile?.dailyCalorieTarget || 2000) * daysBeforeToday;
+                const weeklyVariance = weeklyTotalBeforeToday - weeklyTargetBeforeToday;
+                const weeklyVariancePercent = daysBeforeToday > 0 ? Math.round((weeklyVariance / weeklyTargetBeforeToday) * 100) : 0;
+                const weeklyTotalSoFar = weeklyData.reduce((sum, day) => sum + day.totalCalories, 0);
+                
+                return (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Weekly Total</span>
+                      <span className="text-sm font-black text-gray-100">
+                        {weeklyTotalSoFar} / {(profile?.dailyCalorieTarget || 2000) * (todayIndex + 1)} kcal
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Surplus / Deficit</span>
+                      <span className={`text-sm font-black ${
+                        weeklyTotalSoFar > (profile?.dailyCalorieTarget || 2000) * (todayIndex + 1) ? 'text-red-400' : 'text-green-500'
+                      }`}>
+                        {(() => {
+                          const totalVariance = weeklyTotalSoFar - ((profile?.dailyCalorieTarget || 2000) * (todayIndex + 1));
+                          const totalVariancePercent = Math.round((totalVariance / ((profile?.dailyCalorieTarget || 2000) * (todayIndex + 1))) * 100);
+                          // Debug: uncomment to see values
+                          // console.log('weeklyTotalSoFar:', weeklyTotalSoFar, 'targetSoFar:', (profile?.dailyCalorieTarget || 2000) * (todayIndex + 1), 'variance:', totalVariance, 'percent:', totalVariancePercent);
+                          return totalVariance > 0 
+                            ? `+${totalVariancePercent}%`
+                            : `${totalVariancePercent}%`;
+                        })()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Daily Avg</span>
+                      <span className="text-sm font-black text-gray-100">
+                        {Math.round(weeklyTotalSoFar / Math.max(1, todayIndex + 1))} kcal
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-gray-300 mt-2 italic">Above metrics consider the total calories consumed so far this week</p>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>

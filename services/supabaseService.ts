@@ -170,6 +170,52 @@ export const deleteFoodLog = async (logId: string) => {
   return { error };
 };
 
+export const getWeeklyFoodLogs = async (userId: string, weekDates: Date[], timezone?: string): Promise<{ date: string; entries: FoodLog[]; totalCalories: number }[]> => {
+  const results = [];
+  
+  for (const date of weekDates) {
+    const dateStr = timezone 
+      ? getLocalDateString(date, timezone)
+      : date.toISOString().split('T')[0];
+    
+    const { data, error } = await supabase
+      .from('food_logs')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('date', dateStr)
+      .order('created_at', { ascending: false });
+    
+    if (!error && data) {
+      const entries: FoodLog[] = data.map(log => ({
+        id: log.id,
+        name: log.name,
+        calories: log.calories,
+        protein: log.protein,
+        carbs: log.carbs,
+        fat: log.fat,
+        description: log.description,
+        date: new Date(log.date),
+      }));
+      
+      const totalCalories = entries.reduce((sum, entry) => sum + entry.calories, 0);
+      
+      results.push({
+        date: dateStr,
+        entries,
+        totalCalories,
+      });
+    } else {
+      results.push({
+        date: dateStr,
+        entries: [],
+        totalCalories: 0,
+      });
+    }
+  }
+  
+  return results;
+};
+
 // Listen to auth changes
 export const onAuthStateChange = (callback: (user: any) => void) => {
   return supabase.auth.onAuthStateChange((_event, session) => {
