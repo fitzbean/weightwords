@@ -67,11 +67,19 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
       sttService.stop();
       setIsListening(false);
     } else {
+      // Clear the input when starting voice recording
+      setFoodInput('');
       sttService.start(
         (text) => {
           setFoodInput(prev => prev ? `${prev} ${text}` : text);
         },
-        () => setIsListening(false),
+        () => {
+          setIsListening(false);
+          // Auto-trigger estimation when recording completes
+          if (foodInput.trim()) {
+            handleEstimate();
+          }
+        },
         (error) => {
           console.error('STT error:', error);
           setIsListening(false);
@@ -400,8 +408,19 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                 value={foodInput}
                 onChange={(e) => setFoodInput(e.target.value)}
                 placeholder="Describe your meal (e.g. '3 scrambled eggs with a side of bacon and black coffee')"
-                className="w-full p-6 h-32 border border-gray-600 rounded-2xl focus:ring-4 focus:ring-green-500/10 outline-none resize-none transition-all bg-gray-700 text-gray-100 placeholder-gray-500 font-medium"
+                className="w-full p-6 pr-12 h-32 border border-gray-600 rounded-2xl focus:ring-4 focus:ring-green-500/10 outline-none resize-none transition-all bg-gray-700 text-gray-100 placeholder-gray-500 font-medium"
               />
+              {foodInput && (
+                <button
+                  onClick={() => setFoodInput('')}
+                  className="absolute top-6 right-6 p-1 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-600 transition-all"
+                  title="Clear input"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              )}
               <div className="absolute bottom-4 right-4 flex items-center gap-2">
                 {sttService.isSupported() && (
                   <button
