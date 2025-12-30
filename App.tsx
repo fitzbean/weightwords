@@ -4,7 +4,7 @@ import { UserProfile } from './types';
 import ProfileForm from './components/ProfileForm';
 import Dashboard from './components/Dashboard';
 import AuthForm from './components/AuthForm';
-import { supabase, getCurrentUser, getProfile, updateProfile, signOut, onAuthStateChange } from './services/supabaseService';
+import { supabase, getCurrentUser, getProfile, updateProfile, signOut, onAuthStateChange, getSpouseEmail } from './services/supabaseService';
 import { APP_CONFIG } from './appConfig';
 
 const App: React.FC = () => {
@@ -15,6 +15,7 @@ const App: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [showSpouseModal, setShowSpouseModal] = useState(false);
+  const [spouseEmail, setSpouseEmail] = useState<string | null>(null);
 
   useEffect(() => {
     let isInitialized = false;
@@ -94,6 +95,20 @@ const App: React.FC = () => {
     
     return () => subscription.unsubscribe();
   }, []);
+
+  // Fetch spouse email when profile changes
+  useEffect(() => {
+    const fetchSpouseEmail = async () => {
+      if (profile?.spouseId) {
+        const email = await getSpouseEmail(profile.spouseId);
+        setSpouseEmail(email);
+      } else {
+        setSpouseEmail(null);
+      }
+    };
+
+    fetchSpouseEmail();
+  }, [profile]);
 
   /*
   // Periodically check if profile still exists (handles case where DB is cleared while logged in)
@@ -273,7 +288,12 @@ const App: React.FC = () => {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
                         </svg>
-                        {profile?.spouseId ? 'Remove Spouse' : 'Add Spouse'}
+                        <div className="flex-1">
+                          <div>{profile?.spouseId ? 'Remove Spouse' : 'Add Spouse'}</div>
+                          {profile?.spouseId && spouseEmail && (
+                            <div className="text-xs text-gray-400 font-normal">{spouseEmail}</div>
+                          )}
+                        </div>
                       </button>
                       <hr className="my-1 border-gray-700" />
                       <button

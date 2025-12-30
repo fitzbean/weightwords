@@ -339,6 +339,32 @@ export const getSharedFavoritedBreakdowns = async (userId: string): Promise<Favo
   }));
 };
 
+export const getSpouseEmail = async (spouseId: string): Promise<string | null> => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/get-user-by-id`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({ userId: spouseId }),
+    });
+
+    if (!response.ok) {
+      console.error('Error fetching spouse email:', response.statusText);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.email || null;
+  } catch (error) {
+    console.error('Error fetching spouse email:', error);
+    return null;
+  }
+};
+
 export const removeSpouse = async (userId: string) => {
   // Get current profile to find spouse
   const { data: profile } = await supabase
