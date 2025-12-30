@@ -62,6 +62,7 @@ export const getProfile = async (userId: string): Promise<UserProfile | null> =>
     weightGoal: data.weight_goal as WeightGoal,
     dailyCalorieTarget: data.daily_calorie_target,
     activityLevel: data.activity_level as ActivityLevel,
+    profileCompleted: data.profile_completed ?? false,
   };
   
   console.log('Mapped profile:', profile);
@@ -81,6 +82,7 @@ export const updateProfile = async (userId: string, profile: UserProfile) => {
       weight_goal: profile.weightGoal.toString(),
       daily_calorie_target: profile.dailyCalorieTarget,
       activity_level: profile.activityLevel.toString(),
+      profile_completed: true,
       updated_at: new Date().toISOString(),
     })
     .eq('id', userId)

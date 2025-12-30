@@ -29,6 +29,7 @@ export interface UserProfile {
   activityLevel: ActivityLevel;
   weightGoal: WeightGoal;
   dailyCalorieTarget: number;
+  profileCompleted?: boolean;
 }
 
 export interface FoodEntry {

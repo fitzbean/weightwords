@@ -16,42 +16,75 @@ const App: React.FC = () => {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   useEffect(() => {
+    let isInitialized = false;
+    
     // Initialize auth state
     const initAuth = async () => {
-      const currentUser = await getCurrentUser();
-      
-      // Only set user if email is confirmed
-      if (currentUser && currentUser.email_confirmed_at) {
-        setUser(currentUser);
-        const userProfile = await getProfile(currentUser.id);
-        // Only set profile if it's been properly configured (not default values)
-        if (userProfile && userProfile.dailyCalorieTarget !== 2000) {
-          setProfile(userProfile);
+      try {
+        const currentUser = await getCurrentUser();
+        
+        // Only set user if email is confirmed
+        if (currentUser && currentUser.email_confirmed_at) {
+          const userProfile = await getProfile(currentUser.id);
+          
+          // If user exists but profile doesn't, there's a stale session - sign out
+          if (!userProfile) {
+            console.log('Stale session detected - signing out');
+            await signOut();
+            setUser(null);
+            setProfile(null);
+            setIsLoading(false);
+            isInitialized = true;
+            return;
+          }
+          
+          // Set both user and profile together to avoid flash
+          const profileToSet = userProfile.profileCompleted ? userProfile : null;
+          
+          // Batch state updates
+          setProfile(profileToSet);
+          setUser(currentUser);
         } else {
-          setProfile(null); // Force profile setup
+          // No valid user - ensure clean state
+          setUser(null);
+          setProfile(null);
         }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        // On error, ensure clean state
+        setUser(null);
+        setProfile(null);
+      } finally {
+        setIsLoading(false);
+        isInitialized = true;
       }
-      
-      setIsLoading(false);
     };
     
     initAuth();
     
     // Listen for auth changes
     const { data: { subscription } } = onAuthStateChange(async (authUser) => {
+      // Skip if not initialized yet (initial load handles this)
+      if (!isInitialized) return;
+      
       // Only set user if email is confirmed
       if (authUser && authUser.email_confirmed_at) {
+        const userProfile = await getProfile(authUser.id);
+        
+        // If user exists but profile doesn't, there's a stale session - sign out
+        if (!userProfile) {
+          console.log('Stale session detected in auth change - signing out');
+          await signOut();
+          setUser(null);
+          setProfile(null);
+          return;
+        }
+        
+        const profileToSet = (userProfile && userProfile.profileCompleted) ? userProfile : null;
+        
+        // Batch state updates
+        setProfile(profileToSet);
         setUser(authUser);
-        // Small delay to allow trigger to complete
-        setTimeout(async () => {
-          const userProfile = await getProfile(authUser.id);
-          // Only set profile if it's been properly configured (not default values)
-          if (userProfile && userProfile.dailyCalorieTarget !== 2000) {
-            setProfile(userProfile);
-          } else {
-            setProfile(null); // Force profile setup
-          }
-        }, 500);
       } else {
         setUser(null);
         setProfile(null);
@@ -60,6 +93,28 @@ const App: React.FC = () => {
     
     return () => subscription.unsubscribe();
   }, []);
+
+  // Periodically check if profile still exists (handles case where DB is cleared while logged in)
+  useEffect(() => {
+    if (!user || !profile) return;
+
+    const checkProfileExists = async () => {
+      const userProfile = await getProfile(user.id);
+      if (!userProfile) {
+        console.log('Profile no longer exists - signing out');
+        await signOut();
+        setUser(null);
+        setProfile(null);
+      }
+    };
+
+    // Check immediately
+    checkProfileExists();
+
+    // Check every 30 seconds
+    const interval = setInterval(checkProfileExists, 30000);
+    return () => clearInterval(interval);
+  }, [user, profile]);
 
   const handleSaveProfile = async (newProfile: UserProfile) => {
     if (!user) return;
@@ -85,6 +140,7 @@ const App: React.FC = () => {
           weight_goal: newProfile.weightGoal.toString(),
           daily_calorie_target: newProfile.dailyCalorieTarget,
           activity_level: newProfile.activityLevel.toString(),
+          profile_completed: true,
         });
       error = insertError;
     }
