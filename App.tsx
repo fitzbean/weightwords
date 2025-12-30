@@ -94,6 +94,7 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  /*
   // Periodically check if profile still exists (handles case where DB is cleared while logged in)
   useEffect(() => {
     if (!user || !profile) return;
@@ -115,7 +116,7 @@ const App: React.FC = () => {
     const interval = setInterval(checkProfileExists, 30000);
     return () => clearInterval(interval);
   }, [user, profile]);
-
+  */
   const handleSaveProfile = async (newProfile: UserProfile) => {
     if (!user) return;
     
