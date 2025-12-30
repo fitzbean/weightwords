@@ -84,3 +84,12 @@ export interface ItemInsight {
   highlights: { text: string; isPositive: boolean }[];
   tip: string;
 }
+
+export interface WeighIn {
+  id: string;
+  userId: string;
+  weightLbs: number;
+  date: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}

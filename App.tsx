@@ -4,6 +4,7 @@ import { UserProfile } from './types';
 import ProfileForm from './components/ProfileForm';
 import Dashboard from './components/Dashboard';
 import AuthForm from './components/AuthForm';
+import WeighInModal from './components/WeighInModal';
 import { supabase, getCurrentUser, getProfile, updateProfile, signOut, onAuthStateChange, getSpouseEmail } from './services/supabaseService';
 import { APP_CONFIG } from './appConfig';
 
@@ -16,6 +17,7 @@ const App: React.FC = () => {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [showSpouseModal, setShowSpouseModal] = useState(false);
   const [spouseEmail, setSpouseEmail] = useState<string | null>(null);
+  const [showWeighInModal, setShowWeighInModal] = useState(false);
 
   useEffect(() => {
     let isInitialized = false;
@@ -295,6 +297,18 @@ const App: React.FC = () => {
                           )}
                         </div>
                       </button>
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          setShowWeighInModal(true);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 flex items-center gap-3"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path>
+                        </svg>
+                        Weigh-ins
+                      </button>
                       <hr className="my-1 border-gray-700" />
                       <button
                         onClick={handleLogout}
@@ -334,6 +348,12 @@ const App: React.FC = () => {
           />
         )}
       </main>
+
+      <WeighInModal
+        isOpen={showWeighInModal}
+        onClose={() => setShowWeighInModal(false)}
+        userId={user?.id}
+      />
 
       <footer className="mt-20 border-t border-gray-800 py-12 text-center">
          <p className="text-gray-600 text-xs font-bold uppercase tracking-widest">© {new Date().getFullYear()} WeightWords • USA Units Enabled</p>
