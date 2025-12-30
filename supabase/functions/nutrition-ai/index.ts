@@ -14,7 +14,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { description, type, item, image } = body;
+    const { description, type, item, image, productImage, nutritionImage } = body;
     
     const ai = new GoogleGenAI({ apiKey: Deno.env.get('GEMINI_API_KEY') });
     
@@ -131,15 +131,71 @@ serve(async (req) => {
               },
               {
                 text: `Look at this nutrition facts label image and extract the key nutrition information.
+
+                IMPORTANT: Try to identify what product this is from any visible text, branding, or context in the image.
                 
-                Return a simple text description that includes:
-                - Serving size (if visible)
-                - Calories per serving
-                - Any other visible macros (protein, carbs, fat)
+                Return a simple text description in this format:
+                "[Product Name], [serving size], [calories] calories, [protein]g protein, [carbs]g carbs, [fat]g fat"
                 
-                Format it as a natural description like: "1 serving (28g), 150 calories, 3g protein, 15g carbs, 9g fat"
+                Examples:
+                - "Cheerios cereal, 1 cup (28g), 100 calories, 3g protein, 20g carbs, 2g fat"
+                - "Coca-Cola, 12 fl oz can, 140 calories, 0g protein, 39g carbs, 0g fat"
+                - "Greek yogurt, 1 container (150g), 120 calories, 15g protein, 8g carbs, 0g fat"
                 
-                If you cannot read the label clearly, return null.`,
+                If you cannot identify the product name, use a generic description based on what you can infer (e.g., "Granola bar", "Chips", "Soda").
+                
+                If you cannot read the label clearly at all, return null.`,
+              },
+            ],
+          },
+        ],
+      });
+
+      const nutritionText = response.text?.trim() || null;
+      
+      return new Response(JSON.stringify({ nutritionText }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    if (type === 'nutrition-label-dual') {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                inlineData: {
+                  mimeType: 'image/jpeg',
+                  data: productImage,
+                },
+              },
+              {
+                inlineData: {
+                  mimeType: 'image/jpeg',
+                  data: nutritionImage,
+                },
+              },
+              {
+                text: `I'm showing you two images of a food product:
+                1. The first image shows the FRONT of the product (brand name, product name, packaging)
+                2. The second image shows the NUTRITION FACTS label
+                
+                Please identify the product and extract the nutrition information.
+                
+                Return a simple text description in this format:
+                "[Product Name by Brand], [serving size], [calories] calories, [protein]g protein, [carbs]g carbs, [fat]g fat"
+                
+                Examples:
+                - "Cheerios by General Mills, 1 cup (28g), 100 calories, 3g protein, 20g carbs, 2g fat"
+                - "Coca-Cola Classic, 12 fl oz can, 140 calories, 0g protein, 39g carbs, 0g fat"
+                - "Chobani Greek Yogurt Vanilla, 1 container (150g), 120 calories, 15g protein, 8g carbs, 0g fat"
+                
+                Be specific with the product name - include flavor, variety, or type if visible.
+                
+                If you cannot read either image clearly, return null.`,
               },
             ],
           },

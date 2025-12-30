@@ -6,6 +6,8 @@ interface NutritionLabelScannerProps {
   onScan: (nutritionText: string) => void;
 }
 
+type CaptureStep = 'product' | 'nutrition';
+
 const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, onClose, onScan }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -13,6 +15,14 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const [captureStep, setCaptureStep] = useState<CaptureStep>('product');
+  const [productImage, setProductImage] = useState<string | null>(null);
+
+  const resetState = useCallback(() => {
+    setCaptureStep('product');
+    setProductImage(null);
+    setError(null);
+  }, []);
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -46,52 +56,76 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
     }
   }, []);
 
-  const captureAndAnalyze = useCallback(async () => {
-    if (!videoRef.current || !canvasRef.current || isProcessing) return;
+  const captureImage = useCallback((): string | null => {
+    if (!videoRef.current || !canvasRef.current) return null;
 
-    setIsProcessing(true);
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
 
-    try {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
+    if (!context) return null;
 
-      if (!context) {
-        throw new Error('Could not get canvas context');
-      }
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      // Set canvas size to match video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    return imageData.split(',')[1];
+  }, []);
 
-      // Draw current video frame to canvas
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const handleCapture = useCallback(async () => {
+    if (isProcessing) return;
 
-      // Convert to base64
-      const imageData = canvas.toDataURL('image/jpeg', 0.8);
-      const base64Image = imageData.split(',')[1];
-
-      // Send to Gemini Vision API
-      const { extractNutritionFromImage } = await import('../services/geminiService');
-      const nutritionText = await extractNutritionFromImage(base64Image);
-
-      if (nutritionText) {
-        onScan(nutritionText);
-        stopCamera();
-        onClose();
-      } else {
-        setError('Could not read nutrition label. Please try again with better lighting or positioning.');
-      }
-    } catch (err) {
-      console.error('Error analyzing image:', err);
-      setError('Failed to analyze image. Please try again.');
-    } finally {
-      setIsProcessing(false);
+    const base64Image = captureImage();
+    if (!base64Image) {
+      setError('Failed to capture image');
+      return;
     }
-  }, [isProcessing, onScan, onClose, stopCamera]);
+
+    if (captureStep === 'product') {
+      // Save product image and move to nutrition step
+      setProductImage(base64Image);
+      setCaptureStep('nutrition');
+    } else {
+      // We have both images, send to API
+      setIsProcessing(true);
+      
+      try {
+        const { extractNutritionFromImages } = await import('../services/geminiService');
+        const nutritionText = await extractNutritionFromImages(productImage!, base64Image);
+
+        if (nutritionText) {
+          onScan(nutritionText);
+          stopCamera();
+          resetState();
+          onClose();
+        } else {
+          setError('Could not read nutrition info. Please try again.');
+        }
+      } catch (err) {
+        console.error('Error analyzing images:', err);
+        setError('Failed to analyze images. Please try again.');
+      } finally {
+        setIsProcessing(false);
+      }
+    }
+  }, [isProcessing, captureStep, productImage, captureImage, onScan, stopCamera, resetState, onClose]);
+
+  const handleBack = useCallback(() => {
+    setCaptureStep('product');
+    setProductImage(null);
+    setError(null);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    stopCamera();
+    resetState();
+    onClose();
+  }, [stopCamera, resetState, onClose]);
 
   useEffect(() => {
     if (isOpen) {
+      resetState();
       startCamera();
     } else {
       stopCamera();
@@ -100,25 +134,46 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
     return () => {
       stopCamera();
     };
-  }, [isOpen, startCamera, stopCamera]);
+  }, [isOpen, startCamera, stopCamera, resetState]);
 
   if (!isOpen) return null;
+
+  const stepInfo = captureStep === 'product' 
+    ? { title: 'Step 1: Product Front', instruction: 'Point camera at the front of the product (name/brand visible)' }
+    : { title: 'Step 2: Nutrition Label', instruction: 'Now point camera at the nutrition facts label' };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
       <div className="bg-gray-800 rounded-2xl p-6 max-w-lg w-full">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-black text-gray-100">Scan Nutrition Label</h2>
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-2xl font-black text-gray-100">Scan Product</h2>
           <button
-            onClick={() => {
-              stopCamera();
-              onClose();
-            }}
+            onClick={handleClose}
             className="text-gray-400 hover:text-gray-200 text-2xl leading-none"
           >
             ×
           </button>
         </div>
+        
+        {/* Step indicator */}
+        <div className="flex items-center gap-2 mb-4">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+            captureStep === 'product' ? 'bg-green-500 text-white' : 'bg-gray-600 text-gray-300'
+          }`}>
+            {productImage ? '✓' : '1'}
+          </div>
+          <div className="flex-1 h-1 bg-gray-600 rounded">
+            <div className={`h-full bg-green-500 rounded transition-all ${productImage ? 'w-full' : 'w-0'}`}></div>
+          </div>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+            captureStep === 'nutrition' ? 'bg-green-500 text-white' : 'bg-gray-600 text-gray-300'
+          }`}>
+            2
+          </div>
+        </div>
+        
+        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{stepInfo.title}</p>
+        
         <div className="relative bg-black rounded-xl overflow-hidden mb-4">
           <video
             ref={videoRef}
@@ -158,7 +213,7 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <p className="text-white font-bold">Analyzing nutrition label...</p>
+                <p className="text-white font-bold">Analyzing product...</p>
               </div>
             </div>
           )}
@@ -167,34 +222,41 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
           {isScanning && !isProcessing && (
             <div className="absolute inset-0 pointer-events-none">
               <div className="absolute inset-4 border-2 border-white border-opacity-50 rounded-lg"></div>
-              <div className="absolute top-4 left-4 w-8 h-8 border-t-4 border-l-4 border-green-400 rounded-tl-lg"></div>
-              <div className="absolute top-4 right-4 w-8 h-8 border-t-4 border-r-4 border-green-400 rounded-tr-lg"></div>
-              <div className="absolute bottom-4 left-4 w-8 h-8 border-b-4 border-l-4 border-green-400 rounded-bl-lg"></div>
-              <div className="absolute bottom-4 right-4 w-8 h-8 border-b-4 border-r-4 border-green-400 rounded-br-lg"></div>
+              <div className={`absolute top-4 left-4 w-8 h-8 border-t-4 border-l-4 rounded-tl-lg ${captureStep === 'product' ? 'border-blue-400' : 'border-green-400'}`}></div>
+              <div className={`absolute top-4 right-4 w-8 h-8 border-t-4 border-r-4 rounded-tr-lg ${captureStep === 'product' ? 'border-blue-400' : 'border-green-400'}`}></div>
+              <div className={`absolute bottom-4 left-4 w-8 h-8 border-b-4 border-l-4 rounded-bl-lg ${captureStep === 'product' ? 'border-blue-400' : 'border-green-400'}`}></div>
+              <div className={`absolute bottom-4 right-4 w-8 h-8 border-b-4 border-r-4 rounded-br-lg ${captureStep === 'product' ? 'border-blue-400' : 'border-green-400'}`}></div>
             </div>
           )}
         </div>
         
         <div className="text-center">
           <p className="text-sm text-gray-400 mb-4">
-            Point camera at the nutrition facts label
+            {stepInfo.instruction}
           </p>
           <div className="flex gap-3 justify-center">
+            {captureStep === 'nutrition' && (
+              <button
+                onClick={handleBack}
+                className="px-6 py-2 bg-gray-700 text-gray-300 rounded-xl font-bold hover:bg-gray-600"
+              >
+                ← Back
+              </button>
+            )}
             <button
-              onClick={() => {
-                stopCamera();
-                onClose();
-              }}
+              onClick={handleClose}
               className="px-6 py-2 bg-gray-700 text-gray-300 rounded-xl font-bold hover:bg-gray-600"
             >
               Cancel
             </button>
             <button
-              onClick={captureAndAnalyze}
+              onClick={handleCapture}
               disabled={!isScanning || isProcessing}
-              className="px-6 py-2 bg-green-600 text-white rounded-xl font-bold hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`px-6 py-2 text-white rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed ${
+                captureStep === 'product' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-green-600 hover:bg-green-500'
+              }`}
             >
-              {isProcessing ? 'Analyzing...' : 'Capture'}
+              {isProcessing ? 'Analyzing...' : captureStep === 'product' ? 'Capture Front' : 'Capture & Analyze'}
             </button>
           </div>
         </div>

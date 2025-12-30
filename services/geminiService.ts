@@ -72,3 +72,21 @@ export const extractNutritionFromImage = async (base64Image: string): Promise<st
   const data = await response.json();
   return data.nutritionText || null;
 };
+
+export const extractNutritionFromImages = async (productImage: string, nutritionImage: string): Promise<string | null> => {
+  const response = await fetch(`${supabaseUrl}/functions/v1/nutrition-ai`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify({ productImage, nutritionImage, type: 'nutrition-label-dual' }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to extract nutrition from images');
+  }
+
+  const data = await response.json();
+  return data.nutritionText || null;
+};
