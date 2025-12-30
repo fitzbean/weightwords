@@ -9,13 +9,22 @@ import { sttService } from '../services/sttService';
 import NutritionLabelScanner from './NutritionLabelScanner';
 
 interface DashboardProps {
-  profile: UserProfile;
+  profile: UserProfile | null;
   onLogout: () => void;
   showSpouseModal?: boolean;
   setShowSpouseModal?: (show: boolean) => void;
+  selectedDate?: Date;
+  setSelectedDate?: (date: Date) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externalShowSpouseModal, setShowSpouseModal: externalSetShowSpouseModal }) => {
+const Dashboard: React.FC<DashboardProps> = ({ 
+  profile, 
+  onLogout, 
+  showSpouseModal: externalShowSpouseModal = false, 
+  setShowSpouseModal: externalSetShowSpouseModal = (_: boolean) => {},
+  selectedDate: externalSelectedDate = new Date(),
+  setSelectedDate: externalSetSelectedDate = (_: Date) => {}
+}) => {
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [foodInput, setFoodInput] = useState('');
   const [isEstimating, setIsEstimating] = useState(false);
@@ -26,7 +35,6 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
   const [editingName, setEditingName] = useState('');
   const [spouseEmail, setSpouseEmail] = useState('');
   const [spouseError, setSpouseError] = useState('');
-  const [selectedDate, setSelectedDate] = useState(new Date());
   const [weeklyData, setWeeklyData] = useState<{ date: string; totalCalories: number }[]>([]);
   const [isListening, setIsListening] = useState(false);
   const currentInputRef = useRef('');
@@ -35,10 +43,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
   const [isLoadingInsight, setIsLoadingInsight] = useState(false);
   const [showLabelScanner, setShowLabelScanner] = useState(false);
   const [breakdownItems, setBreakdownItems] = useState<FoodItemEstimate[]>([]);
-  
-  // Use external modal state if provided, otherwise use internal state
-  const showSpouseModal = externalShowSpouseModal ?? false;
-  const setShowSpouseModal = externalSetShowSpouseModal ?? (() => {});
+  const [showPreviousDayWarning, setShowPreviousDayWarning] = useState(false);
 
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -46,7 +51,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
       setUser(user);
     };
     getCurrentUser();
-  }, []);
+  }, [externalSelectedDate]);
 
   useEffect(() => {
     if (user) {
@@ -54,20 +59,21 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
       loadFavoritedBreakdowns();
       loadWeeklyData();
     }
-  }, [user]);
-
-  useEffect(() => {
-    if (user && profile) {
-      loadEntries();
-    }
-  }, [profile?.timezone]);
+  }, [user, externalSelectedDate]);
 
   useEffect(() => {
     if (user && profile) {
       loadEntries();
       loadWeeklyData();
     }
-  }, [selectedDate]);
+  }, [profile?.timezone, externalSelectedDate]);
+
+  useEffect(() => {
+    if (user && profile) {
+      loadEntries();
+      loadWeeklyData();
+    }
+  }, [externalSelectedDate]);
 
   const handleToggleListening = () => {
     if (isListening) {
@@ -114,14 +120,14 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
 
   const loadWeeklyData = async () => {
     if (!user) return;
-    const weekDates = getWeekDates(selectedDate, profile?.timezone);
+    const weekDates = getWeekDates(externalSelectedDate, profile?.timezone);
     const data = await getWeeklyFoodLogs(user.id, weekDates, profile?.timezone);
     setWeeklyData(data.map(d => ({ date: d.date, totalCalories: d.totalCalories })));
   };
 
   const loadEntries = async () => {
     if (!user) return;
-    const logs = await getFoodLogs(user.id, selectedDate, profile?.timezone);
+    const logs = await getFoodLogs(user.id, externalSelectedDate, profile?.timezone);
     const entries: FoodEntry[] = logs.map(log => ({
       id: log.id,
       timestamp: log.date.getTime(),
@@ -183,6 +189,17 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
   const addEntry = async () => {
     if (!user || !lastEstimate || breakdownItems.length === 0) return;
 
+    // Check if selected date is before today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDay = new Date(externalSelectedDate);
+    selectedDay.setHours(0, 0, 0, 0);
+    
+    if (selectedDay < today) {
+      setShowPreviousDayWarning(true);
+      return;
+    }
+
     // Create an entry for each breakdown item
     const entries = breakdownItems.map(item => ({
       user_id: user.id,
@@ -193,8 +210,8 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
       fat: item.fat,
       description: item.name,
       date: profile?.timezone 
-        ? new Date(selectedDate.toLocaleString("en-US", { timeZone: profile?.timezone })).toISOString().split('T')[0]
-        : selectedDate.toISOString().split('T')[0],
+        ? new Date(externalSelectedDate.toLocaleString("en-US", { timeZone: profile?.timezone })).toISOString().split('T')[0]
+        : externalSelectedDate.toISOString().split('T')[0],
     }));
 
     // Insert all entries at once
@@ -207,6 +224,36 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
     setFoodInput('');
     setLastEstimate(null);
     setBreakdownItems([]);
+  };
+
+  const confirmAddEntry = async () => {
+    if (!user || !lastEstimate || breakdownItems.length === 0) return;
+
+    // Create an entry for each breakdown item
+    const entries = breakdownItems.map(item => ({
+      user_id: user.id,
+      name: item.name,
+      calories: item.calories,
+      protein: item.protein,
+      carbs: item.carbs,
+      fat: item.fat,
+      description: item.name,
+      date: profile?.timezone 
+        ? new Date(externalSelectedDate.toLocaleString("en-US", { timeZone: profile?.timezone })).toISOString().split('T')[0]
+        : externalSelectedDate.toISOString().split('T')[0],
+    }));
+
+    // Insert all entries at once
+    const { data, error } = await supabase
+      .from('food_logs')
+      .insert(entries);
+    
+    await loadEntries();
+    await loadWeeklyData();
+    setFoodInput('');
+    setLastEstimate(null);
+    setBreakdownItems([]);
+    setShowPreviousDayWarning(false);
   };
 
   const deleteEntry = async (id: string) => {
@@ -308,7 +355,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
     if (error) {
       setSpouseError(error.message || 'Failed to add spouse');
     } else {
-      setShowSpouseModal(false);
+      externalSetShowSpouseModal(false);
       setSpouseEmail('');
       // Reload profile to get spouse info
       window.location.reload();
@@ -761,8 +808,8 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
             <div className="space-y-2">
               {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => {
                 const dayData = weeklyData[index];
-                const isToday = selectedDate.toDateString() === new Date().toDateString() && 
-                               new Date(selectedDate).getDay() === (index === 6 ? 0 : index + 1);
+                const isToday = externalSelectedDate.toDateString() === new Date().toDateString() && 
+                               new Date(externalSelectedDate).getDay() === (index === 6 ? 0 : index + 1);
                 const calories = dayData?.totalCalories || 0;
                 const percent = Math.min(100, (calories / (profile?.dailyCalorieTarget || 2000)) * 100);
                 
@@ -850,9 +897,9 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                   <div className="flex items-center gap-2 mt-1">
                     <button
                       onClick={() => {
-                        const newDate = new Date(selectedDate);
+                        const newDate = new Date(externalSelectedDate);
                         newDate.setDate(newDate.getDate() - 1);
-                        setSelectedDate(newDate);
+                        externalSetSelectedDate(newDate);
                       }}
                       className="p-1 text-gray-400 hover:text-gray-200 transition-colors"
                     >
@@ -861,7 +908,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                       </svg>
                     </button>
                     <p className="text-[10px] text-gray-500 font-black uppercase tracking-wider">
-                      {selectedDate.toLocaleDateString('en-US', { 
+                      {externalSelectedDate.toLocaleDateString('en-US', { 
                         weekday: 'short', 
                         month: 'short', 
                         day: 'numeric',
@@ -870,20 +917,20 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                     </p>
                     <button
                       onClick={() => {
-                        const newDate = new Date(selectedDate);
+                        const newDate = new Date(externalSelectedDate);
                         newDate.setDate(newDate.getDate() + 1);
-                        setSelectedDate(newDate);
+                        externalSetSelectedDate(newDate);
                       }}
                       className="p-1 text-gray-400 hover:text-gray-200 transition-colors"
-                      disabled={selectedDate.toDateString() === new Date().toDateString()}
+                      disabled={externalSelectedDate.toDateString() === new Date().toDateString()}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
-                    {selectedDate.toDateString() !== new Date().toDateString() && (
+                    {externalSelectedDate.toDateString() !== new Date().toDateString() && (
                       <button
-                        onClick={() => setSelectedDate(new Date())}
+                        onClick={() => externalSetSelectedDate(new Date())}
                         className="px-2 py-1 text-[10px] font-black text-green-500 hover:text-green-400 transition-colors"
                       >
                         Back to Today
@@ -897,9 +944,9 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                 {entries.length === 0 ? (
                   <div className="p-10 text-center">
                     <p className="text-gray-600 text-sm font-bold italic">
-                      {selectedDate.toDateString() === new Date().toDateString() 
+                      {externalSelectedDate.toDateString() === new Date().toDateString() 
                         ? 'No meals logged today.' 
-                        : `No meals logged on ${selectedDate.toLocaleDateString('en-US', { 
+                        : `No meals logged on ${externalSelectedDate.toLocaleDateString('en-US', { 
                             month: 'short', 
                             day: 'numeric',
                             timeZone: profile?.timezone || 'UTC'
@@ -940,7 +987,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
       </div>
 
       {/* Spouse Modal */}
-      {showSpouseModal && (
+      {externalShowSpouseModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-3xl shadow-xl border border-gray-700 w-full max-w-md">
             <h3 className="text-xl font-black text-gray-100 mb-4">
@@ -970,7 +1017,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                   </button>
                   <button
                     onClick={() => {
-                      setShowSpouseModal(false);
+                      externalSetShowSpouseModal(false);
                       setSpouseEmail('');
                       setSpouseError('');
                     }}
@@ -993,7 +1040,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                     Remove Spouse
                   </button>
                   <button
-                    onClick={() => setShowSpouseModal(false)}
+                    onClick={() => externalSetShowSpouseModal(false)}
                     className="flex-1 py-3 bg-gray-700 text-gray-300 rounded-xl font-bold hover:bg-gray-600"
                   >
                     Cancel
@@ -1089,6 +1136,40 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
         onClose={() => setShowLabelScanner(false)}
         onScan={handleLabelScan}
       />
+
+      {/* Previous Day Warning Modal */}
+      {showPreviousDayWarning && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-3xl shadow-xl border border-gray-700 w-full max-w-md">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-yellow-900/30 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-black text-gray-100">Logging for a Previous Day</h3>
+            </div>
+            <p className="text-gray-400 mb-6">
+              You're about to add food entries for {externalSelectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}. 
+              Are you sure you want to continue?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowPreviousDayWarning(false)}
+                className="flex-1 py-3 bg-gray-700 text-gray-300 rounded-xl font-bold hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmAddEntry}
+                className="flex-1 py-3 bg-green-600 text-white rounded-xl font-black uppercase tracking-widest text-sm hover:bg-green-700"
+              >
+                Confirm Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
         </>
       )}
     </div>

@@ -20,6 +20,7 @@ const App: React.FC = () => {
   const [showWeighInModal, setShowWeighInModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   useEffect(() => {
     let isInitialized = false;
@@ -261,11 +262,53 @@ const App: React.FC = () => {
           
           {profile && (
             <div className="flex items-center gap-4 sm:gap-6 flex-shrink-0">
-               <div className="text-right">
-                  <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Today</p>
-                  <p className="text-sm font-bold text-gray-300 cursor-pointer hover:text-gray-200 transition-colors">
-                    {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                  </p>
+               <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const newDate = new Date(selectedDate);
+                      newDate.setDate(newDate.getDate() - 1);
+                      setSelectedDate(newDate);
+                    }}
+                    className="p-1 text-gray-400 hover:text-gray-200 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <div className="text-right">
+                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">
+                      
+                    </p>
+                    <p className="text-sm font-bold text-gray-300 cursor-pointer hover:text-gray-200 transition-colors">
+                      {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const newDate = new Date(selectedDate);
+                      newDate.setDate(newDate.getDate() + 1);
+                      setSelectedDate(newDate);
+                    }}
+                    className="p-1 text-gray-400 hover:text-gray-200 transition-colors"
+                    disabled={selectedDate.toDateString() === new Date().toDateString()}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                  {selectedDate.toDateString() !== new Date().toDateString() && (
+                    <button
+                      onClick={() => setSelectedDate(new Date())}
+                      className="px-0 py-1 text-[10px] font-black text-green-500 hover:text-green-400 transition-colors"
+                    >
+                      <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                    <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                    </button>
+                  )}
                </div>
                <div className="h-8 w-px bg-gray-700"></div>
                <div className="relative user-menu">
@@ -347,6 +390,8 @@ const App: React.FC = () => {
             onLogout={handleLogout} 
             showSpouseModal={showSpouseModal}
             setShowSpouseModal={setShowSpouseModal}
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
           />
         ) : (
           <div className="animate-in fade-in duration-500 translate-y-0">
