@@ -54,3 +54,14 @@ export interface NutritionEstimate {
   totalCalories: number;
   confidence: number;
 }
+
+export interface FoodLog {
+  id: string;
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  description: string;
+  date: Date;
+}

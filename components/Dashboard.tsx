@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, FoodEntry, NutritionEstimate, FoodItemEstimate } from '../types';
 import { estimateNutrition } from '../services/geminiService';
+import { getFoodLogs, addFoodLog, deleteFoodLog, supabase } from '../services/supabaseService';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 interface DashboardProps {
@@ -9,29 +10,41 @@ interface DashboardProps {
   onLogout: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ profile, onLogout }) => {
+const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [foodInput, setFoodInput] = useState('');
   const [isEstimating, setIsEstimating] = useState(false);
   const [lastEstimate, setLastEstimate] = useState<NutritionEstimate | null>(null);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('weightwords_entries');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        const today = new Date().setHours(0, 0, 0, 0);
-        const filtered = parsed.filter((e: FoodEntry) => e.timestamp >= today);
-        setEntries(filtered);
-      } catch (e) {
-        console.error("Error loading entries", e);
-      }
-    }
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    getCurrentUser();
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('weightwords_entries', JSON.stringify(entries));
-  }, [entries]);
+    if (user) {
+      loadEntries();
+    }
+  }, [user]);
+
+  const loadEntries = async () => {
+    if (!user) return;
+    const logs = await getFoodLogs(user.id, new Date());
+    const entries: FoodEntry[] = logs.map(log => ({
+      id: log.id,
+      timestamp: log.date.getTime(),
+      name: log.name,
+      calories: log.calories,
+      protein: log.protein,
+      carbs: log.carbs,
+      fat: log.fat,
+    }));
+    setEntries(entries);
+  };
 
   const totalCalories = entries.reduce((sum, entry) => sum + entry.calories, 0);
   const caloriesRemaining = profile.dailyCalorieTarget - totalCalories;
@@ -50,26 +63,28 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, onLogout }) => {
     }
   };
 
-  const addEntries = () => {
-    if (!lastEstimate) return;
+  const addEntries = async () => {
+    if (!lastEstimate || !user) return;
     
-    const newEntries: FoodEntry[] = lastEstimate.items.map((item, index) => ({
-      id: `${Date.now()}-${index}`,
-      timestamp: Date.now(),
-      name: item.name,
-      calories: item.calories,
-      protein: item.protein,
-      carbs: item.carbs,
-      fat: item.fat,
-    }));
+    for (const item of lastEstimate.items) {
+      await addFoodLog(user.id, {
+        name: item.name,
+        calories: item.calories,
+        protein: item.protein,
+        carbs: item.carbs,
+        fat: item.fat,
+        description: foodInput,
+      });
+    }
 
-    setEntries([...newEntries, ...entries]);
+    await loadEntries();
     setFoodInput('');
     setLastEstimate(null);
   };
 
-  const deleteEntry = (id: string) => {
-    setEntries(entries.filter(e => e.id !== id));
+  const deleteEntry = async (id: string) => {
+    await deleteFoodLog(id);
+    await loadEntries();
   };
 
   const data = [
@@ -88,16 +103,6 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, onLogout }) => {
             Goal: <span className="text-green-600">{profile.dailyCalorieTarget} kcal</span>
           </p>
         </div>
-        <button 
-            type="button"
-            onClick={(e) => {
-                e.preventDefault();
-                onLogout();
-            }} 
-            className="mt-6 md:mt-0 px-6 py-2.5 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100"
-        >
-          Reset Profile
-        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">

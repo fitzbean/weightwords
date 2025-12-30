@@ -63,7 +63,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ onSave, initialData }) => {
     <form onSubmit={handleSubmit} className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 space-y-6 max-w-md mx-auto transform transition-all">
       <div>
         <h2 className="text-2xl font-black text-gray-800 mb-1">Your Physical Profile</h2>
-        <p className="text-gray-400 text-sm mb-6">Enter your details to calculate your daily target.</p>
+        <p className="text-gray-400 text-sm mb-6">Enter your details to calculate your daily caloric target.</p>
       </div>
       
       <div className="grid grid-cols-2 gap-4">
@@ -163,7 +163,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ onSave, initialData }) => {
         type="submit"
         className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-black rounded-2xl transition-all shadow-lg shadow-green-200 active:scale-[0.98]"
       >
-        Calculate & Start
+        Save
       </button>
     </form>
   );
