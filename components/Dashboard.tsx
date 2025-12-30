@@ -5,6 +5,7 @@ import { estimateNutrition } from '../services/geminiService';
 import { getFoodLogs, addFoodLog, deleteFoodLog, supabase, getFavoritedBreakdowns, addFavoritedBreakdown, deleteFavoritedBreakdown, updateFavoritedBreakdown, getSharedFavoritedBreakdowns, addSpouse, removeSpouse, getWeeklyFoodLogs } from '../services/supabaseService';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { getWeekDates } from '../utils/dateUtils';
+import { sttService } from '../services/sttService';
 
 interface DashboardProps {
   profile: UserProfile;
@@ -26,6 +27,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
   const [spouseError, setSpouseError] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [weeklyData, setWeeklyData] = useState<{ date: string; totalCalories: number }[]>([]);
+  const [isListening, setIsListening] = useState(false);
   
   // Use external modal state if provided, otherwise use internal state
   const showSpouseModal = externalShowSpouseModal ?? false;
@@ -59,6 +61,28 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
       loadWeeklyData();
     }
   }, [selectedDate]);
+
+  const handleToggleListening = () => {
+    if (isListening) {
+      sttService.stop();
+      setIsListening(false);
+    } else {
+      sttService.start(
+        (text) => {
+          setFoodInput(prev => prev ? `${prev} ${text}` : text);
+        },
+        () => setIsListening(false),
+        (error) => {
+          console.error('STT error:', error);
+          setIsListening(false);
+          if (error !== 'no-speech') {
+            alert('Speech recognition error. Please try again or type manually.');
+          }
+        }
+      );
+      setIsListening(true);
+    }
+  };
 
   const loadWeeklyData = async () => {
     if (!user) return;
@@ -378,18 +402,39 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                 placeholder="Describe your meal (e.g. '3 scrambled eggs with a side of bacon and black coffee')"
                 className="w-full p-6 h-32 border border-gray-600 rounded-2xl focus:ring-4 focus:ring-green-500/10 outline-none resize-none transition-all bg-gray-700 text-gray-100 placeholder-gray-500 font-medium"
               />
-              <button
-                onClick={handleEstimate}
-                disabled={isEstimating || !foodInput}
-                className="absolute bottom-4 right-4 px-8 py-3 bg-gray-600 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-gray-500 transition-all disabled:opacity-50 shadow-xl shadow-black/50 active:scale-95"
-              >
-                {isEstimating ? (
-                   <span className="flex items-center gap-2">
-                     <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                     Analyzing...
-                   </span>
-                ) : 'Estimate'}
-              </button>
+              <div className="absolute bottom-4 right-4 flex items-center gap-2">
+                {sttService.isSupported() && (
+                  <button
+                    onClick={handleToggleListening}
+                    className={`p-3 rounded-xl transition-all shadow-xl shadow-black/50 active:scale-95 ${
+                      isListening 
+                        ? 'bg-red-500 text-white animate-pulse' 
+                        : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                    }`}
+                    title={isListening ? 'Stop listening' : 'Speak to log'}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {isListening ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z M9 10a1 1 0 011-1h6a1 1 0 110 2h-6a1 1 0 01-1-1z" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      )}
+                    </svg>
+                  </button>
+                )}
+                <button
+                  onClick={handleEstimate}
+                  disabled={isEstimating || !foodInput}
+                  className="px-8 py-3 bg-gray-600 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-gray-500 transition-all disabled:opacity-50 shadow-xl shadow-black/50 active:scale-95"
+                >
+                  {isEstimating ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                      Analyzing...
+                    </span>
+                  ) : 'Estimate'}
+                </button>
+              </div>
             </div>
 
             {/* Favorited Breakdowns */}

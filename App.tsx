@@ -249,7 +249,11 @@ const App: React.FC = () => {
                   </button>
                   
                   {showUserMenu && (
-                    <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-2 z-50">
+                    <div className="absolute right-0 mt-2 w-56 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-2 z-50 overflow-hidden">
+                      <div className="px-4 py-2 border-b border-gray-700 bg-gray-800/50">
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Signed in as</p>
+                        <p className="text-xs font-bold text-green-400 truncate">{user?.email}</p>
+                      </div>
                       <button
                         onClick={handleEditProfile}
                         className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 flex items-center gap-3"

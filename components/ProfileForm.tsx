@@ -52,6 +52,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ onSave, initialData }) => {
       weightGoal: formData.weightGoal,
       dailyCalorieTarget: target,
       timezone: formData.timezone,
+      spouseId: initialData?.spouseId,
+      profileCompleted: true,
     });
   };
 

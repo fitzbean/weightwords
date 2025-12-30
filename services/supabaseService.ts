@@ -96,6 +96,7 @@ export const updateProfile = async (userId: string, profile: UserProfile) => {
       activity_level: profile.activityLevel.toString(),
       profile_completed: true,
       timezone: profile.timezone || 'UTC',
+      spouse_id: profile.spouseId,
       updated_at: new Date().toISOString(),
     })
     .eq('id', userId)
