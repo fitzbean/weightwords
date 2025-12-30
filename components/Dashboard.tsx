@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, FoodEntry, FoodLog, NutritionEstimate, FoodItemEstimate, FavoritedBreakdown } from '../types';
 import { estimateNutrition } from '../services/geminiService';
 import { getFoodLogs, addFoodLog, deleteFoodLog, supabase, getFavoritedBreakdowns, addFavoritedBreakdown, deleteFavoritedBreakdown, updateFavoritedBreakdown, getSharedFavoritedBreakdowns, addSpouse, removeSpouse, getWeeklyFoodLogs } from '../services/supabaseService';
@@ -28,6 +28,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [weeklyData, setWeeklyData] = useState<{ date: string; totalCalories: number }[]>([]);
   const [isListening, setIsListening] = useState(false);
+  const currentInputRef = useRef('');
   
   // Use external modal state if provided, otherwise use internal state
   const showSpouseModal = externalShowSpouseModal ?? false;
@@ -64,21 +65,33 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
 
   const handleToggleListening = () => {
     if (isListening) {
+      console.log('Stopping speech recognition');
       sttService.stop();
       setIsListening(false);
     } else {
+      console.log('Starting speech recognition');
       // Clear the input when starting voice recording
       setFoodInput('');
+      currentInputRef.current = '';
+      console.log('Cleared input, ref is now:', currentInputRef.current);
+      
       sttService.start(
         (text) => {
-          setFoodInput(prev => prev ? `${prev} ${text}` : text);
+          console.log('Speech result:', text);
+          const newInput = text;
+          currentInputRef.current = newInput;
+          console.log('Updated ref to:', currentInputRef.current);
+          setFoodInput(newInput);
         },
-        (finalText) => {
+        () => {
+          console.log('Speech recognition ended');
+          console.log('Final ref value:', currentInputRef.current);
+          console.log('Final state value:', foodInput);
           setIsListening(false);
           // Auto-trigger estimation when recording completes
+          const finalText = currentInputRef.current;
           if (finalText.trim()) {
-            setFoodInput(finalText);
-            handleEstimate();
+            handleEstimate(finalText);
           }
         },
         (error) => {
@@ -128,11 +141,16 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
   const caloriesRemaining = profile.dailyCalorieTarget - totalCalories;
   const progressPercent = Math.min(100, (totalCalories / profile.dailyCalorieTarget) * 100);
 
-  const handleEstimate = async () => {
-    if (!foodInput.trim()) return;
+  const handleEstimate = async (textOverride?: string) => {
+    // Use textOverride if provided (for voice recordings), otherwise use state
+    const textToEstimate = textOverride ?? foodInput;
+    
+    if (!textToEstimate.trim()) {
+      return;
+    }
     setIsEstimating(true);
     try {
-      const estimate = await estimateNutrition(foodInput);
+      const estimate = await estimateNutrition(textToEstimate);
       setLastEstimate(estimate);
     } catch (error) {
       alert("Failed to estimate calories. Please try again.");
@@ -402,14 +420,14 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
           <div className="bg-gray-800 p-3 rounded-3xl shadow-sm border border-gray-700">
             <h2 className="text-xl font-black text-gray-100 mb-4 flex items-center gap-2">
                 <div className="w-2 h-6 bg-green-500 rounded-full"></div>
-                Log Your Meal
+                Log Your Food
             </h2>
             <div className="relative">
               <textarea
                 value={foodInput}
                 onChange={(e) => setFoodInput(e.target.value)}
                 placeholder="Describe your meal (e.g. '3 scrambled eggs with a side of bacon and black coffee')"
-                className="w-full p-6 pr-12 h-32 border border-gray-600 rounded-2xl focus:ring-4 focus:ring-green-500/10 outline-none resize-none transition-all bg-gray-700 text-gray-100 placeholder-gray-500 font-medium"
+                className="w-full p-4 pr-12 h-48 border border-gray-600 rounded-2xl focus:ring-4 focus:ring-green-500/10 outline-none resize-none transition-all bg-gray-700 text-gray-100 placeholder-gray-500 font-medium"
               />
               {foodInput && (
                 <button
@@ -443,7 +461,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                   </button>
                 )}
                 <button
-                  onClick={handleEstimate}
+                  onClick={() => handleEstimate()}
                   disabled={isEstimating || !foodInput}
                   className="px-8 py-3 bg-gray-600 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-gray-500 transition-all disabled:opacity-50 shadow-xl shadow-black/50 active:scale-95"
                 >

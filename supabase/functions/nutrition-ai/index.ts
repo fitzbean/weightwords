@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,6 +35,9 @@ serve(async (req) => {
         
         Return a structured JSON response.`,
         config: {
+          thinkingConfig: {
+            thinkingLevel: ThinkingLevel.MINIMAL,
+          },
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
