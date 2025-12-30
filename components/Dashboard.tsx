@@ -6,6 +6,8 @@ import { getFoodLogs, addFoodLog, deleteFoodLog, supabase, getFavoritedBreakdown
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { getWeekDates } from '../utils/dateUtils';
 import { sttService } from '../services/sttService';
+import BarcodeScanner from './BarcodeScanner';
+import { lookupBarcode, formatBarcodeNutrition, BarcodeProduct } from '../services/barcodeService';
 
 interface DashboardProps {
   profile: UserProfile;
@@ -32,6 +34,8 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
   const [selectedItem, setSelectedItem] = useState<FoodItemEstimate | null>(null);
   const [itemInsight, setItemInsight] = useState<ItemInsight | null>(null);
   const [isLoadingInsight, setIsLoadingInsight] = useState(false);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [isLookingUpBarcode, setIsLookingUpBarcode] = useState(false);
   
   // Use external modal state if provided, otherwise use internal state
   const showSpouseModal = externalShowSpouseModal ?? false;
@@ -159,6 +163,35 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
       alert("Failed to estimate calories. Please try again.");
     } finally {
       setIsEstimating(false);
+    }
+  };
+
+  const handleBarcodeScan = async (barcode: string) => {
+    console.log('Barcode scanned:', barcode);
+    setIsLookingUpBarcode(true);
+    
+    try {
+      console.log('Looking up barcode:', barcode);
+      const product = await lookupBarcode(barcode);
+      console.log('Lookup result:', product);
+      
+      if (product) {
+        const nutritionText = formatBarcodeNutrition(product);
+        console.log('Nutrition text:', nutritionText);
+        setFoodInput(nutritionText);
+        await handleEstimate(nutritionText);
+      } else {
+        console.log('Product not found for barcode:', barcode);
+        // Pre-fill with barcode info for manual entry
+        setFoodInput(`Scanned barcode: ${barcode}\n\nProduct not found in database. Please enter nutrition information manually.`);
+        alert(`Product with barcode "${barcode}" not found in the database.\n\nThe barcode has been added to the text area. Please enter the nutrition information manually.`);
+      }
+    } catch (error) {
+      console.error('Barcode lookup error:', error);
+      alert('Failed to lookup product. Please try again.');
+    } finally {
+      setIsLookingUpBarcode(false);
+      setShowBarcodeScanner(false);
     }
   };
 
@@ -494,6 +527,15 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                     </svg>
                   </button>
                 )}
+                <button
+                  onClick={() => setShowBarcodeScanner(true)}
+                  className="p-3 rounded-xl bg-gray-600 text-gray-300 hover:bg-gray-500 transition-all shadow-xl shadow-black/50 active:scale-95"
+                  title="Scan barcode"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+                  </svg>
+                </button>
                 <button
                   onClick={() => handleEstimate()}
                   disabled={isEstimating || !foodInput}
@@ -1025,6 +1067,12 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
           </div>
         </div>
       )}
+      {/* Barcode Scanner Modal */}
+      <BarcodeScanner
+        isOpen={showBarcodeScanner}
+        onClose={() => setShowBarcodeScanner(false)}
+        onScan={handleBarcodeScan}
+      />
         </>
       )}
     </div>
