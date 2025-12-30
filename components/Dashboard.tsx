@@ -181,34 +181,26 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
   };
 
   const addEntry = async () => {
-    if (!user || !lastEstimate) return;
+    if (!user || !lastEstimate || breakdownItems.length === 0) return;
 
-    const log: Omit<FoodLog, 'id' | 'date'> = {
-      name: foodInput,
-      calories: lastEstimate.totalCalories,
-      protein: lastEstimate.items.reduce((sum, item) => sum + item.protein, 0),
-      carbs: lastEstimate.items.reduce((sum, item) => sum + item.carbs, 0),
-      fat: lastEstimate.items.reduce((sum, item) => sum + item.fat, 0),
-      description: foodInput,
-    };
+    // Create an entry for each breakdown item
+    const entries = breakdownItems.map(item => ({
+      user_id: user.id,
+      name: item.name,
+      calories: item.calories,
+      protein: item.protein,
+      carbs: item.carbs,
+      fat: item.fat,
+      description: item.name,
+      date: profile?.timezone 
+        ? new Date(selectedDate.toLocaleString("en-US", { timeZone: profile?.timezone })).toISOString().split('T')[0]
+        : selectedDate.toISOString().split('T')[0],
+    }));
 
-    // Create a modified addFoodLog that accepts a specific date
+    // Insert all entries at once
     const { data, error } = await supabase
       .from('food_logs')
-      .insert({
-        user_id: user.id,
-        name: log.name,
-        calories: log.calories,
-        protein: log.protein,
-        carbs: log.carbs,
-        fat: log.fat,
-        description: log.description,
-        date: profile?.timezone 
-          ? new Date(selectedDate.toLocaleString("en-US", { timeZone: profile?.timezone })).toISOString().split('T')[0]
-          : selectedDate.toISOString().split('T')[0],
-      })
-      .select()
-      .single();
+      .insert(entries);
     
     await loadEntries();
     await loadWeeklyData();
@@ -741,6 +733,11 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                     style={{ width: `${Math.min(100, progressPercent)}%` }}
                   ></div>
                 </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className={`text-xs font-black ${progressPercent > 50 ? 'text-white' : 'text-gray-300'}`}>
+                    {Math.round(progressPercent)}%
+                  </span>
+                </div>
               </div>
               
               <div className="flex justify-between items-center">
@@ -889,7 +886,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile, showSpouseModal: externa
                         onClick={() => setSelectedDate(new Date())}
                         className="px-2 py-1 text-[10px] font-black text-green-500 hover:text-green-400 transition-colors"
                       >
-                        Today
+                        Back to Today
                       </button>
                     )}
                   </div>
