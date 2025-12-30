@@ -52,7 +52,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ onSave, initialData }) => {
     });
   };
 
-  const inputClasses = "w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none bg-white text-gray-900 placeholder-gray-300 transition-all";
+  const inputClasses = "w-full p-2 border border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 outline-none bg-gray-700 text-gray-100 placeholder-gray-500 transition-all";
 
   const handleChange = (field: string, value: string) => {
     // We allow any string value here, including empty strings, so the user can delete characters
@@ -60,15 +60,15 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ onSave, initialData }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 space-y-6 max-w-md mx-auto transform transition-all">
+    <form onSubmit={handleSubmit} className="bg-gray-800 p-8 rounded-3xl shadow-xl border border-gray-700 space-y-6 max-w-md mx-auto transform transition-all">
       <div>
-        <h2 className="text-2xl font-black text-gray-800 mb-1">Your Physical Profile</h2>
+        <h2 className="text-2xl font-black text-gray-100 mb-1">Your Physical Profile</h2>
         <p className="text-gray-400 text-sm mb-6">Enter your details to calculate your daily caloric target.</p>
       </div>
       
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Age</label>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Age</label>
           <input
             type="number"
             value={formData.age}
@@ -79,7 +79,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ onSave, initialData }) => {
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Gender</label>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Gender</label>
           <select
             value={formData.gender}
             onChange={(e) => handleChange('gender', e.target.value)}
@@ -106,7 +106,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ onSave, initialData }) => {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Height (ft)</label>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Height (ft)</label>
           <input
             type="number"
             value={formData.heightFt}
@@ -119,7 +119,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ onSave, initialData }) => {
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Height (in)</label>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Height (in)</label>
           <input
             type="number"
             value={formData.heightIn}
