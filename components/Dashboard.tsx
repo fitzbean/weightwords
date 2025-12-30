@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, FoodEntry, NutritionEstimate, FoodItemEstimate, FavoritedBreakdown } from '../types';
 import { estimateNutrition } from '../services/geminiService';
-import { getFoodLogs, addFoodLog, deleteFoodLog, supabase, getFavoritedBreakdowns, addFavoritedBreakdown, deleteFavoritedBreakdown } from '../services/supabaseService';
+import { getFoodLogs, addFoodLog, deleteFoodLog, supabase, getFavoritedBreakdowns, addFavoritedBreakdown, deleteFavoritedBreakdown, updateFavoritedBreakdown } from '../services/supabaseService';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 interface DashboardProps {
@@ -17,6 +17,8 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
   const [lastEstimate, setLastEstimate] = useState<NutritionEstimate | null>(null);
   const [user, setUser] = useState<any>(null);
   const [favoritedBreakdowns, setFavoritedBreakdowns] = useState<FavoritedBreakdown[]>([]);
+  const [editingFavorite, setEditingFavorite] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
 
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -99,7 +101,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
     if (!lastEstimate || !user) return;
     
     const favorite: Omit<FavoritedBreakdown, 'id' | 'createdAt'> = {
-      name: foodInput.slice(0, 50) + (foodInput.length > 50 ? '...' : ''),
+      name: foodInput,
       breakdown: lastEstimate.items,
       totalCalories: lastEstimate.totalCalories,
     };
@@ -120,6 +122,25 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
   const handleDeleteFavorite = async (id: string) => {
     await deleteFavoritedBreakdown(id);
     await loadFavoritedBreakdowns();
+  };
+
+  const handleRename = (favorite: FavoritedBreakdown) => {
+    setEditingFavorite(favorite.id);
+    setEditingName(''); // Start with empty field
+  };
+
+  const saveRename = async () => {
+    if (!editingFavorite) return;
+    
+    await updateFavoritedBreakdown(editingFavorite, { name: editingName });
+    await loadFavoritedBreakdowns();
+    setEditingFavorite(null);
+    setEditingName('');
+  };
+
+  const cancelRename = () => {
+    setEditingFavorite(null);
+    setEditingName('');
   };
 
   const getFoodEmoji = (foodName: string): string => {
@@ -305,22 +326,67 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
                       key={favorite.id}
                       className="relative group"
                     >
-                      <button
-                        onClick={() => useFavoritedBreakdown(favorite)}
-                        className="px-4 py-2 pr-10 bg-gray-700 text-gray-300 rounded-xl text-sm font-medium transition-all border border-gray-600 active:scale-95 active:bg-gray-500"
-                      >
-                        <span className="text-gray-300">{favorite.name}</span>
-                        <span className="text-xs text-gray-500 ml-2">({favorite.totalCalories} kcal)</span>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteFavorite(favorite.id)}
-                        className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-gray-400 sm:opacity-0 sm:group-hover:opacity-60 transition-all rounded-md hover:bg-red-900/40"
-                        title="Remove from favorites"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                      </button>
+                      {editingFavorite === favorite.id ? (
+                        <div className="flex items-center gap-1 px-3 py-2 bg-gray-700 rounded-xl border border-gray-600">
+                          <input
+                            type="text"
+                            value={editingName}
+                            onChange={(e) => setEditingName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') saveRename();
+                              if (e.key === 'Escape') cancelRename();
+                            }}
+                            className="bg-gray-600 text-gray-100 px-2 py-1 rounded text-sm w-32 outline-none"
+                            autoFocus
+                          />
+                          <button
+                            onClick={saveRename}
+                            className="p-1 text-green-400 hover:text-green-300"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                          </button>
+                          <button
+                            onClick={cancelRename}
+                            className="p-1 text-gray-400 hover:text-gray-300"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => useFavoritedBreakdown(favorite)}
+                            className="px-4 py-2 pr-16 bg-gray-700 text-gray-300 rounded-xl text-sm font-medium transition-all border border-gray-600 active:scale-95 active:bg-gray-500"
+                          >
+                            <span className="text-gray-300">{favorite.name}</span>
+                            <span className="text-xs text-gray-500 ml-2">({favorite.totalCalories} kcal)</span>
+                          </button>
+                          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">
+                            <button
+                              onClick={() => handleRename(favorite)}
+                              className="p-1 text-gray-400 sm:opacity-0 sm:group-hover:opacity-60 transition-all rounded-md hover:bg-gray-600"
+                              title="Rename favorite"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteFavorite(favorite.id)}
+                              className="p-1 text-gray-400 sm:opacity-0 sm:group-hover:opacity-60 transition-all rounded-md hover:bg-red-900/40"
+                              title="Remove from favorites"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                              </svg>
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>

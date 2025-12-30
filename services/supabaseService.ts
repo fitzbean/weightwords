@@ -208,3 +208,16 @@ export const deleteFavoritedBreakdown = async (breakdownId: string) => {
   
   return { error };
 };
+
+export const updateFavoritedBreakdown = async (breakdownId: string, updates: { name: string }) => {
+  const { data, error } = await supabase
+    .from('favorited_breakdowns')
+    .update({
+      name: updates.name,
+    })
+    .eq('id', breakdownId)
+    .select()
+    .single();
+  
+  return { data, error };
+};

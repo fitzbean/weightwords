@@ -22,7 +22,17 @@ serve(async (req) => {
         model: 'gemini-3-flash-preview',
         contents: `Analyze the following meal description: "${description}". 
         Break it down into individual components (e.g., if it says 'eggs and toast', create separate entries for eggs and toast). 
-        For each item, estimate calories and macros (Protein, Carbs, Fat in grams). 
+        For each item, estimate calories and macros (Protein, Carbs, Fat in grams).
+        
+        IMPORTANT: Keep food names concise and clean:
+        - Use title case (first letter capitalized)
+        - Remove articles (a, an, the)
+        - Remove unnecessary words (about, approximately, some, just, really)
+        - Keep essential descriptors (e.g., "whole wheat", "grilled", "fried")
+        - Include quantities if specified (e.g., "2 slices", "1 cup")
+        - Maximum 4 words per item name
+        - Examples: "2 Slices Bread" not "Two slices of bread", "Grilled Chicken" not "A piece of grilled chicken"
+        
         Return a structured JSON response.`,
         config: {
           responseMimeType: "application/json",
@@ -34,7 +44,7 @@ serve(async (req) => {
                 items: {
                   type: Type.OBJECT,
                   properties: {
-                    name: { type: Type.STRING, description: 'Name of the specific food component' },
+                    name: { type: Type.STRING, description: 'Concise name of the food component (max 4 words, title case)' },
                     calories: { type: Type.NUMBER, description: 'Estimated calories for this component' },
                     protein: { type: Type.NUMBER, description: 'Protein in grams' },
                     carbs: { type: Type.NUMBER, description: 'Carbs in grams' },
