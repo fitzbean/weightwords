@@ -122,6 +122,142 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
     await loadFavoritedBreakdowns();
   };
 
+  const getFoodEmoji = (foodName: string): string => {
+    const name = foodName.toLowerCase();
+    
+    // Proteins
+    if (name.includes('chicken') || name.includes('turkey') || name.includes('breast')) return '🍗';
+    if (name.includes('beef') || name.includes('steak') || name.includes('burger')) return '🥩';
+    if (name.includes('fish') || name.includes('salmon') || name.includes('tuna')) return '🐟';
+    if (name.includes('egg') || name.includes('scrambled')) return '🥚';
+    if (name.includes('protein') || name.includes('shake')) return '🥤';
+    if (name.includes('bacon') || name.includes('sausage')) return '🥓';
+    if (name.includes('pork')) return '🍖';
+    
+    // Dairy
+    if (name.includes('milk') || name.includes('cheese') || name.includes('yogurt')) return '🥛';
+    if (name.includes('butter')) return '🧈';
+    
+    // Grains/Carbs
+    if (name.includes('bread') || name.includes('toast') || name.includes('sandwich')) return '🍞';
+    if (name.includes('rice')) return '🍚';
+    if (name.includes('pasta') || name.includes('noodle') || name.includes('spaghetti')) return '🍝';
+    if (name.includes('potato') || name.includes('fries')) return '🍟';
+    if (name.includes('oatmeal') || name.includes('cereal')) return '🥣';
+    if (name.includes('pizza')) return '🍕';
+    if (name.includes('bagel')) return '🥯';
+    
+    // Fruits
+    if (name.includes('apple')) return '🍎';
+    if (name.includes('banana')) return '🍌';
+    if (name.includes('orange') || name.includes('citrus')) return '🍊';
+    if (name.includes('berry') || name.includes('strawberry') || name.includes('blueberry')) return '🍓';
+    if (name.includes('grape')) return '🍇';
+    if (name.includes('watermelon')) return '🍉';
+    if (name.includes('fruit') || name.includes('smoothie')) return '🥝';
+    
+    // Vegetables
+    if (name.includes('salad') || name.includes('lettuce') || name.includes('greens')) return '🥗';
+    if (name.includes('broccoli') || name.includes('cauliflower')) return '🥦';
+    if (name.includes('carrot')) return '🥕';
+    if (name.includes('tomato')) return '🍅';
+    if (name.includes('corn')) return '🌽';
+    if (name.includes('pepper') || name.includes('bell')) return '🫑';
+    if (name.includes('avocado')) return '🥑';
+    if (name.includes('mushroom')) return '🍄';
+    if (name.includes('onion')) return '🧅';
+    if (name.includes('garlic')) return '🧄';
+    if (name.includes('vegetable') || name.includes('veggie')) return '🥬';
+    
+    // Snacks & Sweets
+    if (name.includes('cookie') || name.includes('cake') || name.includes('dessert')) return '🍪';
+    if (name.includes('chocolate') || name.includes('candy')) return '🍫';
+    if (name.includes('ice cream')) return '🍦';
+    if (name.includes('chip') || name.includes('cracker')) return '🍿';
+    if (name.includes('popcorn')) return '🍿';
+    if (name.includes('nuts') || name.includes('almond')) return '🥜';
+    if (name.includes('granola') || name.includes('bar')) return '🍫';
+    
+    // Beverages
+    if (name.includes('coffee')) return '☕';
+    if (name.includes('tea')) return '🍵';
+    if (name.includes('juice')) return '🧃';
+    if (name.includes('water') || name.includes('hydrat')) return '💧';
+    if (name.includes('soda') || name.includes('coke')) return '🥤';
+    
+    // Soups
+    if (name.includes('soup') || name.includes('stew')) return '🍲';
+    
+    // Mexican/International
+    if (name.includes('taco') || name.includes('burrito') || name.includes('quesadilla')) return '🌮';
+    if (name.includes('sushi')) return '🍱';
+    if (name.includes('ramen')) return '🍜';
+    
+    // Default
+    return '🍽️';
+  };
+
+  const getHealthColor = (foodName: string, calories: number, protein: number): string => {
+    const name = foodName.toLowerCase();
+    
+    // Excellent (green) - Vegetables, fruits, lean proteins, water
+    if (
+      name.includes('salad') || name.includes('lettuce') || name.includes('greens') ||
+      name.includes('broccoli') || name.includes('cauliflower') || name.includes('spinach') ||
+      name.includes('vegetable') || name.includes('veggie') ||
+      name.includes('fruit') || name.includes('apple') || name.includes('berry') ||
+      name.includes('chicken breast') || name.includes('turkey') || name.includes('fish') ||
+      name.includes('salmon') || name.includes('tuna') || name.includes('egg white') ||
+      name.includes('water') || name.includes('hydrat')
+    ) {
+      return 'bg-green-900/30';
+    }
+    
+    // Good (blue-green) - Most fruits, whole grains, lean proteins
+    if (
+      name.includes('apple') || name.includes('banana') || name.includes('orange') ||
+      name.includes('oatmeal') || name.includes('quinoa') || name.includes('brown rice') ||
+      name.includes('chicken') || name.includes('greek yogurt') || name.includes('beans') ||
+      name.includes('lentils') || name.includes('nuts') || name.includes('avocado') ||
+      protein > 20 && calories < 300 // High protein, low calorie
+    ) {
+      return 'bg-teal-900/30';
+    }
+    
+    // Moderate (yellow) - Regular grains, dairy, some proteins
+    if (
+      name.includes('bread') || name.includes('pasta') || name.includes('rice') ||
+      name.includes('milk') || name.includes('cheese') || name.includes('yogurt') ||
+      name.includes('potato') || name.includes('beef') || name.includes('pork') ||
+      name.includes('egg') || name.includes('protein shake')
+    ) {
+      return 'bg-yellow-900/30';
+    }
+    
+    // Less ideal (orange) - Processed foods, fried foods
+    if (
+      name.includes('pizza') || name.includes('burger') || name.includes('fries') ||
+      name.includes('chip') || name.includes('cracker') || name.includes('granola') ||
+      name.includes('juice') || name.includes('soda') || name.includes('beer') ||
+      calories > 500 && protein < 20 // High calorie, low protein
+    ) {
+      return 'bg-orange-900/30';
+    }
+    
+    // Limited (red) - Desserts, sweets, highly processed
+    if (
+      name.includes('cookie') || name.includes('cake') || name.includes('dessert') ||
+      name.includes('chocolate') || name.includes('candy') || name.includes('ice cream') ||
+      name.includes('bacon') || name.includes('sausage') || name.includes('donut') ||
+      calories > 600 // Very high calorie
+    ) {
+      return 'bg-red-900/30';
+    }
+    
+    // Default neutral
+    return 'bg-gray-700';
+  };
+
   const data = [
     { name: 'Consumed', value: totalCalories },
     { name: 'Remaining', value: Math.max(0, caloriesRemaining) },
@@ -133,7 +269,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         {/* Left Column: Input & AI */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-gray-800 p-8 rounded-3xl shadow-sm border border-gray-700">
+          <div className="bg-gray-800 p-3 rounded-3xl shadow-sm border border-gray-700">
             <h2 className="text-xl font-black text-gray-100 mb-4 flex items-center gap-2">
                 <div className="w-2 h-6 bg-green-500 rounded-full"></div>
                 Log Your Meal
@@ -171,14 +307,14 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
                     >
                       <button
                         onClick={() => useFavoritedBreakdown(favorite)}
-                        className="px-4 py-2 pr-10 bg-gray-700 text-gray-300 rounded-xl text-sm font-medium hover:bg-gray-600 transition-all border border-gray-600 hover:border-green-500/50"
+                        className="px-4 py-2 pr-10 bg-gray-700 text-gray-300 rounded-xl text-sm font-medium transition-all border border-gray-600 active:scale-95 active:bg-gray-500"
                       >
-                        <span className="group-hover:text-green-400 transition-colors">{favorite.name}</span>
+                        <span className="text-gray-300">{favorite.name}</span>
                         <span className="text-xs text-gray-500 ml-2">({favorite.totalCalories} kcal)</span>
                       </button>
                       <button
                         onClick={() => handleDeleteFavorite(favorite.id)}
-                        className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all rounded-md hover:bg-red-900/20"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-gray-400 sm:opacity-0 sm:group-hover:opacity-60 transition-all rounded-md hover:bg-red-900/40"
                         title="Remove from favorites"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -192,7 +328,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
             )}
 
             {lastEstimate && (
-              <div className="mt-8 p-8 bg-green-900/20 rounded-3xl border border-green-800 animate-in fade-in zoom-in-95 duration-300">
+              <div className="mt-8 p-4 bg-green-900/20 rounded-3xl border border-green-800 animate-in fade-in zoom-in-95 duration-300">
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h3 className="text-xl font-black text-green-400 uppercase tracking-tight">Breakdown</h3>
@@ -267,10 +403,10 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
                   </div>
                 ) : (
                   entries.map((entry) => (
-                    <div key={entry.id} className="p-4 flex justify-between items-center group hover:bg-gray-700 transition-all">
+                    <div key={entry.id} className={`p-4 flex justify-between items-center group transition-all ${getHealthColor(entry.name, entry.calories, entry.protein)}`}>
                       <div className="flex gap-3 items-center">
-                        <div className="w-8 h-8 rounded-lg bg-gray-700 flex items-center justify-center text-gray-500 text-xs font-black group-hover:bg-gray-600 group-hover:text-green-400 transition-all shrink-0">
-                            {entry.name.charAt(0).toUpperCase()}
+                        <div className="w-8 h-8 rounded-lg bg-gray-800/50 flex items-center justify-center text-lg shrink-0">
+                            {getFoodEmoji(entry.name)}
                         </div>
                         <div className="min-w-0">
                           <p className="font-bold text-gray-100 text-sm truncate">{entry.name}</p>
@@ -284,7 +420,7 @@ const Dashboard: React.FC<DashboardProps> = ({ profile }) => {
                         </div>
                         <button
                           onClick={() => deleteEntry(entry.id)}
-                          className="p-1.5 text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-900/20 rounded-md"
+                          className="p-1.5 text-gray-400 sm:opacity-0 sm:group-hover:opacity-60 transition-all rounded-md hover:bg-red-900/40"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
