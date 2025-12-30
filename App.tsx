@@ -251,7 +251,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
-      <nav className="bg-gray-800 border-b border-gray-700 py-4 px-6 sticky top-0 z-50 shadow-sm">
+      <nav className="bg-gray-800 border-b border-gray-700 py-3 px-3 sm:py-4 sm:px-6 sticky top-0 z-50 shadow-sm">
         <div className="max-w-6xl mx-auto flex justify-between items-center flex-wrap sm:flex-nowrap gap-4">
           <div className="flex items-center gap-2">
             <div className="bg-green-600 text-white p-1.5 rounded-lg shadow-md shadow-green-900">
@@ -261,8 +261,8 @@ const App: React.FC = () => {
           </div>
           
           {profile && (
-            <div className="flex items-center gap-4 sm:gap-6 flex-shrink-0">
-               <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+               <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={() => {
                       const newDate = new Date(selectedDate);
@@ -276,41 +276,36 @@ const App: React.FC = () => {
                     </svg>
                   </button>
                   <div className="text-right">
-                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">
-                      
-                    </p>
-                    <p className="text-sm font-bold text-gray-300 cursor-pointer hover:text-gray-200 transition-colors">
+                    <p className="text-xs sm:text-sm font-bold text-gray-300 cursor-pointer hover:text-gray-200 transition-colors">
                       {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                     </p>
                   </div>
-                  <button
-                    onClick={() => {
-                      const newDate = new Date(selectedDate);
-                      newDate.setDate(newDate.getDate() + 1);
-                      setSelectedDate(newDate);
-                    }}
-                    className="p-1 text-gray-400 hover:text-gray-200 transition-colors"
-                    disabled={selectedDate.toDateString() === new Date().toDateString()}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
+                  {selectedDate.toDateString() !== new Date().toDateString() && (
+                    <button
+                      onClick={() => {
+                        const newDate = new Date(selectedDate);
+                        newDate.setDate(newDate.getDate() + 1);
+                        setSelectedDate(newDate);
+                      }}
+                      className="p-1 text-gray-400 hover:text-gray-200 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  )}
                   {selectedDate.toDateString() !== new Date().toDateString() && (
                     <button
                       onClick={() => setSelectedDate(new Date())}
-                      className="px-0 py-1 text-[10px] font-black text-green-500 hover:text-green-400 transition-colors"
+                      className="px-0 py-1 text-[9px] sm:text-[10px] font-black text-green-500 hover:text-green-400 transition-colors"
                     >
-                      <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                    <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                     </button>
                   )}
                </div>
-               <div className="h-8 w-px bg-gray-700"></div>
+               <div className="hidden sm:block h-8 w-px bg-gray-700"></div>
                <div className="relative user-menu">
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
