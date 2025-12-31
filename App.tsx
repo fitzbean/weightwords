@@ -20,7 +20,11 @@ const App: React.FC = () => {
   const [showWeighInModal, setShowWeighInModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const now = new Date();
+    // Initialize with current date in user's local timezone
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  });
 
   useEffect(() => {
     let isInitialized = false;
@@ -197,6 +201,12 @@ const App: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showUserMenu]);
 
+  // Helper function to get today's date at midnight
+  const getToday = () => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  };
+
   const handleLogout = async () => {
     await signOut();
   };
@@ -280,7 +290,7 @@ const App: React.FC = () => {
                       {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                     </p>
                   </div>
-                  {selectedDate.toDateString() !== new Date().toDateString() && (
+                  {selectedDate.getTime() !== getToday().getTime() && (
                     <button
                       onClick={() => {
                         const newDate = new Date(selectedDate);
@@ -294,9 +304,9 @@ const App: React.FC = () => {
                       </svg>
                     </button>
                   )}
-                  {selectedDate.toDateString() !== new Date().toDateString() && (
+                  {selectedDate.getTime() !== getToday().getTime() && (
                     <button
-                      onClick={() => setSelectedDate(new Date())}
+                      onClick={() => setSelectedDate(getToday())}
                       className="px-0 py-1 text-[9px] sm:text-[10px] font-black text-green-500 hover:text-green-400 transition-colors"
                     >
                       <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">

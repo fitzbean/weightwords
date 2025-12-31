@@ -200,6 +200,24 @@ const Dashboard: React.FC<DashboardProps> = ({
       return;
     }
 
+    // Helper to get date string in user's timezone
+    const getDateString = () => {
+      if (profile?.timezone) {
+        const formatter = new Intl.DateTimeFormat('en-CA', { 
+          timeZone: profile.timezone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+        return formatter.format(externalSelectedDate);
+      }
+      // Fallback: use local date parts
+      const year = externalSelectedDate.getFullYear();
+      const month = String(externalSelectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(externalSelectedDate.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     // Create an entry for each breakdown item
     const entries = breakdownItems.map(item => ({
       user_id: user.id,
@@ -209,9 +227,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       carbs: item.carbs,
       fat: item.fat,
       description: item.name,
-      date: profile?.timezone 
-        ? new Date(externalSelectedDate.toLocaleString("en-US", { timeZone: profile?.timezone })).toISOString().split('T')[0]
-        : externalSelectedDate.toISOString().split('T')[0],
+      date: getDateString(),
     }));
 
     // Insert all entries at once
@@ -229,6 +245,24 @@ const Dashboard: React.FC<DashboardProps> = ({
   const confirmAddEntry = async () => {
     if (!user || !lastEstimate || breakdownItems.length === 0) return;
 
+    // Helper to get date string in user's timezone
+    const getDateString = () => {
+      if (profile?.timezone) {
+        const formatter = new Intl.DateTimeFormat('en-CA', { 
+          timeZone: profile.timezone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+        return formatter.format(externalSelectedDate);
+      }
+      // Fallback: use local date parts
+      const year = externalSelectedDate.getFullYear();
+      const month = String(externalSelectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(externalSelectedDate.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     // Create an entry for each breakdown item
     const entries = breakdownItems.map(item => ({
       user_id: user.id,
@@ -238,9 +272,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       carbs: item.carbs,
       fat: item.fat,
       description: item.name,
-      date: profile?.timezone 
-        ? new Date(externalSelectedDate.toLocaleString("en-US", { timeZone: profile?.timezone })).toISOString().split('T')[0]
-        : externalSelectedDate.toISOString().split('T')[0],
+      date: getDateString(),
     }));
 
     // Insert all entries at once

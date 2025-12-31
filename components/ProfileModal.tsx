@@ -24,7 +24,19 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     heightIn: initialData?.heightIn || 10,
     activityLevel: initialData?.activityLevel || ActivityLevel.MODERATE,
     weightGoal: initialData?.weightGoal || WeightGoal.MAINTAIN,
+    timezone: initialData?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
   });
+
+  // Common US timezones
+  const timezones = [
+    { value: 'America/New_York', label: 'Eastern Time (ET)' },
+    { value: 'America/Chicago', label: 'Central Time (CT)' },
+    { value: 'America/Denver', label: 'Mountain Time (MT)' },
+    { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
+    { value: 'America/Anchorage', label: 'Alaska Time (AKT)' },
+    { value: 'Pacific/Honolulu', label: 'Hawaii Time (HT)' },
+    { value: 'UTC', label: 'UTC' },
+  ];
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -205,6 +217,22 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                 <option value={WeightGoal.MAINTAIN}>Maintain weight</option>
                 <option value={WeightGoal.GAIN}>Gain 0.5 lb per week</option>
                 <option value={WeightGoal.GAIN_FAST}>Gain 1 lb per week</option>
+              </select>
+            </div>
+
+            {/* Timezone */}
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                Timezone
+              </label>
+              <select
+                value={formData.timezone}
+                onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
+                className="w-full p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
+              >
+                {timezones.map(tz => (
+                  <option key={tz.value} value={tz.value}>{tz.label}</option>
+                ))}
               </select>
             </div>
           </div>

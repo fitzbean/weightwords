@@ -22,5 +22,13 @@ export const getWeekDates = (date: Date, timezone?: string) => {
 
 // Helper function to get local date string in timezone
 export const getLocalDateString = (date: Date, timezone: string): string => {
-  return new Date(date.toLocaleString("en-US", { timeZone: timezone })).toISOString().split('T')[0];
+  // Use Intl.DateTimeFormat to get the correct date parts in the target timezone
+  const formatter = new Intl.DateTimeFormat('en-CA', { 
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  // en-CA format gives us YYYY-MM-DD directly
+  return formatter.format(date);
 };
