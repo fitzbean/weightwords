@@ -5,7 +5,7 @@ import { UserProfile } from '../types';
 interface AdminModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onImpersonate: (userId: string, profile: UserProfile) => void;
+  onImpersonate: (userId: string, profile: UserProfile, email: string) => void;
 }
 
 interface UserItem {
@@ -43,12 +43,12 @@ const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, onImpersonate 
     (user.profile?.spouseId && user.email.includes(searchTerm))
   );
 
-  const handleImpersonate = async (userId: string, profile: UserProfile) => {
+  const handleImpersonate = async (userId: string, profile: UserProfile, email: string) => {
     if (!profile) return;
     
     setIsLoadingUser(userId);
     try {
-      onImpersonate(userId, profile);
+      onImpersonate(userId, profile, email);
       onClose();
     } finally {
       setIsLoadingUser(null);
@@ -117,7 +117,7 @@ const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, onImpersonate 
                     </div>
                     {user.profile && (
                       <button
-                        onClick={() => handleImpersonate(user.id, user.profile!)}
+                        onClick={() => handleImpersonate(user.id, user.profile!, user.email)}
                         disabled={isLoadingUser === user.id}
                         className="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                       >
