@@ -959,52 +959,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         <div className="flex flex-col">
           <div className="bg-gray-800 rounded-3xl shadow-sm border border-gray-700 overflow-hidden flex-1 flex flex-col">
              <div className="p-6 border-b border-gray-700 flex justify-between items-center">
-                <div>
-                  <h2 className="text-lg font-black text-gray-100">Daily Log</h2>
-                  <div className="flex items-center gap-2 mt-1">
-                    <button
-                      onClick={() => {
-                        const newDate = new Date(externalSelectedDate);
-                        newDate.setDate(newDate.getDate() - 1);
-                        externalSetSelectedDate(newDate);
-                      }}
-                      className="p-1 text-gray-400 hover:text-gray-200 transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-wider">
-                      {externalSelectedDate.toLocaleDateString('en-US', { 
-                        weekday: 'short', 
-                        month: 'short', 
-                        day: 'numeric',
-                        timeZone: profile?.timezone || 'UTC'
-                      })}
-                    </p>
-                    <button
-                      onClick={() => {
-                        const newDate = new Date(externalSelectedDate);
-                        newDate.setDate(newDate.getDate() + 1);
-                        externalSetSelectedDate(newDate);
-                      }}
-                      className="p-1 text-gray-400 hover:text-gray-200 transition-colors"
-                      disabled={externalSelectedDate.toDateString() === new Date().toDateString()}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                    {externalSelectedDate.toDateString() !== new Date().toDateString() && (
-                      <button
-                        onClick={() => externalSetSelectedDate(new Date())}
-                        className="px-2 py-1 text-[10px] font-black text-green-500 hover:text-green-400 transition-colors"
-                      >
-                        Back to Today
-                      </button>
-                    )}
-                  </div>
-                </div>
+                <h2 className="text-lg font-black text-gray-100">Daily Log</h2>
                 <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{entries.length} Items</span>
              </div>
              <div className="divide-y divide-gray-700 flex-1 overflow-y-auto">
