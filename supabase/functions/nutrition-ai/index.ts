@@ -30,17 +30,22 @@ serve(async (req) => {
           const webResponse = await ai.models.generateContent({
             model: 'gemini-2.0-flash',
             contents: `Search for nutrition facts for: "${description}". 
-            Find the most reliable source (official product website, nutrition label, or reputable database).
+            IMPORTANT: 
+            - Find the official nutrition information from the manufacturer's website or reliable sources
+            - Look for the specific product mentioned (e.g., "Gatorade Zero" has 0-10 calories depending on flavor)
+            - If multiple variations exist, choose the most common/original version
+            - Always verify the information matches the exact product name
             
             Return the nutrition information in JSON format with:
-            - name: Product name
-            - calories: Calories per serving
+            - name: Full product name with any specific details (e.g., flavor, version)
+            - calories: Calories per serving (be precise - 0, 5, or 10 calories are all different)
             - protein: Protein in grams per serving
-            - carbs: Carbs in grams per serving
+            - carbs: Carbs in grams per serving  
             - fat: Fat in grams per serving
             - servingSize: Serving size description
             - sourceUrl: URL where you found this information
-            - confidence: Your confidence in this data (0-1)`,
+            - confidence: Your confidence in this data (0-1)
+            - notes: Any important notes about variations`,
             config: {
               tools: [{ googleSearchRetrieval: {} }],
               responseMimeType: "application/json",
@@ -55,6 +60,7 @@ serve(async (req) => {
                   servingSize: { type: Type.STRING },
                   sourceUrl: { type: Type.STRING },
                   confidence: { type: Type.NUMBER },
+                  notes: { type: Type.STRING },
                 },
                 required: ["name", "calories", "protein", "carbs", "fat", "confidence"],
               },
@@ -77,6 +83,7 @@ serve(async (req) => {
             source: 'web',
             sourceUrl: webResult.sourceUrl,
             servingSize: webResult.servingSize,
+            notes: webResult.notes,
           }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200,

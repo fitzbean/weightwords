@@ -782,6 +782,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                       {lastEstimate.servingSize && (
                         <div className="text-[8px] text-gray-500 mt-1">{lastEstimate.servingSize}</div>
                       )}
+                      {lastEstimate.notes && (
+                        <div className="text-[8px] text-yellow-500 mt-1 italic">{lastEstimate.notes}</div>
+                      )}
                     </div>
                   </div>
                 </div>
