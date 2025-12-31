@@ -5,7 +5,8 @@ import ProfileModal from './components/ProfileModal';
 import Dashboard from './components/Dashboard';
 import AuthForm from './components/AuthForm';
 import WeighInModal from './components/WeighInModal';
-import { supabase, getCurrentUser, getProfile, updateProfile, signOut, onAuthStateChange, getSpouseEmail } from './services/supabaseService';
+import AdminModal from './components/AdminModal';
+import { supabase, getCurrentUser, getProfile, updateProfile, signOut, onAuthStateChange, getSpouseEmail, getUserById } from './services/supabaseService';
 import { APP_CONFIG } from './appConfig';
 
 const App: React.FC = () => {
@@ -25,6 +26,11 @@ const App: React.FC = () => {
     // Initialize with current date in user's local timezone
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   });
+  
+  // Admin state
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [impersonatedUser, setImpersonatedUser] = useState<{ id: string; profile: UserProfile } | null>(null);
+  const [adminProfile, setAdminProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     let isInitialized = false;
@@ -217,6 +223,23 @@ const App: React.FC = () => {
     setShowUserMenu(false);
   };
 
+  const handleImpersonate = async (userId: string, userProfile: UserProfile) => {
+    // Store the current admin profile if not already impersonating
+    if (!impersonatedUser && profile?.isAdmin) {
+      setAdminProfile(profile);
+    }
+    setImpersonatedUser({ id: userId, profile: userProfile });
+    setShowUserMenu(false);
+  };
+
+  const handleStopImpersonating = () => {
+    setImpersonatedUser(null);
+    // Restore admin profile
+    if (adminProfile) {
+      setProfile(adminProfile);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900">
@@ -370,6 +393,23 @@ const App: React.FC = () => {
                         </svg>
                         Weigh-ins
                       </button>
+                      {profile?.isAdmin && (
+                        <>
+                          <hr className="my-1 border-gray-700" />
+                          <button
+                            onClick={() => {
+                              setShowUserMenu(false);
+                              setShowAdminModal(true);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-purple-400 hover:bg-gray-700 flex items-center gap-3"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                            </svg>
+                            Admin Panel
+                          </button>
+                        </>
+                      )}
                       <hr className="my-1 border-gray-700" />
                       <button
                         onClick={handleLogout}
@@ -391,12 +431,15 @@ const App: React.FC = () => {
       <main className="py-8 px-4">
         {user ? (
           <Dashboard 
-            profile={profile} 
+            profile={impersonatedUser?.profile || profile} 
             onLogout={handleLogout} 
             showSpouseModal={showSpouseModal}
             setShowSpouseModal={setShowSpouseModal}
             selectedDate={selectedDate}
             setSelectedDate={setSelectedDate}
+            isImpersonating={!!impersonatedUser}
+            onStopImpersonating={handleStopImpersonating}
+            realProfile={profile}
           />
         ) : (
           <div className="animate-in fade-in duration-500 translate-y-0">
@@ -428,6 +471,12 @@ const App: React.FC = () => {
         isOpen={showWeighInModal}
         onClose={() => setShowWeighInModal(false)}
         userId={user?.id}
+      />
+
+      <AdminModal
+        isOpen={showAdminModal}
+        onClose={() => setShowAdminModal(false)}
+        onImpersonate={handleImpersonate}
       />
 
       <footer className="mt-20 border-t border-gray-800 py-12 text-center">

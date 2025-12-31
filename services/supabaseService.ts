@@ -76,6 +76,7 @@ export const getProfile = async (userId: string): Promise<UserProfile | null> =>
     profileCompleted: data.profile_completed ?? false,
     spouseId: data.spouse_id,
     timezone: data.timezone ?? 'UTC',
+    isAdmin: data.is_admin ?? false,
   };
   
   console.log('Mapped profile:', profile);
@@ -229,11 +230,10 @@ export const getWeeklyFoodLogs = async (userId: string, weekDates: Date[], timez
 // Listen to auth changes
 export const onAuthStateChange = (callback: (user: any) => void) => {
   return supabase.auth.onAuthStateChange((_event, session) => {
-    callback(session?.user ?? null);
+    callback(session?.user || null);
   });
 };
 
-// Favorited breakdown functions
 export const getFavoritedBreakdowns = async (userId: string): Promise<FavoritedBreakdown[]> => {
   const { data, error } = await supabase
     .from('favorited_breakdowns')
@@ -249,7 +249,7 @@ export const getFavoritedBreakdowns = async (userId: string): Promise<FavoritedB
     breakdown: item.breakdown as FoodItemEstimate[],
     totalCalories: item.total_calories,
     createdAt: new Date(item.created_at).getTime(),
-    userId: item.user_id,
+    userId: item.user_id
   }));
 };
 
@@ -458,4 +458,59 @@ export const deleteWeighIn = async (weighInId: string): Promise<{ error: any }> 
     .eq('id', weighInId);
   
   return { error };
+};
+
+// Admin functions
+export const getAllUsers = async (): Promise<Array<{id: string, email: string, profile: UserProfile | null}>> => {
+  // Use the RPC function to get all users with their profiles
+  const { data, error } = await supabase.rpc('get_all_users_with_profiles');
+  
+  if (error) {
+    console.error('Error fetching users:', error);
+    return [];
+  }
+  
+  return (data || []).map((userData: any) => ({
+    id: userData.user_id,
+    email: userData.user_email || 'No email',
+    profile: userData.user_age ? {
+      age: userData.user_age,
+      gender: userData.user_gender as Gender,
+      weightLbs: userData.user_weight_lbs,
+      heightFt: userData.user_height_ft,
+      heightIn: userData.user_height_in,
+      weightGoal: userData.user_weight_goal as WeightGoal,
+      dailyCalorieTarget: userData.user_daily_calorie_target,
+      activityLevel: userData.user_activity_level as ActivityLevel,
+      profileCompleted: userData.user_profile_completed ?? false,
+      spouseId: userData.user_spouse_id,
+      timezone: userData.user_timezone ?? 'UTC',
+      isAdmin: userData.user_is_admin ?? false,
+    } : null
+  }));
+};
+
+export const getUserById = async (userId: string): Promise<UserProfile | null> => {
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  
+  if (error || !data) return null;
+  
+  return {
+    age: data.age,
+    gender: data.gender as Gender,
+    weightLbs: data.weight_lbs,
+    heightFt: data.height_ft,
+    heightIn: data.height_in,
+    weightGoal: data.weight_goal as WeightGoal,
+    dailyCalorieTarget: data.daily_calorie_target,
+    activityLevel: data.activity_level as ActivityLevel,
+    profileCompleted: data.profile_completed ?? false,
+    spouseId: data.spouse_id,
+    timezone: data.timezone ?? 'UTC',
+    isAdmin: data.is_admin ?? false,
+  };
 };

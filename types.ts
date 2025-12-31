@@ -32,6 +32,7 @@ export interface UserProfile {
   profileCompleted?: boolean;
   spouseId?: string;
   timezone?: string;
+  isAdmin?: boolean;
 }
 
 export interface FoodEntry {
