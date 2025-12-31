@@ -19,6 +19,75 @@ serve(async (req) => {
     const ai = new GoogleGenAI({ apiKey: Deno.env.get('GEMINI_API_KEY') });
     
     if (type === 'nutrition') {
+      // Check if this is just a product name (no nutrition info provided)
+      const isJustProductName = description.split(' ').length <= 6 && 
+        !/\d+/.test(description) && // No numbers
+        !/calories|kcal|protein|carbs|fat|grams?|g\b/i.test(description); // No nutrition terms
+      
+      if (isJustProductName) {
+        // Use web search for product nutrition
+        try {
+          const webResponse = await ai.models.generateContent({
+            model: 'gemini-2.0-flash',
+            contents: `Search for nutrition facts for: "${description}". 
+            Find the most reliable source (official product website, nutrition label, or reputable database).
+            
+            Return the nutrition information in JSON format with:
+            - name: Product name
+            - calories: Calories per serving
+            - protein: Protein in grams per serving
+            - carbs: Carbs in grams per serving
+            - fat: Fat in grams per serving
+            - servingSize: Serving size description
+            - sourceUrl: URL where you found this information
+            - confidence: Your confidence in this data (0-1)`,
+            config: {
+              tools: [{ googleSearchRetrieval: {} }],
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  name: { type: Type.STRING },
+                  calories: { type: Type.NUMBER },
+                  protein: { type: Type.NUMBER },
+                  carbs: { type: Type.NUMBER },
+                  fat: { type: Type.NUMBER },
+                  servingSize: { type: Type.STRING },
+                  sourceUrl: { type: Type.STRING },
+                  confidence: { type: Type.NUMBER },
+                },
+                required: ["name", "calories", "protein", "carbs", "fat", "confidence"],
+              },
+            },
+          });
+          
+          const webResult = JSON.parse(webResponse.text);
+          
+          // Convert to expected format
+          return new Response(JSON.stringify({
+            items: [{
+              name: webResult.name,
+              calories: webResult.calories,
+              protein: webResult.protein,
+              carbs: webResult.carbs,
+              fat: webResult.fat,
+            }],
+            totalCalories: webResult.calories,
+            confidence: webResult.confidence,
+            source: 'web',
+            sourceUrl: webResult.sourceUrl,
+            servingSize: webResult.servingSize,
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          });
+        } catch (error) {
+          console.error('Web search failed, falling back to estimation:', error);
+          // Fall back to estimation if web search fails
+        }
+      }
+      
+      // Regular estimation for meals or when web search fails
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: `Analyze the following meal description: "${description}". 
@@ -65,7 +134,10 @@ serve(async (req) => {
         },
       });
 
-      return new Response(JSON.stringify(JSON.parse(response.text)), {
+      const result = JSON.parse(response.text);
+      result.source = 'estimated';
+      
+      return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });

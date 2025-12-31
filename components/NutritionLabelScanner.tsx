@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { extractNutritionFromImages, extractNutritionFromImage } from '../services/geminiService';
 
 interface NutritionLabelScannerProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
   const [productImage, setProductImage] = useState<string | null>(null);
 
   const resetState = useCallback(() => {
+    console.log('resetState called');
     setCaptureStep('product');
     setProductImage(null);
     setError(null);
@@ -37,6 +39,7 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
 
   const startCamera = useCallback(async () => {
     try {
+      console.log('Starting camera...');
       setIsScanning(true);
       setError(null);
 
@@ -49,21 +52,55 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
+        
+        // Wait for video metadata to load
+        await new Promise((resolve) => {
+          if (videoRef.current) {
+            if (videoRef.current.readyState >= 2) {
+              resolve(null);
+            } else {
+              videoRef.current.onloadedmetadata = () => resolve(null);
+            }
+          }
+        });
+        
+        console.log('Camera ready', {
+          videoWidth: videoRef.current.videoWidth,
+          videoHeight: videoRef.current.videoHeight,
+          readyState: videoRef.current.readyState
+        });
+        
+        // Ensure scanning stays true after camera is ready
+        setIsScanning(true);
       }
     } catch (err) {
+      console.error('Camera error:', err);
       setError('Failed to access camera. Please ensure camera permissions are granted.');
       setIsScanning(false);
     }
   }, []);
 
   const captureImage = useCallback((): string | null => {
-    if (!videoRef.current || !canvasRef.current) return null;
+    if (!videoRef.current || !canvasRef.current) {
+      console.log('Missing video or canvas ref');
+      return null;
+    }
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
 
     if (!context) return null;
+
+    // Check if video has dimensions
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      console.log('Video dimensions not ready', {
+        videoWidth: video.videoWidth,
+        videoHeight: video.videoHeight,
+        readyState: video.readyState
+      });
+      return null;
+    }
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -74,42 +111,79 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
   }, []);
 
   const handleCapture = useCallback(async () => {
-    if (isProcessing) return;
-
-    const base64Image = captureImage();
-    if (!base64Image) {
-      setError('Failed to capture image');
+    // Force check the current state
+    const currentState = {
+      isScanning,
+      isProcessing,
+      captureStep,
+      hasVideo: !!videoRef.current,
+      videoReady: videoRef.current ? videoRef.current.readyState >= 2 : false
+    };
+    
+    console.log('handleCapture called', currentState);
+    
+    if (!currentState.isScanning || currentState.isProcessing) {
+      console.log('Early return - not ready', currentState);
       return;
     }
 
-    if (captureStep === 'product') {
-      // Save product image and move to nutrition step
-      setProductImage(base64Image);
-      setCaptureStep('nutrition');
-    } else {
-      // We have both images, send to API
-      setIsProcessing(true);
-      
-      try {
-        const { extractNutritionFromImages } = await import('../services/geminiService');
-        const nutritionText = await extractNutritionFromImages(productImage!, base64Image);
+    setIsProcessing(true);
+    setError(null);
 
+    try {
+      const imageData = captureImage();
+      console.log('Image captured', imageData ? 'success' : 'failed');
+      
+      if (captureStep === 'product') {
+        setProductImage(imageData);
+        setCaptureStep('nutrition');
+        setIsProcessing(false);
+      } else {
+        // Final step - analyze both images
+        const nutritionText = await extractNutritionFromImages(productImage!, imageData);
+        
         if (nutritionText) {
-          onScan(nutritionText);
           stopCamera();
           resetState();
           onClose();
+          onScan(nutritionText);
         } else {
           setError('Could not read nutrition info. Please try again.');
+          setIsProcessing(false);
         }
-      } catch (err) {
-        console.error('Error analyzing images:', err);
-        setError('Failed to analyze images. Please try again.');
-      } finally {
-        setIsProcessing(false);
       }
+    } catch (err) {
+      console.error('Error analyzing images:', err);
+      setError('Failed to analyze images. Please try again.');
+      setIsProcessing(false);
     }
-  }, [isProcessing, captureStep, productImage, captureImage, onScan, stopCamera, resetState, onClose]);
+  }, [isScanning, isProcessing, captureStep, productImage, captureImage, onScan, stopCamera, resetState, onClose]);
+
+  const handleSkipLabel = useCallback(async () => {
+    if (!productImage || isProcessing) return;
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      // Analyze just the product image and search web for nutrition
+      const nutritionText = await extractNutritionFromImage(productImage);
+      
+      if (nutritionText) {
+        stopCamera();
+        resetState();
+        onClose();
+        onScan(nutritionText);
+      } else {
+        setError('Could not identify the product. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error analyzing product:', err);
+      setError('Failed to analyze product. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [productImage, isProcessing, onScan, stopCamera, resetState, onClose]);
 
   const handleBack = useCallback(() => {
     setCaptureStep('product');
@@ -237,26 +311,25 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
           <div className="flex gap-3 justify-center">
             {captureStep === 'nutrition' && (
               <button
-                onClick={handleBack}
-                className="px-6 py-2 bg-gray-700 text-gray-300 rounded-xl font-bold hover:bg-gray-600"
+                onClick={handleSkipLabel}
+                disabled={isProcessing}
+                className="px-6 py-2 bg-purple-600 text-white rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-500"
               >
-                ← Back
+                {isProcessing ? 'Searching...' : 'No Nutrition Label'}
               </button>
             )}
-            <button
-              onClick={handleClose}
-              className="px-6 py-2 bg-gray-700 text-gray-300 rounded-xl font-bold hover:bg-gray-600"
-            >
-              Cancel
-            </button>
             <button
               onClick={handleCapture}
               disabled={!isScanning || isProcessing}
               className={`px-6 py-2 text-white rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed ${
                 captureStep === 'product' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-green-600 hover:bg-green-500'
               }`}
+              style={{ 
+                opacity: !isScanning || isProcessing ? 0.5 : 1,
+                cursor: !isScanning || isProcessing ? 'not-allowed' : 'pointer'
+              }}
             >
-              {isProcessing ? 'Analyzing...' : captureStep === 'product' ? 'Capture Front' : 'Capture & Analyze'}
+              {isProcessing ? 'Analyzing...' : captureStep === 'product' ? `Capture Product` : 'Capture Nutrition Label'}
             </button>
           </div>
         </div>

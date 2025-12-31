@@ -57,6 +57,9 @@ export interface NutritionEstimate {
   items: FoodItemEstimate[];
   totalCalories: number;
   confidence: number;
+  source?: 'estimated' | 'web' | 'label';
+  sourceUrl?: string;
+  servingSize?: string;
 }
 
 export interface FoodLog {

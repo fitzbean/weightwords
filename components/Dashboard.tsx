@@ -761,6 +761,27 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <div className="text-right">
                       <div className="text-2xl font-black text-green-400">{lastEstimate.totalCalories}</div>
                       <div className="text-[10px] font-black uppercase text-green-500 tracking-tighter">Total KCAL</div>
+                      {lastEstimate.source === 'web' && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-[8px] text-purple-400 font-medium">From web search</span>
+                          {lastEstimate.sourceUrl && (
+                            <a
+                              href={lastEstimate.sourceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-purple-400 hover:text-purple-300"
+                              title="View source"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </a>
+                          )}
+                        </div>
+                      )}
+                      {lastEstimate.servingSize && (
+                        <div className="text-[8px] text-gray-500 mt-1">{lastEstimate.servingSize}</div>
+                      )}
                     </div>
                   </div>
                 </div>
