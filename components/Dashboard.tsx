@@ -18,6 +18,7 @@ interface DashboardProps {
   isImpersonating?: boolean;
   onStopImpersonating?: () => void;
   realProfile?: UserProfile | null;
+  impersonatedUserId?: string;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ 
@@ -29,7 +30,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   setSelectedDate: externalSetSelectedDate = (_: Date) => {},
   isImpersonating = false,
   onStopImpersonating = () => {},
-  realProfile = null
+  realProfile = null,
+  impersonatedUserId
 }) => {
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [foodInput, setFoodInput] = useState('');
@@ -51,31 +53,34 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [breakdownItems, setBreakdownItems] = useState<FoodItemEstimate[]>([]);
   const [showPreviousDayWarning, setShowPreviousDayWarning] = useState(false);
 
+  // Use impersonated user ID if impersonating, otherwise use real user ID
+  const effectiveUserId = impersonatedUserId || user?.id;
+
   useEffect(() => {
     const getCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
     };
     getCurrentUser();
-  }, [externalSelectedDate]);
+  }, []);
 
   useEffect(() => {
-    if (user) {
+    if (effectiveUserId) {
       loadEntries();
       loadFavoritedBreakdowns();
       loadWeeklyData();
     }
-  }, [user, externalSelectedDate]);
+  }, [effectiveUserId, externalSelectedDate]);
 
   useEffect(() => {
-    if (user && profile) {
+    if (effectiveUserId && profile) {
       loadEntries();
       loadWeeklyData();
     }
   }, [profile?.timezone, externalSelectedDate]);
 
   useEffect(() => {
-    if (user && profile) {
+    if (effectiveUserId && profile) {
       loadEntries();
       loadWeeklyData();
     }
@@ -125,15 +130,15 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const loadWeeklyData = async () => {
-    if (!user) return;
+    if (!effectiveUserId) return;
     const weekDates = getWeekDates(externalSelectedDate, profile?.timezone);
-    const data = await getWeeklyFoodLogs(user.id, weekDates, profile?.timezone);
+    const data = await getWeeklyFoodLogs(effectiveUserId, weekDates, profile?.timezone);
     setWeeklyData(data.map(d => ({ date: d.date, totalCalories: d.totalCalories })));
   };
 
   const loadEntries = async () => {
-    if (!user) return;
-    const logs = await getFoodLogs(user.id, externalSelectedDate, profile?.timezone);
+    if (!effectiveUserId) return;
+    const logs = await getFoodLogs(effectiveUserId, externalSelectedDate, profile?.timezone);
     const entries: FoodEntry[] = logs.map(log => ({
       id: log.id,
       timestamp: log.createdAt.getTime(),
@@ -147,11 +152,11 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const loadFavoritedBreakdowns = async () => {
-    if (!user) return;
+    if (!effectiveUserId) return;
     // Use shared favorites if user has a spouse, otherwise use personal favorites
     const favorites = profile?.spouseId 
-      ? await getSharedFavoritedBreakdowns(user.id)
-      : await getFavoritedBreakdowns(user.id);
+      ? await getSharedFavoritedBreakdowns(effectiveUserId)
+      : await getFavoritedBreakdowns(effectiveUserId);
     setFavoritedBreakdowns(favorites);
   };
 
@@ -193,7 +198,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const addEntry = async () => {
-    if (!user || !lastEstimate || breakdownItems.length === 0) return;
+    if (!effectiveUserId || !lastEstimate || breakdownItems.length === 0) return;
 
     // Check if selected date is before today
     const today = new Date();
@@ -226,7 +231,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     // Create an entry for each breakdown item
     const entries = breakdownItems.map(item => ({
-      user_id: user.id,
+      user_id: effectiveUserId,
       name: item.name,
       calories: item.calories,
       protein: item.protein,
@@ -249,7 +254,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const confirmAddEntry = async () => {
-    if (!user || !lastEstimate || breakdownItems.length === 0) return;
+    if (!effectiveUserId || !lastEstimate || breakdownItems.length === 0) return;
 
     // Helper to get date string in user's timezone
     const getDateString = () => {
@@ -271,7 +276,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     // Create an entry for each breakdown item
     const entries = breakdownItems.map(item => ({
-      user_id: user.id,
+      user_id: effectiveUserId,
       name: item.name,
       calories: item.calories,
       protein: item.protein,
@@ -282,7 +287,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     }));
 
     // Insert all entries at once
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('food_logs')
       .insert(entries);
     
@@ -336,7 +341,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const favoriteBreakdown = async () => {
-    if (!lastEstimate || !user) return;
+    if (!lastEstimate || !effectiveUserId) return;
     
     const favorite: Omit<FavoritedBreakdown, 'id' | 'createdAt'> = {
       name: breakdownItems.map(item => item.name).join(', '),
@@ -344,7 +349,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       totalCalories: lastEstimate.totalCalories,
     };
     
-    await addFavoritedBreakdown(user.id, favorite);
+    await addFavoritedBreakdown(effectiveUserId, favorite);
     await loadFavoritedBreakdowns();
   };
 
@@ -389,7 +394,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       return;
     }
     
-    const { error } = await addSpouse(user.id, spouseEmail);
+    const { error } = await addSpouse(effectiveUserId, spouseEmail);
     if (error) {
       setSpouseError(error.message || 'Failed to add spouse');
     } else {
@@ -401,7 +406,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleRemoveSpouse = async () => {
-    await removeSpouse(user.id);
+    await removeSpouse(effectiveUserId);
     window.location.reload();
   };
 

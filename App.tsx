@@ -440,6 +440,7 @@ const App: React.FC = () => {
             isImpersonating={!!impersonatedUser}
             onStopImpersonating={handleStopImpersonating}
             realProfile={profile}
+            impersonatedUserId={impersonatedUser?.id}
           />
         ) : (
           <div className="animate-in fade-in duration-500 translate-y-0">

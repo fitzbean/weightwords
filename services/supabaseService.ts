@@ -154,7 +154,7 @@ export const getFoodLogs = async (userId: string, date?: Date, timezone?: string
   }));
 };
 
-export const addFoodLog = async (userId: string, log: Omit<FoodLog, 'id' | 'date'>, timezone?: string) => {
+export const addFoodLog = async (userId: string, log: Omit<FoodLog, 'id' | 'date' | 'createdAt'>, timezone?: string) => {
   const { data, error } = await supabase
     .from('food_logs')
     .insert({
