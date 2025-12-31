@@ -150,6 +150,7 @@ export const getFoodLogs = async (userId: string, date?: Date, timezone?: string
     fat: log.fat,
     description: log.description,
     date: new Date(log.date),
+    createdAt: new Date(log.created_at),
   }));
 };
 
@@ -206,6 +207,7 @@ export const getWeeklyFoodLogs = async (userId: string, weekDates: Date[], timez
         fat: log.fat,
         description: log.description,
         date: new Date(log.date),
+        createdAt: new Date(log.created_at),
       }));
       
       const totalCalories = entries.reduce((sum, entry) => sum + entry.calories, 0);

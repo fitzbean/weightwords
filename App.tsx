@@ -29,7 +29,7 @@ const App: React.FC = () => {
   
   // Admin state
   const [showAdminModal, setShowAdminModal] = useState(false);
-  const [impersonatedUser, setImpersonatedUser] = useState<{ id: string; email: string; profile: UserProfile } | null>(null);
+  const [impersonatedUser, setImpersonatedUser] = useState<{ id: string; profile: UserProfile } | null>(null);
   const [adminProfile, setAdminProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
@@ -159,22 +159,19 @@ const App: React.FC = () => {
   const handleSaveProfile = async (newProfile: UserProfile) => {
     if (!user) return;
     
-    // Use impersonated user ID if impersonating
-    const targetUserId = impersonatedUser?.id || user.id;
-    
     // Check if profile exists first
-    const existingProfile = await getProfile(targetUserId);
+    const existingProfile = await getProfile(user.id);
     
     let error;
     if (existingProfile) {
-      const result = await updateProfile(targetUserId, newProfile);
+      const result = await updateProfile(user.id, newProfile);
       error = result.error;
     } else {
       // Create new profile if it doesn't exist
       const { error: insertError } = await supabase
         .from('user_profiles')
         .insert({
-          id: targetUserId,
+          id: user.id,
           age: newProfile.age,
           gender: newProfile.gender,
           weight_lbs: newProfile.weightLbs,
@@ -189,12 +186,7 @@ const App: React.FC = () => {
     }
 
     if (!error) {
-      // Update the correct profile state
-      if (impersonatedUser) {
-        setImpersonatedUser({ ...impersonatedUser, profile: newProfile });
-      } else {
-        setProfile(newProfile);
-      }
+      setProfile(newProfile);
       setShowProfileModal(false);
       setIsEditingProfile(false);
       setIsNewUser(false);
@@ -231,12 +223,12 @@ const App: React.FC = () => {
     setShowUserMenu(false);
   };
 
-  const handleImpersonate = async (userId: string, userProfile: UserProfile, email: string) => {
+  const handleImpersonate = async (userId: string, userProfile: UserProfile) => {
     // Store the current admin profile if not already impersonating
     if (!impersonatedUser && profile?.isAdmin) {
       setAdminProfile(profile);
     }
-    setImpersonatedUser({ id: userId, email, profile: userProfile });
+    setImpersonatedUser({ id: userId, profile: userProfile });
     setShowUserMenu(false);
   };
 
@@ -448,8 +440,6 @@ const App: React.FC = () => {
             isImpersonating={!!impersonatedUser}
             onStopImpersonating={handleStopImpersonating}
             realProfile={profile}
-            impersonatedUserId={impersonatedUser?.id}
-            impersonatedEmail={impersonatedUser?.email}
           />
         ) : (
           <div className="animate-in fade-in duration-500 translate-y-0">
@@ -473,14 +463,14 @@ const App: React.FC = () => {
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         onSave={handleSaveProfile}
-        initialData={impersonatedUser?.profile || profile}
+        initialData={profile}
         isNewUser={isNewUser}
       />
 
       <WeighInModal
         isOpen={showWeighInModal}
         onClose={() => setShowWeighInModal(false)}
-        userId={impersonatedUser?.id || user?.id}
+        userId={user?.id}
       />
 
       <AdminModal

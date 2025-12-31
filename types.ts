@@ -68,6 +68,7 @@ export interface FoodLog {
   fat: number;
   description: string;
   date: Date;
+  createdAt: Date;
   breakdown?: FoodItemEstimate[];
 }
 

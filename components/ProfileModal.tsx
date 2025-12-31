@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { UserProfile, Gender, ActivityLevel, WeightGoal } from '../types';
 
 interface ProfileModalProps {
@@ -26,22 +26,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     weightGoal: initialData?.weightGoal || WeightGoal.MAINTAIN,
     timezone: initialData?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
   });
-
-  // Update form data when initialData changes (e.g., when impersonating a different user)
-  useEffect(() => {
-    if (initialData) {
-      setFormData({
-        age: initialData.age || 25,
-        gender: initialData.gender || Gender.MALE,
-        weightLbs: initialData.weightLbs || 150,
-        heightFt: initialData.heightFt || 5,
-        heightIn: initialData.heightIn || 10,
-        activityLevel: initialData.activityLevel || ActivityLevel.MODERATE,
-        weightGoal: initialData.weightGoal || WeightGoal.MAINTAIN,
-        timezone: initialData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-      });
-    }
-  }, [initialData]);
 
   // Common US timezones
   const timezones = [

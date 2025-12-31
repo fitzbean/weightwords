@@ -18,8 +18,6 @@ interface DashboardProps {
   isImpersonating?: boolean;
   onStopImpersonating?: () => void;
   realProfile?: UserProfile | null;
-  impersonatedUserId?: string;
-  impersonatedEmail?: string;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ 
@@ -31,9 +29,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   setSelectedDate: externalSetSelectedDate = (_: Date) => {},
   isImpersonating = false,
   onStopImpersonating = () => {},
-  realProfile = null,
-  impersonatedUserId,
-  impersonatedEmail
+  realProfile = null
 }) => {
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [foodInput, setFoodInput] = useState('');
@@ -55,34 +51,31 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [breakdownItems, setBreakdownItems] = useState<FoodItemEstimate[]>([]);
   const [showPreviousDayWarning, setShowPreviousDayWarning] = useState(false);
 
-  // Use impersonated user ID if impersonating, otherwise use real user ID
-  const effectiveUserId = impersonatedUserId || user?.id;
-
   useEffect(() => {
     const getCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
     };
     getCurrentUser();
-  }, []);
+  }, [externalSelectedDate]);
 
   useEffect(() => {
-    if (effectiveUserId) {
+    if (user) {
       loadEntries();
       loadFavoritedBreakdowns();
       loadWeeklyData();
     }
-  }, [effectiveUserId, externalSelectedDate]);
+  }, [user, externalSelectedDate]);
 
   useEffect(() => {
-    if (effectiveUserId && profile) {
+    if (user && profile) {
       loadEntries();
       loadWeeklyData();
     }
   }, [profile?.timezone, externalSelectedDate]);
 
   useEffect(() => {
-    if (effectiveUserId && profile) {
+    if (user && profile) {
       loadEntries();
       loadWeeklyData();
     }
@@ -132,18 +125,18 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const loadWeeklyData = async () => {
-    if (!effectiveUserId) return;
+    if (!user) return;
     const weekDates = getWeekDates(externalSelectedDate, profile?.timezone);
-    const data = await getWeeklyFoodLogs(effectiveUserId, weekDates, profile?.timezone);
+    const data = await getWeeklyFoodLogs(user.id, weekDates, profile?.timezone);
     setWeeklyData(data.map(d => ({ date: d.date, totalCalories: d.totalCalories })));
   };
 
   const loadEntries = async () => {
-    if (!effectiveUserId) return;
-    const logs = await getFoodLogs(effectiveUserId, externalSelectedDate, profile?.timezone);
+    if (!user) return;
+    const logs = await getFoodLogs(user.id, externalSelectedDate, profile?.timezone);
     const entries: FoodEntry[] = logs.map(log => ({
       id: log.id,
-      timestamp: log.date.getTime(),
+      timestamp: log.createdAt.getTime(),
       name: log.name,
       calories: log.calories,
       protein: log.protein,
@@ -154,11 +147,11 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const loadFavoritedBreakdowns = async () => {
-    if (!effectiveUserId) return;
+    if (!user) return;
     // Use shared favorites if user has a spouse, otherwise use personal favorites
     const favorites = profile?.spouseId 
-      ? await getSharedFavoritedBreakdowns(effectiveUserId)
-      : await getFavoritedBreakdowns(effectiveUserId);
+      ? await getSharedFavoritedBreakdowns(user.id)
+      : await getFavoritedBreakdowns(user.id);
     setFavoritedBreakdowns(favorites);
   };
 
@@ -200,7 +193,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const addEntry = async () => {
-    if (!effectiveUserId || !lastEstimate || breakdownItems.length === 0) return;
+    if (!user || !lastEstimate || breakdownItems.length === 0) return;
 
     // Check if selected date is before today
     const today = new Date();
@@ -233,7 +226,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     // Create an entry for each breakdown item
     const entries = breakdownItems.map(item => ({
-      user_id: effectiveUserId,
+      user_id: user.id,
       name: item.name,
       calories: item.calories,
       protein: item.protein,
@@ -256,7 +249,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const confirmAddEntry = async () => {
-    if (!effectiveUserId || !lastEstimate || breakdownItems.length === 0) return;
+    if (!user || !lastEstimate || breakdownItems.length === 0) return;
 
     // Helper to get date string in user's timezone
     const getDateString = () => {
@@ -278,7 +271,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     // Create an entry for each breakdown item
     const entries = breakdownItems.map(item => ({
-      user_id: effectiveUserId,
+      user_id: user.id,
       name: item.name,
       calories: item.calories,
       protein: item.protein,
@@ -343,7 +336,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const favoriteBreakdown = async () => {
-    if (!lastEstimate || !effectiveUserId) return;
+    if (!lastEstimate || !user) return;
     
     const favorite: Omit<FavoritedBreakdown, 'id' | 'createdAt'> = {
       name: breakdownItems.map(item => item.name).join(', '),
@@ -351,7 +344,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       totalCalories: lastEstimate.totalCalories,
     };
     
-    await addFavoritedBreakdown(effectiveUserId, favorite);
+    await addFavoritedBreakdown(user.id, favorite);
     await loadFavoritedBreakdowns();
   };
 
@@ -396,7 +389,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       return;
     }
     
-    const { error } = await addSpouse(effectiveUserId, spouseEmail);
+    const { error } = await addSpouse(user.id, spouseEmail);
     if (error) {
       setSpouseError(error.message || 'Failed to add spouse');
     } else {
@@ -408,7 +401,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleRemoveSpouse = async () => {
-    await removeSpouse(effectiveUserId);
+    await removeSpouse(user.id);
     window.location.reload();
   };
 
@@ -564,8 +557,8 @@ const Dashboard: React.FC<DashboardProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
             </svg>
             <div>
-              <p className="text-purple-300 font-medium">Viewing as: {impersonatedEmail}</p>
-              <p className="text-purple-400 text-sm">{profile?.age}y {profile?.gender === 'male' ? 'Male' : 'Female'}, {profile?.weightLbs}lbs • {profile?.dailyCalorieTarget} cal/day</p>
+              <p className="text-purple-300 font-medium">Viewing as: {profile?.age}y {profile?.gender === 'male' ? 'Male' : 'Female'}, {profile?.weightLbs}lbs</p>
+              <p className="text-purple-400 text-sm">You are impersonating this user</p>
             </div>
           </div>
           <button
