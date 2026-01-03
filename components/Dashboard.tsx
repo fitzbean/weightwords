@@ -174,6 +174,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     setIsEstimating(true);
     try {
       const estimate = await estimateNutrition(textToEstimate);
+      console.log('Nutrition estimate received:', estimate);
       // Add new items to existing breakdown
       setBreakdownItems(prev => [...prev, ...estimate.items]);
       // Update last estimate with combined items
@@ -182,6 +183,9 @@ const Dashboard: React.FC<DashboardProps> = ({
         items: combinedItems,
         totalCalories: combinedItems.reduce((sum, item) => sum + item.calories, 0),
         confidence: estimate.confidence,
+        source: estimate.source,
+        sourceUrl: estimate.sourceUrl,
+        servingSize: estimate.servingSize,
       });
       // Clear the input after adding
       setFoodInput('');
@@ -761,29 +765,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <div className="text-right">
                       <div className="text-2xl font-black text-green-400">{lastEstimate.totalCalories}</div>
                       <div className="text-[10px] font-black uppercase text-green-500 tracking-tighter">Total KCAL</div>
-                      {lastEstimate.source === 'web' && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <span className="text-[8px] text-purple-400 font-medium">From web search</span>
-                          {lastEstimate.sourceUrl && (
-                            <a
-                              href={lastEstimate.sourceUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-purple-400 hover:text-purple-300"
-                              title="View source"
-                            >
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                              </svg>
-                            </a>
-                          )}
-                        </div>
-                      )}
-                      {lastEstimate.servingSize && (
+                                            {lastEstimate.servingSize && (
                         <div className="text-[8px] text-gray-500 mt-1">{lastEstimate.servingSize}</div>
-                      )}
-                      {lastEstimate.notes && (
-                        <div className="text-[8px] text-yellow-500 mt-1 italic">{lastEstimate.notes}</div>
                       )}
                     </div>
                   </div>
@@ -799,7 +782,23 @@ const Dashboard: React.FC<DashboardProps> = ({
                         className="flex-1 cursor-pointer"
                         onClick={() => handleItemClick(item)}
                       >
-                        <p className="font-bold text-gray-100">{item.name}</p>
+                        <p className="font-bold text-gray-100">
+                          {item.name}
+                          {lastEstimate?.source === 'web' && lastEstimate?.sourceUrl && (
+                            <a
+                              href={lastEstimate.sourceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-block ml-1 text-purple-400 hover:text-purple-300"
+                              onClick={(e) => e.stopPropagation()}
+                              title="View source"
+                            >
+                              <svg className="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </a>
+                          )}
+                        </p>
                         <div className="flex gap-3 mt-1">
                           <span className="text-[10px] text-gray-500 font-black">P: {item.protein}g</span>
                           <span className="text-[10px] text-gray-500 font-black">C: {item.carbs}g</span>

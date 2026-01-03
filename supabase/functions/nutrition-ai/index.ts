@@ -20,11 +20,22 @@ serve(async (req) => {
     
     if (type === 'nutrition') {
       // Check if this is just a product name (no nutrition info provided)
-      const isJustProductName = description.split(' ').length <= 6 && 
-        !/\d+/.test(description) && // No numbers
-        !/calories|kcal|protein|carbs|fat|grams?|g\b/i.test(description); // No nutrition terms
+      const wordCount = description.split(' ').length;
+      // Allow numbers in brand names like "99s" but not standalone nutrition numbers
+      const hasNutritionNumbers = /\b\d+\s?(calories?|kcal|g|grams?|oz|lbs?|mg|mcg)\b/i.test(description);
+      const hasNutritionTerms = /calories|kcal|protein|carbs|fat|grams?|g\b/i.test(description);
+      const isJustProductName = wordCount <= 10 && !hasNutritionNumbers && !hasNutritionTerms;
+      
+      console.log('Nutrition request analysis:', {
+        description,
+        wordCount,
+        hasNutritionNumbers,
+        hasNutritionTerms,
+        isJustProductName
+      });
       
       if (isJustProductName) {
+        console.log('Triggering web search for product nutrition');
         // Use web search for product nutrition
         try {
           const webResponse = await ai.models.generateContent({
@@ -36,41 +47,32 @@ serve(async (req) => {
             - If multiple variations exist, choose the most common/original version
             - Always verify the information matches the exact product name
             
-            Return the nutrition information in JSON format with:
-            - name: Full product name with any specific details (e.g., flavor, version)
-            - calories: Calories per serving (be precise - 0, 5, or 10 calories are all different)
-            - protein: Protein in grams per serving
-            - carbs: Carbs in grams per serving  
-            - fat: Fat in grams per serving
-            - servingSize: Serving size description
-            - sourceUrl: URL where you found this information
-            - confidence: Your confidence in this data (0-1)
-            - notes: Any important notes about variations`,
+            Return ONLY a valid JSON object (no markdown, no code blocks) with these fields:
+            {
+              "name": "Full product name",
+              "calories": number,
+              "protein": number,
+              "carbs": number,
+              "fat": number,
+              "servingSize": "serving size description",
+              "sourceUrl": "URL where you found this",
+              "confidence": number between 0 and 1
+            }`,
             config: {
-              tools: [{ googleSearchRetrieval: {} }],
-              responseMimeType: "application/json",
-              responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                  name: { type: Type.STRING },
-                  calories: { type: Type.NUMBER },
-                  protein: { type: Type.NUMBER },
-                  carbs: { type: Type.NUMBER },
-                  fat: { type: Type.NUMBER },
-                  servingSize: { type: Type.STRING },
-                  sourceUrl: { type: Type.STRING },
-                  confidence: { type: Type.NUMBER },
-                  notes: { type: Type.STRING },
-                },
-                required: ["name", "calories", "protein", "carbs", "fat", "confidence"],
-              },
+              tools: [{ googleSearch: {} }],
             },
           });
           
-          const webResult = JSON.parse(webResponse.text);
+          console.log('Web search raw response:', webResponse.text);
+          // Extract JSON from response (may have markdown code blocks)
+          let jsonText = webResponse.text || '';
+          // Remove markdown code blocks if present
+          jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+          const webResult = JSON.parse(jsonText);
+          console.log('Web search parsed result:', webResult);
           
           // Convert to expected format
-          return new Response(JSON.stringify({
+          const responseData = {
             items: [{
               name: webResult.name,
               calories: webResult.calories,
@@ -83,8 +85,9 @@ serve(async (req) => {
             source: 'web',
             sourceUrl: webResult.sourceUrl,
             servingSize: webResult.servingSize,
-            notes: webResult.notes,
-          }), {
+          };
+          console.log('Returning web search response:', responseData);
+          return new Response(JSON.stringify(responseData), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200,
           });

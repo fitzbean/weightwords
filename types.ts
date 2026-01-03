@@ -60,7 +60,6 @@ export interface NutritionEstimate {
   source?: 'estimated' | 'web' | 'label';
   sourceUrl?: string;
   servingSize?: string;
-  notes?: string;
 }
 
 export interface FoodLog {
