@@ -782,23 +782,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                         className="flex-1 cursor-pointer"
                         onClick={() => handleItemClick(item)}
                       >
-                        <p className="font-bold text-gray-100">
-                          {item.name}
-                          {lastEstimate?.source === 'web' && lastEstimate?.sourceUrl && (
-                            <a
-                              href={lastEstimate.sourceUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-block ml-1 text-purple-400 hover:text-purple-300"
-                              onClick={(e) => e.stopPropagation()}
-                              title="View source"
-                            >
-                              <svg className="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                              </svg>
-                            </a>
-                          )}
-                        </p>
+                        <p className="font-bold text-gray-100">{item.name}</p>
                         <div className="flex gap-3 mt-1">
                           <span className="text-[10px] text-gray-500 font-black">P: {item.protein}g</span>
                           <span className="text-[10px] text-gray-500 font-black">C: {item.carbs}g</span>

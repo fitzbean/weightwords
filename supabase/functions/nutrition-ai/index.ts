@@ -23,7 +23,7 @@ serve(async (req) => {
       const wordCount = description.split(' ').length;
       // Allow numbers in brand names like "99s" but not standalone nutrition numbers
       const hasNutritionNumbers = /\b\d+\s?(calories?|kcal|g|grams?|oz|lbs?|mg|mcg)\b/i.test(description);
-      const hasNutritionTerms = /calories|kcal|protein|carbs|fat|grams?|g\b/i.test(description);
+      const hasNutritionTerms = /\b(calories|kcal|protein|carbs|fat|grams?)\b/i.test(description);
       const isJustProductName = wordCount <= 10 && !hasNutritionNumbers && !hasNutritionTerms;
       
       console.log('Nutrition request analysis:', {
@@ -95,6 +95,8 @@ serve(async (req) => {
           console.error('Web search failed, falling back to estimation:', error);
           // Fall back to estimation if web search fails
         }
+      } else {
+        console.log('Not a product name, skipping web search:', { wordCount, hasNutritionNumbers, hasNutritionTerms });
       }
       
       // Regular estimation for meals or when web search fails
