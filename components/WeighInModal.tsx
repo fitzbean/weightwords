@@ -145,23 +145,45 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId }) 
             <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-5 border border-gray-700/50 shadow-xl">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Weight Trend</h4>
-                {weighIns.length >= 2 && (
-                  <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${
-                    (weighIns[weighIns.length - 1].weightLbs - weighIns[0].weightLbs) <= 0 
-                      ? 'bg-green-900/30 text-green-400' 
-                      : 'bg-red-900/30 text-red-400'
-                  }`}>
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
-                        d={(weighIns[weighIns.length - 1].weightLbs - weighIns[0].weightLbs) <= 0 
-                          ? "M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" 
-                          : "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"} 
-                      />
-                    </svg>
-                    {(weighIns[weighIns.length - 1].weightLbs - weighIns[0].weightLbs) > 0 ? '+' : ''}
-                    {(weighIns[weighIns.length - 1].weightLbs - weighIns[0].weightLbs).toFixed(1)} lbs
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  {weighIns.length >= 2 && (() => {
+                    const totalChange = weighIns[weighIns.length - 1].weightLbs - weighIns[0].weightLbs;
+                    return (
+                      <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${
+                        totalChange <= 0 
+                          ? 'bg-green-900/30 text-green-400' 
+                          : 'bg-red-900/30 text-red-400'
+                      }`}>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                            d={totalChange <= 0 
+                              ? "M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" 
+                              : "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"} 
+                          />
+                        </svg>
+                        <span className="text-[9px] opacity-70 mr-0.5">total</span>
+                        {Math.abs(totalChange).toFixed(1)} lbs
+                      </div>
+                    );
+                  })()}
+                  {weightChange !== null && (
+                    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${
+                      weightChange <= 0 
+                        ? 'bg-green-900/30 text-green-400' 
+                        : 'bg-red-900/30 text-red-400'
+                    }`}>
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                          d={weightChange <= 0 
+                            ? "M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" 
+                            : "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"} 
+                        />
+                      </svg>
+                      <span className="text-[9px] opacity-70 mr-0.5">last</span>
+                      {Math.abs(weightChange).toFixed(1)} lbs
+                    </div>
+                  )}
+                </div>
               </div>
               <ResponsiveContainer width="100%" height={280}>
                 <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
