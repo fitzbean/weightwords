@@ -55,8 +55,6 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId }) 
   };
 
   const handleDeleteWeighIn = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this weigh-in?')) return;
-    
     const result = await deleteWeighIn(id);
     if (result.error) {
       setError(result.error.message || 'Failed to delete weigh-in');
@@ -123,9 +121,9 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId }) 
                       </svg>
                     </div>
                   </div>
-                  <p className={`text-[10px] font-bold ${weightChange >= 0 ? 'text-red-400/70' : 'text-emerald-400/70'} uppercase tracking-wider`}>Last Change</p>
+                  <p className={`text-[10px] font-bold ${weightChange >= 0 ? 'text-red-400/70' : 'text-emerald-400/70'} uppercase tracking-wider`}>Last</p>
                   <p className={`text-2xl font-black ${weightChange >= 0 ? 'text-red-400' : 'text-emerald-400'}`}>
-                    {weightChange >= 0 ? '+' : ''}{weightChange.toFixed(1)}<span className="text-sm ml-1 font-bold opacity-60">lbs</span>
+                    {weightChange >= 0 ? '+' : ''}{Math.abs(weightChange).toFixed(1)}<span className="text-sm ml-1 font-bold opacity-60">lbs</span>
                   </p>
                 </div>
               )}
@@ -144,7 +142,7 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId }) 
 
             <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-5 border border-gray-700/50 shadow-xl">
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Weight Trend</h4>
+                <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Weight History</h4>
                 <div className="flex items-center gap-2">
                   {weighIns.length >= 2 && (() => {
                     const totalChange = weighIns[weighIns.length - 1].weightLbs - weighIns[0].weightLbs;
@@ -161,8 +159,9 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId }) 
                               : "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"} 
                           />
                         </svg>
-                        <span className="text-[9px] opacity-70 mr-0.5">total</span>
-                        {Math.abs(totalChange).toFixed(1)} lbs
+                        <span className="text-[8px] sm:text-[9px] opacity-70 mr-0.5">total</span>
+                        {Math.abs(totalChange).toFixed(1)}
+                        <span className="text-[8px] sm:text-[9px] opacity-70 mr-0.5">lbs</span>
                       </div>
                     );
                   })()}
@@ -179,8 +178,9 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId }) 
                             : "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"} 
                         />
                       </svg>
-                      <span className="text-[9px] opacity-70 mr-0.5">last</span>
-                      {Math.abs(weightChange).toFixed(1)} lbs
+                        <span className="text-[8px] sm:text-[9px] opacity-70 mr-0.5">last</span>
+                        {Math.abs(weightChange).toFixed(1)}
+                        <span className="text-[8px] sm:text-[9px] opacity-70 mr-0.5">lbs</span>
                     </div>
                   )}
                 </div>
@@ -304,9 +304,9 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId }) 
                   </div>
                   <button
                     onClick={() => handleDeleteWeighIn(wi.id)}
-                    className="text-red-400 hover:text-red-300 text-sm"
+                    className="p-1.5 text-gray-400 opacity-60 hover:opacity-100 transition-all rounded-md hover:bg-red-900/40"
                   >
-                    Delete
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                   </button>
                 </div>
               ))}
