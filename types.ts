@@ -51,6 +51,7 @@ export interface FoodItemEstimate {
   protein: number;
   carbs: number;
   fat: number;
+  source?: 'estimated' | 'web' | 'label';
 }
 
 export interface NutritionEstimate {

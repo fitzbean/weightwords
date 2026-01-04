@@ -19,22 +19,36 @@ serve(async (req) => {
     const ai = new GoogleGenAI({ apiKey: Deno.env.get('GEMINI_API_KEY') });
     
     if (type === 'nutrition') {
-      // Check if this is just a product name (no nutrition info provided)
-      const wordCount = description.split(' ').length;
-      // Allow numbers in brand names like "99s" but not standalone nutrition numbers
+      // Check if this contains nutrition info already
       const hasNutritionNumbers = /\b\d+\s?(calories?|kcal|g|grams?|oz|lbs?|mg|mcg)\b/i.test(description);
       const hasNutritionTerms = /\b(calories|kcal|protein|carbs|fat|grams?)\b/i.test(description);
-      const isJustProductName = wordCount <= 10 && !hasNutritionNumbers && !hasNutritionTerms;
       
-      console.log('Nutrition request analysis:', {
-        description,
-        wordCount,
-        hasNutritionNumbers,
-        hasNutritionTerms,
-        isJustProductName
-      });
+      // Use AI to detect if this is a branded product
+      let isBrandedProduct = false;
+      if (!hasNutritionNumbers && !hasNutritionTerms) {
+        const brandCheck = await ai.models.generateContent({
+          model: 'gemini-2.0-flash',
+          contents: `Does this text contain a specific brand, restaurant, or store name? Answer only "yes" or "no".
+          
+Text: "${description}"
+
+Examples:
+- "burger" -> no (generic food)
+- "Burger King fries" -> yes (restaurant name)
+- "eggs and toast" -> no (generic food)
+- "Starbucks latte" -> yes (brand name)
+- "Trader Joe's cookies" -> yes (store name)
+- "chicken salad" -> no (generic food)
+- "99s Restaurant potato skins" -> yes (restaurant name)
+- "Gatorade Zero" -> yes (brand name)`,
+        });
+        
+        const brandAnswer = (brandCheck.text || '').toLowerCase().trim();
+        isBrandedProduct = brandAnswer.includes('yes');
+        console.log('Brand detection:', { description, brandAnswer, isBrandedProduct });
+      }
       
-      if (isJustProductName) {
+      if (isBrandedProduct) {
         console.log('Triggering web search for product nutrition');
         // Use web search for product nutrition
         try {
@@ -79,6 +93,7 @@ serve(async (req) => {
               protein: webResult.protein,
               carbs: webResult.carbs,
               fat: webResult.fat,
+              source: 'web',
             }],
             totalCalories: webResult.calories,
             confidence: webResult.confidence,
@@ -96,7 +111,7 @@ serve(async (req) => {
           // Fall back to estimation if web search fails
         }
       } else {
-        console.log('Not a product name, skipping web search:', { wordCount, hasNutritionNumbers, hasNutritionTerms });
+        console.log('Not a branded product, skipping web search:', { hasNutritionNumbers, hasNutritionTerms, isBrandedProduct });
       }
       
       // Regular estimation for meals or when web search fails
