@@ -620,7 +620,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               <textarea
                 value={foodInput}
                 onChange={(e) => setFoodInput(e.target.value)}
-                placeholder="Type (e.g. '2 slices of toast'), Speak (e.g. 'two slices of toast'), or Scan label and nutrition facts"
+                placeholder="Type (e.g. '2 slices of toast'), Speak (e.g. 'Burger King small fry'), or Scan brand label and optionally nutrition facts"
                 className="w-full p-4 pr-12 h-48 border border-gray-600 rounded-2xl focus:ring-4 focus:ring-green-500/10 outline-none resize-none transition-all bg-gray-700 text-gray-100 placeholder-gray-500 font-medium"
               />
               {foodInput && (
