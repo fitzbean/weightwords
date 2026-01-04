@@ -1,15 +1,17 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { extractNutritionFromImages, extractNutritionFromImage } from '../services/geminiService';
+import { extractNutritionFromImages, extractNutritionFromImage, getNutritionFromProductImage } from '../services/geminiService';
+import { NutritionEstimate } from '../types';
 
 interface NutritionLabelScannerProps {
   isOpen: boolean;
   onClose: () => void;
   onScan: (nutritionText: string) => void;
+  onScanEstimate?: (estimate: NutritionEstimate) => void;
 }
 
 type CaptureStep = 'product' | 'nutrition';
 
-const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, onClose, onScan }) => {
+const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, onClose, onScan, onScanEstimate }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -166,10 +168,18 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
     setError(null);
 
     try {
-      // Analyze just the product image and search web for nutrition
-      const nutritionText = await extractNutritionFromImage(productImage);
+      // Identify product from image and search web for nutrition
+      const estimate = await getNutritionFromProductImage(productImage);
       
-      if (nutritionText) {
+      if (estimate && onScanEstimate) {
+        stopCamera();
+        resetState();
+        onClose();
+        onScanEstimate(estimate);
+      } else if (estimate) {
+        // Fallback to text-based flow if onScanEstimate not provided
+        const item = estimate.items[0];
+        const nutritionText = `${item.name}, ${estimate.servingSize || '1 serving'}, ${item.calories} calories, ${item.protein}g protein, ${item.carbs}g carbs, ${item.fat}g fat`;
         stopCamera();
         resetState();
         onClose();
@@ -183,7 +193,7 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
     } finally {
       setIsProcessing(false);
     }
-  }, [productImage, isProcessing, onScan, stopCamera, resetState, onClose]);
+  }, [productImage, isProcessing, onScan, onScanEstimate, stopCamera, resetState, onClose]);
 
   const handleBack = useCallback(() => {
     setCaptureStep('product');

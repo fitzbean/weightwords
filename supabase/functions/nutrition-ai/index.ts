@@ -215,6 +215,113 @@ Examples:
       });
     }
 
+    if (type === 'product-image') {
+      // First, identify the brand/product from the image
+      const brandResponse = await ai.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                inlineData: {
+                  mimeType: 'image/jpeg',
+                  data: image,
+                },
+              },
+              {
+                text: `Look at this product image and identify the brand and product name.
+                
+                Return ONLY the brand and product name, nothing else.
+                Examples:
+                - "Gatorade Zero Lemon Lime"
+                - "Coca-Cola Classic"
+                - "Starbucks Frappuccino Mocha"
+                - "Doritos Nacho Cheese"
+                
+                If you cannot identify a specific branded product, return "unknown".`,
+              },
+            ],
+          },
+        ],
+      });
+
+      const productName = brandResponse.text?.trim() || 'unknown';
+      console.log('Product identified from image:', productName);
+
+      if (productName.toLowerCase() === 'unknown') {
+        return new Response(JSON.stringify({ 
+          error: 'Could not identify product from image',
+          nutritionText: null 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+
+      // Now use web search to find nutrition info for this product
+      try {
+        const webResponse = await ai.models.generateContent({
+          model: 'gemini-2.0-flash',
+          contents: `Search for nutrition facts for: "${productName}". 
+          IMPORTANT: 
+          - Find the official nutrition information from the manufacturer's website or reliable sources
+          - Look for the specific product mentioned
+          - If multiple variations exist, choose the most common/original version
+          
+          Return ONLY a valid JSON object (no markdown, no code blocks) with these fields:
+          {
+            "name": "Full product name",
+            "calories": number,
+            "protein": number,
+            "carbs": number,
+            "fat": number,
+            "servingSize": "serving size description",
+            "sourceUrl": "URL where you found this",
+            "confidence": number between 0 and 1
+          }`,
+          config: {
+            tools: [{ googleSearch: {} }],
+          },
+        });
+
+        console.log('Web search raw response for image:', webResponse.text);
+        let jsonText = webResponse.text || '';
+        jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        const webResult = JSON.parse(jsonText);
+
+        const responseData = {
+          items: [{
+            name: webResult.name,
+            calories: webResult.calories,
+            protein: webResult.protein,
+            carbs: webResult.carbs,
+            fat: webResult.fat,
+            source: 'web',
+          }],
+          totalCalories: webResult.calories,
+          confidence: webResult.confidence,
+          source: 'web',
+          sourceUrl: webResult.sourceUrl,
+          servingSize: webResult.servingSize,
+        };
+
+        return new Response(JSON.stringify(responseData), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      } catch (error) {
+        console.error('Web search failed for product image:', error);
+        return new Response(JSON.stringify({ 
+          error: 'Could not find nutrition info for this product',
+          nutritionText: null 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+      }
+    }
+
     if (type === 'nutrition-label') {
       const response = await ai.models.generateContent({
         model: 'gemini-2.0-flash',

@@ -201,6 +201,20 @@ const Dashboard: React.FC<DashboardProps> = ({
     await handleEstimate(nutritionText);
   };
 
+  const handleLabelScanEstimate = (estimate: NutritionEstimate) => {
+    setShowLabelScanner(false);
+    // Add items directly from the estimate (already has source: 'web')
+    setBreakdownItems(prev => [...prev, ...estimate.items]);
+    setLastEstimate({
+      items: [...breakdownItems, ...estimate.items],
+      totalCalories: [...breakdownItems, ...estimate.items].reduce((sum, item) => sum + item.calories, 0),
+      confidence: estimate.confidence,
+      source: estimate.source,
+      sourceUrl: estimate.sourceUrl,
+      servingSize: estimate.servingSize,
+    });
+  };
+
   const addEntry = async () => {
     if (!effectiveUserId || !lastEstimate || breakdownItems.length === 0) return;
 
@@ -1173,6 +1187,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         isOpen={showLabelScanner}
         onClose={() => setShowLabelScanner(false)}
         onScan={handleLabelScan}
+        onScanEstimate={handleLabelScanEstimate}
       />
 
       {/* Previous Day Warning Modal */}
