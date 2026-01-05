@@ -194,12 +194,29 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, activityLevel: e.target.value as ActivityLevel })}
                 className="w-full p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
               >
-                <option value={ActivityLevel.SEDENTARY}>Sedentary (little or no exercise)</option>
-                <option value={ActivityLevel.LIGHT}>Light (1-3 days/week)</option>
-                <option value={ActivityLevel.MODERATE}>Moderate (3-5 days/week)</option>
-                <option value={ActivityLevel.ACTIVE}>Active (6-7 days/week)</option>
-                <option value={ActivityLevel.VERY_ACTIVE}>Very Active (twice/day)</option>
+                <option value={ActivityLevel.SEDENTARY}>Sedentary</option>
+                <option value={ActivityLevel.LIGHT}>Light</option>
+                <option value={ActivityLevel.MODERATE}>Moderate</option>
+                <option value={ActivityLevel.ACTIVE}>Active</option>
+                <option value={ActivityLevel.VERY_ACTIVE}>Very Active</option>
               </select>
+              <p className="text-xs text-gray-500 mt-1">
+                {formData.activityLevel === ActivityLevel.SEDENTARY && (
+                  <>Little to no exercise. You work a desk job and don't engage in regular physical activity. Golf with a cart would fall here.</>
+                )}
+                {formData.activityLevel === ActivityLevel.LIGHT && (
+                  <>Light exercise 1-3 days per week. Examples: leisurely walking, gentle/restorative yoga, light stretching, casual cycling, or golf with a walking cart for 20-30 minutes.</>
+                )}
+                {formData.activityLevel === ActivityLevel.MODERATE && (
+                  <>Moderate exercise 3-5 days per week. Examples: brisk walking, jogging, cycling, swimming, power/vinyasa yoga, or golf while carrying clubs for 30-45 minutes per session.</>
+                )}
+                {formData.activityLevel === ActivityLevel.ACTIVE && (
+                  <>Hard exercise 6-7 days per week. Examples: running, intense weight training, competitive sports, hot yoga, or physically demanding work.</>
+                )}
+                {formData.activityLevel === ActivityLevel.VERY_ACTIVE && (
+                  <>Very hard exercise daily or twice per day. Examples: professional athletes, construction workers, or training for endurance events.</>
+                )}
+              </p>
             </div>
 
             {/* Weight Goal */}
