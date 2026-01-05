@@ -247,11 +247,11 @@ const Dashboard: React.FC<DashboardProps> = ({
       return `${year}-${month}-${day}`;
     };
 
-    // Create an entry for each breakdown item
+    // Create an entry for each breakdown item (round calories to integer for DB)
     const entries = breakdownItems.map(item => ({
       user_id: effectiveUserId,
       name: item.name,
-      calories: item.calories,
+      calories: Math.round(item.calories),
       protein: item.protein,
       carbs: item.carbs,
       fat: item.fat,
@@ -292,11 +292,11 @@ const Dashboard: React.FC<DashboardProps> = ({
       return `${year}-${month}-${day}`;
     };
 
-    // Create an entry for each breakdown item
+    // Create an entry for each breakdown item (round calories to integer for DB)
     const entries = breakdownItems.map(item => ({
       user_id: effectiveUserId,
       name: item.name,
-      calories: item.calories,
+      calories: Math.round(item.calories),
       protein: item.protein,
       carbs: item.carbs,
       fat: item.fat,
