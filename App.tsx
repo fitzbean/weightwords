@@ -435,7 +435,7 @@ const App: React.FC = () => {
                             </svg>
                           </button>
                           {showSpouseTodayMenu && (
-                            <div className="absolute right-full top-0 mr-1 w-64 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-2 max-h-80 overflow-y-auto">
+                            <div className="absolute sm:right-full sm:top-0 sm:mr-1 right-0 top-full mt-1 w-64 sm:w-64 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-2 max-h-80 overflow-y-auto z-50">
                               <div className="px-3 py-2 border-b border-gray-700">
                                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
                                   {spouseEmail}'s Foods
