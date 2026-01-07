@@ -416,14 +416,13 @@ export const getWeighIns = async (userId: string): Promise<WeighIn[]> => {
     id: w.id,
     userId: w.user_id,
     weightLbs: parseFloat(w.weight_lbs),
-    date: new Date(w.date),
+    date: w.date, // Keep as string to avoid UTC parsing issues
     createdAt: new Date(w.created_at),
     updatedAt: new Date(w.updated_at),
   }));
 };
 
-export const addWeighIn = async (userId: string, weightLbs: number, date: Date): Promise<{ data?: WeighIn; error: any }> => {
-  const dateStr = date.toISOString().split('T')[0];
+export const addWeighIn = async (userId: string, weightLbs: number, dateStr: string): Promise<{ data?: WeighIn; error: any }> => {
   
   const { data, error } = await supabase
     .from('weigh_ins')
@@ -445,7 +444,7 @@ export const addWeighIn = async (userId: string, weightLbs: number, date: Date):
       id: data.id,
       userId: data.user_id,
       weightLbs: parseFloat(data.weight_lbs),
-      date: new Date(data.date),
+      date: data.date, // Keep as string to avoid UTC parsing issues
       createdAt: new Date(data.created_at),
       updatedAt: new Date(data.updated_at),
     },

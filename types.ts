@@ -96,7 +96,7 @@ export interface WeighIn {
   id: string;
   userId: string;
   weightLbs: number;
-  date: Date;
+  date: string; // YYYY-MM-DD format string to avoid UTC parsing issues
   createdAt: Date;
   updatedAt: Date;
 }

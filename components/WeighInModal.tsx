@@ -41,7 +41,7 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId }) 
       return;
     }
 
-    const result = await addWeighIn(userId, weight, new Date(selectedDate));
+    const result = await addWeighIn(userId, weight, selectedDate);
     
     if (result.error) {
       setError(result.error.message || 'Failed to add weigh-in');
@@ -64,7 +64,7 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId }) 
   };
 
   const chartData = weighIns.map(wi => ({
-    date: new Date(wi.date).toLocaleDateString(),
+    date: new Date(wi.date + 'T00:00:00').toLocaleDateString(),
     weight: wi.weightLbs,
     fullDate: wi.date,
   }));
@@ -294,7 +294,7 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId }) 
                   <div>
                     <p className="text-gray-100 font-medium">{wi.weightLbs} lbs</p>
                     <p className="text-gray-400 text-sm">
-                      {new Date(wi.date).toLocaleDateString('en-US', { 
+                      {new Date(wi.date + 'T00:00:00').toLocaleDateString('en-US', { 
                         weekday: 'short', 
                         year: 'numeric', 
                         month: 'short', 
