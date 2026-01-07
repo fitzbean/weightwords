@@ -19,6 +19,8 @@ interface DashboardProps {
   onStopImpersonating?: () => void;
   realProfile?: UserProfile | null;
   impersonatedUserId?: string;
+  itemToAdd?: FoodItemEstimate | null;
+  onItemAdded?: () => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ 
@@ -31,7 +33,9 @@ const Dashboard: React.FC<DashboardProps> = ({
   isImpersonating = false,
   onStopImpersonating = () => {},
   realProfile = null,
-  impersonatedUserId
+  impersonatedUserId,
+  itemToAdd,
+  onItemAdded
 }) => {
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [foodInput, setFoodInput] = useState('');
@@ -85,6 +89,19 @@ const Dashboard: React.FC<DashboardProps> = ({
       loadWeeklyData();
     }
   }, [externalSelectedDate]);
+
+  // Handle items added from external sources (e.g., Spouse Today menu)
+  useEffect(() => {
+    if (itemToAdd) {
+      setBreakdownItems(prev => [...prev, itemToAdd]);
+      setLastEstimate(prev => ({
+        items: prev ? [...prev.items, itemToAdd] : [itemToAdd],
+        totalCalories: (prev?.totalCalories || 0) + itemToAdd.calories,
+        confidence: prev?.confidence || 'high',
+      }));
+      onItemAdded?.();
+    }
+  }, [itemToAdd]);
 
   const handleToggleListening = () => {
     if (isListening) {

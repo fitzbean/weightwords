@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { UserProfile } from './types';
+import { UserProfile, FoodLog, FoodItemEstimate } from './types';
 import ProfileModal from './components/ProfileModal';
 import Dashboard from './components/Dashboard';
 import AuthForm from './components/AuthForm';
 import WeighInModal from './components/WeighInModal';
 import AdminModal from './components/AdminModal';
-import { supabase, getCurrentUser, getProfile, updateProfile, signOut, onAuthStateChange, getSpouseEmail, getUserById } from './services/supabaseService';
+import { supabase, getCurrentUser, getProfile, updateProfile, signOut, onAuthStateChange, getSpouseEmail, getUserById, getFoodLogs } from './services/supabaseService';
 import { APP_CONFIG } from './appConfig';
 
 const App: React.FC = () => {
@@ -31,6 +31,12 @@ const App: React.FC = () => {
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [impersonatedUser, setImpersonatedUser] = useState<{ id: string; profile: UserProfile } | null>(null);
   const [adminProfile, setAdminProfile] = useState<UserProfile | null>(null);
+  
+  // Spouse Today state
+  const [showSpouseTodayMenu, setShowSpouseTodayMenu] = useState(false);
+  const [spouseFoods, setSpouseFoods] = useState<FoodLog[]>([]);
+  const [isLoadingSpouseFoods, setIsLoadingSpouseFoods] = useState(false);
+  const [itemToAdd, setItemToAdd] = useState<FoodItemEstimate | null>(null);
 
   useEffect(() => {
     let isInitialized = false;
@@ -200,6 +206,7 @@ const App: React.FC = () => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showUserMenu && !(event.target as Element).closest('.user-menu')) {
         setShowUserMenu(false);
+        setShowSpouseTodayMenu(false);
       }
     };
 
@@ -238,6 +245,38 @@ const App: React.FC = () => {
     if (adminProfile) {
       setProfile(adminProfile);
     }
+  };
+
+  const handleSpouseTodayClick = async () => {
+    if (!profile?.spouseId) return;
+    
+    if (showSpouseTodayMenu) {
+      setShowSpouseTodayMenu(false);
+      return;
+    }
+    
+    setShowSpouseTodayMenu(true);
+    setIsLoadingSpouseFoods(true);
+    
+    try {
+      const foods = await getFoodLogs(profile.spouseId, selectedDate, profile.timezone);
+      setSpouseFoods(foods);
+    } catch (error) {
+      console.error('Error loading spouse foods:', error);
+      setSpouseFoods([]);
+    } finally {
+      setIsLoadingSpouseFoods(false);
+    }
+  };
+
+  const handleAddSpouseFood = (food: FoodLog) => {
+    setItemToAdd({
+      name: food.name,
+      calories: food.calories,
+      protein: food.protein,
+      carbs: food.carbs,
+      fat: food.fat,
+    });
   };
 
   if (isLoading) {
@@ -350,7 +389,7 @@ const App: React.FC = () => {
                   </button>
                   
                   {showUserMenu && (
-                    <div className="absolute right-0 mt-2 w-56 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-2 z-50 overflow-hidden">
+                    <div className="absolute right-0 mt-2 w-56 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-2 z-50">
                       <div className="px-4 py-2 border-b border-gray-700 bg-gray-800/50">
                         <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Signed in as</p>
                         <p className="text-xs font-bold text-green-400 truncate">{user?.email}</p>
@@ -381,6 +420,53 @@ const App: React.FC = () => {
                           )}
                         </div>
                       </button>
+                      {profile?.spouseId && (
+                        <div className="relative">
+                          <button
+                            onClick={handleSpouseTodayClick}
+                            className={`w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 flex items-center gap-3 ${showSpouseTodayMenu ? 'bg-gray-700' : ''}`}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            </svg>
+                            <div className="flex-1">Spouse's Foods</div>
+                            <svg className={`w-4 h-4 transition-transform ${showSpouseTodayMenu ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                          </button>
+                          {showSpouseTodayMenu && (
+                            <div className="absolute right-full top-0 mr-1 w-64 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-2 max-h-80 overflow-y-auto">
+                              <div className="px-3 py-2 border-b border-gray-700">
+                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                  {spouseEmail}'s Foods
+                                </p>
+                              </div>
+                              {isLoadingSpouseFoods ? (
+                                <div className="px-4 py-6 text-center">
+                                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500 mx-auto"></div>
+                                </div>
+                              ) : spouseFoods.length === 0 ? (
+                                <div className="px-4 py-4 text-center text-gray-500 text-sm">
+                                  No foods logged on this day
+                                </div>
+                              ) : (
+                                spouseFoods.map((food) => (
+                                  <button
+                                    key={food.id}
+                                    onClick={() => handleAddSpouseFood(food)}
+                                    className="w-full text-left px-3 py-2 hover:bg-gray-700 transition-colors"
+                                  >
+                                    <div className="text-sm text-gray-200 font-medium truncate">{food.name}</div>
+                                    <div className="text-xs text-gray-500">
+                                      {food.calories} kcal • P:{food.protein}g C:{food.carbs}g F:{food.fat}g
+                                    </div>
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <button
                         onClick={() => {
                           setShowUserMenu(false);
@@ -441,6 +527,8 @@ const App: React.FC = () => {
             onStopImpersonating={handleStopImpersonating}
             realProfile={profile}
             impersonatedUserId={impersonatedUser?.id}
+            itemToAdd={itemToAdd}
+            onItemAdded={() => setItemToAdd(null)}
           />
         ) : (
           <div className="animate-in fade-in duration-500 translate-y-0">
