@@ -33,6 +33,8 @@ export interface UserProfile {
   spouseId?: string;
   timezone?: string;
   isAdmin?: boolean;
+  displayName?: string;
+  targetWeightLbs?: number;
 }
 
 export interface FoodEntry {

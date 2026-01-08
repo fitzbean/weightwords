@@ -187,6 +187,8 @@ const App: React.FC = () => {
           daily_calorie_target: newProfile.dailyCalorieTarget,
           activity_level: newProfile.activityLevel.toString(),
           profile_completed: true,
+          display_name: newProfile.displayName,
+          target_weight_lbs: newProfile.targetWeightLbs,
         });
       error = insertError;
     }

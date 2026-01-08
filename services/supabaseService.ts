@@ -77,6 +77,8 @@ export const getProfile = async (userId: string): Promise<UserProfile | null> =>
     spouseId: data.spouse_id,
     timezone: data.timezone ?? 'UTC',
     isAdmin: data.is_admin ?? false,
+    displayName: data.display_name,
+    targetWeightLbs: data.target_weight_lbs,
   };
   
   console.log('Mapped profile:', profile);
@@ -100,6 +102,8 @@ export const updateProfile = async (userId: string, profile: UserProfile) => {
       timezone: profile.timezone || 'UTC',
       spouse_id: profile.spouseId,
       updated_at: new Date().toISOString(),
+      display_name: profile.displayName,
+      target_weight_lbs: profile.targetWeightLbs,
     })
     .eq('id', userId)
     .select()
@@ -513,5 +517,7 @@ export const getUserById = async (userId: string): Promise<UserProfile | null> =
     spouseId: data.spouse_id,
     timezone: data.timezone ?? 'UTC',
     isAdmin: data.is_admin ?? false,
+    displayName: data.display_name,
+    targetWeightLbs: data.target_weight_lbs,
   };
 };

@@ -17,6 +17,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   isNewUser = false 
 }) => {
   const [formData, setFormData] = useState({
+    displayName: initialData?.displayName || '',
     age: initialData?.age || 25,
     gender: initialData?.gender || Gender.MALE,
     weightLbs: initialData?.weightLbs || 150,
@@ -25,6 +26,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     activityLevel: initialData?.activityLevel || ActivityLevel.MODERATE,
     weightGoal: initialData?.weightGoal || WeightGoal.MAINTAIN,
     timezone: initialData?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+    targetWeightLbs: initialData?.targetWeightLbs || undefined,
   });
 
   // Common US timezones
@@ -47,6 +49,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     try {
       await onSave({
         ...formData,
+        displayName: formData.displayName || undefined,
+        targetWeightLbs: formData.targetWeightLbs || undefined,
         dailyCalorieTarget: calculateDailyCalories(formData),
         spouseId: initialData?.spouseId,
         profileCompleted: true,
@@ -108,6 +112,20 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Display Name */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                Display Name
+              </label>
+              <input
+                type="text"
+                value={formData.displayName}
+                onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                className="w-full p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
+                placeholder="First Name"
+              />
+            </div>
+
             {/* Age */}
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">
@@ -235,6 +253,22 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                 <option value={WeightGoal.GAIN}>Gain 0.5 lb per week</option>
                 <option value={WeightGoal.GAIN_FAST}>Gain 1 lb per week</option>
               </select>
+            </div>
+
+            {/* Target Weight */}
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                Target Weight (lbs)
+              </label>
+              <input
+                type="number"
+                min="50"
+                max="500"
+                value={formData.targetWeightLbs || ''}
+                onChange={(e) => setFormData({ ...formData, targetWeightLbs: e.target.value ? parseInt(e.target.value) : undefined })}
+                className="w-full p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
+                placeholder="Optional"
+              />
             </div>
 
             {/* Timezone */}
