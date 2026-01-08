@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, ReferenceLine } from 'recharts';
-import { WeighIn } from '../types';
+import { WeighIn, UserProfile } from '../types';
 import { getWeighIns, addWeighIn, deleteWeighIn } from '../services/supabaseService';
 
 interface WeighInModalProps {
   isOpen: boolean;
   onClose: () => void;
   userId: string;
+  profile: UserProfile | null;
 }
 
-const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId }) => {
+const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, profile }) => {
   const [weighIns, setWeighIns] = useState<WeighIn[]>([]);
   const [newWeight, setNewWeight] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -127,17 +128,39 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId }) 
                   </p>
                 </div>
               )}
-              <div className="bg-gradient-to-br from-purple-900/40 to-purple-900/20 rounded-2xl p-4 border border-purple-800/30">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                    <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                    </svg>
+              {profile?.targetWeightLbs ? (() => {
+                const currentWeight = weighIns[weighIns.length - 1].weightLbs;
+                const targetWeight = profile.targetWeightLbs;
+                const remaining = currentWeight - targetWeight;
+                const isAboveTarget = remaining > 0;
+                return (
+                  <div className={`bg-gradient-to-br ${isAboveTarget ? 'from-blue-900/40 to-blue-900/20 border-blue-800/30' : 'from-amber-900/40 to-amber-900/20 border-amber-800/30'} rounded-2xl p-4 border`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className={`w-8 h-8 ${isAboveTarget ? 'bg-blue-500/20' : 'bg-amber-500/20'} rounded-lg flex items-center justify-center`}>
+                        <svg className={`w-4 h-4 ${isAboveTarget ? 'text-blue-400' : 'text-amber-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <p className={`text-[10px] font-bold ${isAboveTarget ? 'text-blue-400/70' : 'text-amber-400/70'} uppercase tracking-wider`}>To Target</p>
+                    <p className={`text-2xl font-black ${isAboveTarget ? 'text-blue-400' : 'text-amber-400'}`}>
+                      {isAboveTarget ? '-' : '+'}{Math.abs(remaining).toFixed(1)}<span className="text-sm ml-1 font-bold opacity-60">lbs</span>
+                    </p>
                   </div>
+                );
+              })() : (
+                <div className="bg-gradient-to-br from-purple-900/40 to-purple-900/20 rounded-2xl p-4 border border-purple-800/30">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                      <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                      </svg>
+                    </div>
+                  </div>
+                  <p className="text-[10px] font-bold text-purple-400/70 uppercase tracking-wider">Entries</p>
+                  <p className="text-2xl font-black text-purple-400">{weighIns.length}</p>
                 </div>
-                <p className="text-[10px] font-bold text-purple-400/70 uppercase tracking-wider">Entries</p>
-                <p className="text-2xl font-black text-purple-400">{weighIns.length}</p>
-              </div>
+              )}
             </div>
 
             <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-5 border border-gray-700/50 shadow-xl">
@@ -185,8 +208,8 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId }) 
                   )}
                 </div>
               </div>
-              <ResponsiveContainer width="100%" height={280}>
-                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -30, bottom: 0}}>
                   <defs>
                     <linearGradient id="weightGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#10B981" stopOpacity={0.4} />
@@ -227,6 +250,21 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId }) 
                     formatter={(value: number) => [`${value} lbs`, 'Weight']}
                     cursor={{ stroke: '#10B981', strokeWidth: 1, strokeDasharray: '5 5' }}
                   />
+                  {profile?.targetWeightLbs && (
+                    <ReferenceLine 
+                      y={profile.targetWeightLbs} 
+                      stroke="#3B82F6" 
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      label={{ 
+                        value: `Target: ${profile.targetWeightLbs} lbs`, 
+                        position: 'right',
+                        fill: '#60A5FA',
+                        fontSize: 11,
+                        fontWeight: 'bold'
+                      }}
+                    />
+                  )}
                   <Area 
                     type="monotone" 
                     dataKey="weight" 
@@ -244,6 +282,44 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId }) 
 
         <form onSubmit={handleAddWeighIn} className="mb-6">
           <h3 className="text-lg font-bold text-gray-100 mb-4">Add Weigh-in</h3>
+          {profile?.targetWeightLbs && weighIns.length > 0 && (() => {
+            const currentWeight = weighIns[weighIns.length - 1].weightLbs;
+            const targetWeight = profile.targetWeightLbs;
+            const remaining = currentWeight - targetWeight;
+            const isAboveTarget = remaining > 0;
+            const percentProgress = weighIns.length >= 2 
+              ? ((weighIns[0].weightLbs - currentWeight) / (weighIns[0].weightLbs - targetWeight)) * 100
+              : 0;
+            
+            return (
+              <div className="mb-4 p-4 bg-gradient-to-br from-blue-900/20 to-blue-900/10 border border-blue-800/30 rounded-xl">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                    </svg>
+                    <span className="text-sm font-bold text-blue-400">Target: {targetWeight} lbs</span>
+                  </div>
+                  <span className={`text-sm font-bold ${isAboveTarget ? 'text-blue-400' : 'text-amber-400'}`}>
+                    {isAboveTarget ? `${Math.abs(remaining).toFixed(1)} lbs to go` : `${Math.abs(remaining).toFixed(1)} lbs over`}
+                  </span>
+                </div>
+                {weighIns.length >= 2 && percentProgress > 0 && percentProgress < 200 && (
+                  <div>
+                    <div className="w-full bg-gray-700/50 rounded-full h-2 mb-1">
+                      <div 
+                        className="bg-gradient-to-r from-blue-500 to-blue-400 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(Math.max(percentProgress, 0), 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-400">
+                      {percentProgress >= 100 ? '🎉 Target reached!' : `${percentProgress.toFixed(0)}% progress from start`}
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">

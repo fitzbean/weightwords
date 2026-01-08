@@ -18,6 +18,7 @@ const App: React.FC = () => {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [showSpouseModal, setShowSpouseModal] = useState(false);
   const [spouseEmail, setSpouseEmail] = useState<string | null>(null);
+  const [spouseProfile, setSpouseProfile] = useState<UserProfile | null>(null);
   const [showWeighInModal, setShowWeighInModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
@@ -125,18 +126,23 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch spouse email when profile changes
+  // Fetch spouse profile and email when profile changes
   useEffect(() => {
-    const fetchSpouseEmail = async () => {
+    const fetchSpouseInfo = async () => {
       if (profile?.spouseId) {
-        const email = await getSpouseEmail(profile.spouseId);
+        const [email, spouseProf] = await Promise.all([
+          getSpouseEmail(profile.spouseId),
+          getUserById(profile.spouseId)
+        ]);
         setSpouseEmail(email);
+        setSpouseProfile(spouseProf);
       } else {
         setSpouseEmail(null);
+        setSpouseProfile(null);
       }
     };
 
-    fetchSpouseEmail();
+    fetchSpouseInfo();
   }, [profile]);
 
   /*
@@ -440,7 +446,7 @@ const App: React.FC = () => {
                             <div className="absolute sm:right-full sm:top-0 sm:mr-1 right-0 top-full mt-1 w-64 sm:w-64 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-2 max-h-80 overflow-y-auto z-50">
                               <div className="px-3 py-2 border-b border-gray-700">
                                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                  {spouseEmail}'s Foods
+                                  {spouseProfile?.displayName || spouseEmail}'s Log
                                 </p>
                               </div>
                               {isLoadingSpouseFoods ? (
@@ -567,6 +573,7 @@ const App: React.FC = () => {
         isOpen={showWeighInModal}
         onClose={() => setShowWeighInModal(false)}
         userId={user?.id}
+        profile={profile}
       />
 
       <AdminModal
