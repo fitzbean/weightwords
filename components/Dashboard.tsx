@@ -639,9 +639,9 @@ const Dashboard: React.FC<DashboardProps> = ({
             {/* Favorited Breakdowns */}
             {favoritedBreakdowns.length > 0 && (
               <div className="mt-6">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Quick Add</p>
-                <div className="flex flex-wrap gap-2">
-                  {favoritedBreakdowns.slice(0, 6).map((favorite) => (
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Favorites</p>
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mb-2">
+                  {favoritedBreakdowns.slice(0, favoritedBreakdowns.length).map((favorite) => (
                     <div
                       key={favorite.id}
                       className="relative group"
@@ -680,9 +680,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                         <>
                           <button
                             onClick={() => useFavoritedBreakdown(favorite)}
-                            className={`px-2 py-1 bg-gray-700 text-gray-300 rounded-xl text-sm font-medium transition-all border border-gray-600 active:scale-95 active:bg-gray-500 ${favorite.userId === user?.id ? 'pr-16' : ''}`}
+                            className={`flex-shrink-0 min-w-fit px-3 py-1 bg-gray-700 text-gray-300 rounded-xl text-sm font-medium transition-all border border-gray-600 active:scale-95 active:bg-gray-500 ${favorite.userId === user?.id ? 'pr-16' : ''}`}
                           >
-                            <span className="text-gray-300">{favorite.name}</span>
+                            <span className="text-gray-300 whitespace-nowrap">{favorite.name}</span>
                           </button>
                           <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">
                             {favorite.userId === user?.id && (
