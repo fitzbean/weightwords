@@ -108,7 +108,7 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
                   </div>
                 </div>
                 <p className="text-[10px] font-bold text-green-400/70 uppercase tracking-wider">Current</p>
-                <p className="text-2xl font-black text-green-400">
+                <p className="text-1xl font-black text-green-400">
                   {weighIns[weighIns.length - 1].weightLbs}<span className="text-sm ml-1 font-bold text-green-400/60">lbs</span>
                 </p>
               </div>
@@ -143,7 +143,7 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
                       </div>
                     </div>
                     <p className={`text-[10px] font-bold ${isAboveTarget ? 'text-blue-400/70' : 'text-amber-400/70'} uppercase tracking-wider`}>To Target</p>
-                    <p className={`text-2xl font-black ${isAboveTarget ? 'text-blue-400' : 'text-amber-400'}`}>
+                    <p className={`text-1xl font-black ${isAboveTarget ? 'text-blue-400' : 'text-amber-400'}`}>
                       {isAboveTarget ? '-' : '+'}{Math.abs(remaining).toFixed(1)}<span className="text-sm ml-1 font-bold opacity-60">lbs</span>
                     </p>
                   </div>
