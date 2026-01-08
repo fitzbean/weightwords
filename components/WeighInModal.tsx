@@ -368,15 +368,15 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
               {weighIns.slice().reverse().map((wi) => (
                 <div key={wi.id} className="flex items-center justify-between bg-gray-700 rounded-lg p-3">
                   <div>
-                    <p className="text-gray-100 font-medium">{wi.weightLbs} lbs</p>
-                    <p className="text-gray-400 text-sm">
-                      {new Date(wi.date + 'T00:00:00').toLocaleDateString('en-US', { 
+                    <span className="text-gray-100 font-medium">{wi.weightLbs} lbs</span> 
+                    <span className="text-gray-400 text-sm"> on 
+                      {" " + new Date(wi.date + 'T00:00:00').toLocaleDateString('en-US', { 
                         weekday: 'short', 
                         year: 'numeric', 
                         month: 'short', 
                         day: 'numeric' 
                       })}
-                    </p>
+                    </span>
                   </div>
                   <button
                     onClick={() => handleDeleteWeighIn(wi.id)}
