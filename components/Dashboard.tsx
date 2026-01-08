@@ -520,67 +520,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     return '🍽️';
   };
 
-  const getHealthColor = (foodName: string, calories: number, protein: number): string => {
-    const name = foodName.toLowerCase();
-    
-    // Excellent (green) - Vegetables, fruits, lean proteins, water
-    if (
-      name.includes('salad') || name.includes('lettuce') || name.includes('greens') ||
-      name.includes('broccoli') || name.includes('cauliflower') || name.includes('spinach') ||
-      name.includes('vegetable') || name.includes('veggie') ||
-      name.includes('fruit') || name.includes('apple') || name.includes('berry') ||
-      name.includes('chicken breast') || name.includes('turkey') || name.includes('fish') ||
-      name.includes('salmon') || name.includes('tuna') || name.includes('egg white') ||
-      name.includes('water') || name.includes('hydrat')
-    ) {
-      return 'bg-green-900/30';
-    }
-    
-    // Good (blue-green) - Most fruits, whole grains, lean proteins
-    if (
-      name.includes('apple') || name.includes('banana') || name.includes('orange') ||
-      name.includes('oatmeal') || name.includes('quinoa') || name.includes('brown rice') ||
-      name.includes('chicken') || name.includes('greek yogurt') || name.includes('beans') ||
-      name.includes('lentils') || name.includes('nuts') || name.includes('avocado') ||
-      protein > 20 && calories < 300 // High protein, low calorie
-    ) {
-      return 'bg-teal-900/30';
-    }
-    
-    // Moderate (yellow) - Regular grains, dairy, some proteins
-    if (
-      name.includes('bread') || name.includes('pasta') || name.includes('rice') ||
-      name.includes('milk') || name.includes('cheese') || name.includes('yogurt') ||
-      name.includes('potato') || name.includes('beef') || name.includes('pork') ||
-      name.includes('egg') || name.includes('protein shake')
-    ) {
-      return 'bg-yellow-900/30';
-    }
-    
-    // Less ideal (orange) - Processed foods, fried foods
-    if (
-      name.includes('pizza') || name.includes('burger') || name.includes('fries') ||
-      name.includes('chip') || name.includes('cracker') || name.includes('granola') ||
-      name.includes('juice') || name.includes('soda') || name.includes('beer') ||
-      calories > 500 && protein < 20 // High calorie, low protein
-    ) {
-      return 'bg-orange-900/30';
-    }
-    
-    // Limited (red) - Desserts, sweets, highly processed
-    if (
-      name.includes('cookie') || name.includes('cake') || name.includes('dessert') ||
-      name.includes('chocolate') || name.includes('candy') || name.includes('ice cream') ||
-      name.includes('bacon') || name.includes('sausage') || name.includes('donut') ||
-      calories > 600 // Very high calorie
-    ) {
-      return 'bg-red-900/30';
-    }
-    
-    // Default neutral
-    return 'bg-gray-700';
-  };
-
+  
   const data = [
     { name: 'Consumed', value: totalCalories },
     { name: 'Remaining', value: Math.max(0, caloriesRemaining) },
@@ -1025,7 +965,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   </div>
                 ) : (
                   entries.map((entry) => (
-                    <div key={entry.id} className={`p-4 flex justify-between items-center group transition-all ${getHealthColor(entry.name, entry.calories, entry.protein)}`}>
+                    <div key={entry.id} className="p-4 flex justify-between items-center group transition-all hover:bg-gray-700/50 cursor-pointer" onClick={() => handleItemClick(entry)}>
                       <div className="flex gap-3 items-center min-w-0 flex-1">
                         <div className="w-8 h-8 rounded-lg bg-gray-800/50 flex items-center justify-center text-lg shrink-0">
                             {getFoodEmoji(entry.name)}
@@ -1041,7 +981,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                             <span className="text-[8px] font-black text-gray-500 uppercase ml-0.5">kcal</span>
                         </div>
                         <button
-                          onClick={() => deleteEntry(entry.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteEntry(entry.id);
+                          }}
                           className="p-1.5 text-gray-400 sm:opacity-0 sm:group-hover:opacity-60 transition-all rounded-md hover:bg-red-900/40"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
