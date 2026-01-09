@@ -940,7 +940,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <div className="flex justify-between items-center mt-1">
                       <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Daily Avg</span>
                       <span className="text-sm font-black text-gray-100">
-                        {Math.round(weeklyTotalSoFar / Math.max(1, todayIndex + 1))} kcal
+                        {todayIndex > 0 ? Math.round(weeklyTotalBeforeToday / todayIndex) : 0} kcal
                       </span>
                     </div>
                     {(() => {
