@@ -897,16 +897,25 @@ const Dashboard: React.FC<DashboardProps> = ({
               {(() => {
                 const currentDayOfWeek = new Date().getDay(); // 0 = Sunday, 1 = Monday, etc.
                 const todayIndex = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1; // Convert to 0-6 (Mon-Sun)
-                const daysBeforeToday = todayIndex; // Number of days before today
+                const dailyTarget = profile?.dailyCalorieTarget || 2000;
+                
+                // Get today's calories and check if over target
+                const todayCalories = weeklyData[todayIndex]?.totalCalories || 0;
+                const isTodayOver = todayCalories > dailyTarget;
+                
+                // Completed days (before today)
                 const weeklyTotalBeforeToday = weeklyData.slice(0, todayIndex).reduce((sum, day) => sum + day.totalCalories, 0);
-                const weeklyTargetBeforeToday = (profile?.dailyCalorieTarget || 2000) * daysBeforeToday;
-                const weeklyVariance = weeklyTotalBeforeToday - weeklyTargetBeforeToday;
-                const weeklyVariancePercent = daysBeforeToday > 0 ? Math.round((weeklyVariance / weeklyTargetBeforeToday) * 100) : 0;
+                const weeklyTargetBeforeToday = dailyTarget * todayIndex;
+                
+                // For deficit calculation: use completed days, and include today ONLY if over target
+                // If today is over, include today's full calories and target (not just overage)
+                const effectiveTotal = weeklyTotalBeforeToday + (isTodayOver ? todayCalories : 0);
+                const effectiveTarget = weeklyTargetBeforeToday + (isTodayOver ? dailyTarget : 0);
+                
                 const weeklyTotalSoFar = weeklyData.reduce((sum, day) => sum + day.totalCalories, 0);
                 
                 return (
                   <>
-                    <p className="text-[11px] text-gray-300 mt-2 italic">Metrics consider the total calories consumed so far this week</p>
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Weekly Total</span>
                       <span className="text-sm font-black text-gray-100">
@@ -914,18 +923,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Surplus / Deficit</span>
+                      <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Net Calories</span>
                       <span className={`text-sm font-black ${
-                        weeklyTotalSoFar > (profile?.dailyCalorieTarget || 2000) * (todayIndex + 1) ? 'text-red-400' : 'text-green-500'
+                        effectiveTotal > effectiveTarget ? 'text-red-400' : 'text-green-500'
                       }`}>
                         {(() => {
-                          const totalVariance = weeklyTotalSoFar - ((profile?.dailyCalorieTarget || 2000) * (todayIndex + 1));
-                          const totalVariancePercent = Math.round((totalVariance / ((profile?.dailyCalorieTarget || 2000) * (todayIndex + 1))) * 100);
-                          // Debug: uncomment to see values
-                          // console.log('weeklyTotalSoFar:', weeklyTotalSoFar, 'targetSoFar:', (profile?.dailyCalorieTarget || 2000) * (todayIndex + 1), 'variance:', totalVariance, 'percent:', totalVariancePercent);
-                          return totalVariance > 0 
-                            ? `+${totalVariancePercent}%`
-                            : `${totalVariancePercent}%`;
+                          const variance = effectiveTotal - effectiveTarget;
+                          return variance > 0 
+                            ? `+${variance} kcal`
+                            : `${variance} kcal`;
                         })()}
                       </span>
                     </div>
@@ -945,8 +951,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                       const baselineWeeklyDeficit = -weightGoalValue * 7; // Negate: -(-1000) * 7 = +7000 cal deficit/week
                       
                       // Then, calculate additional deficit/surplus from eating above/below target
-                      const additionalDeficit = ((profile?.dailyCalorieTarget || 2000) * (todayIndex + 1)) - weeklyTotalSoFar;
-                      const projectedAdditionalDeficit = (additionalDeficit / (todayIndex + 1)) * 7;
+                      // Use effectiveTotal/effectiveTarget which only counts today if over target
+                      const daysToProject = effectiveTarget > 0 ? (effectiveTarget / dailyTarget) : Math.max(1, todayIndex);
+                      const additionalDeficit = effectiveTarget - effectiveTotal;
+                      const projectedAdditionalDeficit = daysToProject > 0 ? (additionalDeficit / daysToProject) * 7 : 0;
                       
                       // Total projected deficit includes both baseline goal and actual performance
                       const totalProjectedDeficit = baselineWeeklyDeficit + projectedAdditionalDeficit;
@@ -966,6 +974,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                       );
                     })()}
+                    <p className="text-[11px] text-gray-400 mt-2 italic text-center">- Any Surplus today is not added to Net Calories until its over -<br></br>- Daily average does not count today until it is over -</p>
                   </>
                 );
               })()}
