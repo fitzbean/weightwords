@@ -976,7 +976,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                       );
                     })()}
-                    <p className="text-[11px] text-gray-400 mt-2 italic text-center">- Any Surplus today is not added to Net Calories until its over -<br></br>- Daily average does not count today until it is over -</p>
+                    <p className="text-[11px] text-gray-400 mt-2 italic text-center">- Any Surplus today is not added to Net Calories until tomorrow -<br></br>- Daily average does not count today until tomorrow -</p>
                   </>
                 );
               })()}
