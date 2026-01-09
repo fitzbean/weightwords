@@ -174,6 +174,8 @@ const Dashboard: React.FC<DashboardProps> = ({
     const favorites = profile?.spouseId 
       ? await getSharedFavoritedBreakdowns(effectiveUserId)
       : await getFavoritedBreakdowns(effectiveUserId);
+    // Sort alphabetically by name
+    favorites.sort((a, b) => a.name.localeCompare(b.name));
     setFavoritedBreakdowns(favorites);
   };
 
