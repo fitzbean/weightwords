@@ -93,7 +93,7 @@ const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, onImpersonate 
                 {filteredUsers.map(user => (
                   <div
                     key={user.id}
-                    className="flex items-center justify-between p-4 bg-gray-700/50 rounded-xl hover:bg-gray-700 transition-colors"
+                    className="p-4 bg-gray-700/50 rounded-xl hover:bg-gray-700 transition-colors"
                   >
                     <div className="flex-1">
                       <p className="text-gray-100 font-medium">{user.email}</p>
@@ -119,7 +119,7 @@ const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, onImpersonate 
                       <button
                         onClick={() => handleImpersonate(user.id, user.profile!)}
                         disabled={isLoadingUser === user.id}
-                        className="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                       >
                         {isLoadingUser === user.id ? 'Loading...' : 'View As User'}
                       </button>

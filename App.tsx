@@ -126,13 +126,14 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch spouse profile and email when profile changes
+  // Fetch spouse profile and email when profile changes or when impersonating
   useEffect(() => {
     const fetchSpouseInfo = async () => {
-      if (profile?.spouseId) {
+      const effectiveProfile = impersonatedUser?.profile || profile;
+      if (effectiveProfile?.spouseId) {
         const [email, spouseProf] = await Promise.all([
-          getSpouseEmail(profile.spouseId),
-          getUserById(profile.spouseId)
+          getSpouseEmail(effectiveProfile.spouseId),
+          getUserById(effectiveProfile.spouseId)
         ]);
         setSpouseEmail(email);
         setSpouseProfile(spouseProf);
@@ -143,7 +144,7 @@ const App: React.FC = () => {
     };
 
     fetchSpouseInfo();
-  }, [profile]);
+  }, [profile, impersonatedUser]);
 
   /*
   // Periodically check if profile still exists (handles case where DB is cleared while logged in)
@@ -256,7 +257,8 @@ const App: React.FC = () => {
   };
 
   const handleSpouseTodayClick = async () => {
-    if (!profile?.spouseId) return;
+    const effectiveProfile = impersonatedUser?.profile || profile;
+    if (!effectiveProfile?.spouseId) return;
     
     if (showSpouseTodayMenu) {
       setShowSpouseTodayMenu(false);
@@ -267,7 +269,7 @@ const App: React.FC = () => {
     setIsLoadingSpouseFoods(true);
     
     try {
-      const foods = await getFoodLogs(profile.spouseId, selectedDate, profile.timezone);
+      const foods = await getFoodLogs(effectiveProfile.spouseId, selectedDate, effectiveProfile.timezone);
       setSpouseFoods(foods);
     } catch (error) {
       console.error('Error loading spouse foods:', error);
