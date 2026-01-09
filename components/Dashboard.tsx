@@ -906,6 +906,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 
                 return (
                   <>
+                    <p className="text-[11px] text-gray-300 mt-2 italic">Metrics consider the total calories consumed so far this week</p>
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Weekly Total</span>
                       <span className="text-sm font-black text-gray-100">
@@ -934,7 +935,37 @@ const Dashboard: React.FC<DashboardProps> = ({
                         {Math.round(weeklyTotalSoFar / Math.max(1, todayIndex + 1))} kcal
                       </span>
                     </div>
-                    <p className="text-[11px] text-gray-300 mt-2 italic">Above metrics consider the total calories consumed so far this week</p>
+                    {(() => {
+                      // Calculate projected weight change based on weekly deficit/surplus
+                      // 3500 calories = 1 lb of weight
+                      
+                      // First, calculate the baseline weight change from the profile's weight goal
+                      // Weight goal is negative for loss (e.g., -1000 for 2 lbs/week loss)
+                      const weightGoalValue = parseFloat(profile?.weightGoal || '0');
+                      const baselineWeeklyDeficit = -weightGoalValue * 7; // Negate: -(-1000) * 7 = +7000 cal deficit/week
+                      
+                      // Then, calculate additional deficit/surplus from eating above/below target
+                      const additionalDeficit = ((profile?.dailyCalorieTarget || 2000) * (todayIndex + 1)) - weeklyTotalSoFar;
+                      const projectedAdditionalDeficit = (additionalDeficit / (todayIndex + 1)) * 7;
+                      
+                      // Total projected deficit includes both baseline goal and actual performance
+                      const totalProjectedDeficit = baselineWeeklyDeficit + projectedAdditionalDeficit;
+                      const projectedWeightChange = totalProjectedDeficit / 3500;
+                      
+                      if (Math.abs(projectedWeightChange) < 0.05) return null; // Don't show if negligible
+                      
+                      return (
+                        <div className="mt-2 p-2 bg-gray-700/30 rounded-lg">
+                          <p className="text-xs text-gray-100">
+                            At your current pace, you should{' '}
+                            <span className={`font-bold ${projectedWeightChange > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {projectedWeightChange > 0 ? 'lose' : 'gain'} {Math.abs(projectedWeightChange).toFixed(1)} lbs
+                            </span>
+                            {' '}this week!  Keep it up{profile?.displayName ? `, ${profile.displayName}` : ''}! 🎉 🎊 🥳
+                          </p>
+                        </div>
+                      );
+                    })()}
                   </>
                 );
               })()}
