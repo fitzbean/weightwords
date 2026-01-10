@@ -33,8 +33,18 @@ serve(async (req) => {
       )
     }
     
+    // Also fetch displayName from user_profiles
+    const { data: profile } = await supabaseAdmin
+      .from('user_profiles')
+      .select('display_name')
+      .eq('id', userId)
+      .single()
+    
     return new Response(
-      JSON.stringify({ email: user.email }),
+      JSON.stringify({ 
+        email: user.email,
+        displayName: profile?.display_name || null
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
   } catch (error) {

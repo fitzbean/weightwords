@@ -6,7 +6,7 @@ import Dashboard from './components/Dashboard';
 import AuthForm from './components/AuthForm';
 import WeighInModal from './components/WeighInModal';
 import AdminModal from './components/AdminModal';
-import { supabase, getCurrentUser, getProfile, updateProfile, signOut, onAuthStateChange, getSpouseEmail, getUserById, getFoodLogs } from './services/supabaseService';
+import { supabase, getCurrentUser, getProfile, updateProfile, signOut, onAuthStateChange, getSpouseInfo, getFoodLogs } from './services/supabaseService';
 import { APP_CONFIG } from './appConfig';
 
 const App: React.FC = () => {
@@ -128,22 +128,25 @@ const App: React.FC = () => {
 
   // Fetch spouse profile and email when profile changes or when impersonating
   useEffect(() => {
-    const fetchSpouseInfo = async () => {
+    const fetchSpouseData = async () => {
       const effectiveProfile = impersonatedUser?.profile || profile;
       if (effectiveProfile?.spouseId) {
-        const [email, spouseProf] = await Promise.all([
-          getSpouseEmail(effectiveProfile.spouseId),
-          getUserById(effectiveProfile.spouseId)
-        ]);
-        setSpouseEmail(email);
-        setSpouseProfile(spouseProf);
+        const spouseInfo = await getSpouseInfo(effectiveProfile.spouseId);
+        console.log('Spouse info fetched:', { spouseInfo, spouseId: effectiveProfile.spouseId });
+        setSpouseEmail(spouseInfo.email);
+        // Create a minimal profile object with just displayName for the UI
+        if (spouseInfo.displayName) {
+          setSpouseProfile({ displayName: spouseInfo.displayName } as UserProfile);
+        } else {
+          setSpouseProfile(null);
+        }
       } else {
         setSpouseEmail(null);
         setSpouseProfile(null);
       }
     };
 
-    fetchSpouseInfo();
+    fetchSpouseData();
   }, [profile, impersonatedUser]);
 
   /*
@@ -446,10 +449,13 @@ const App: React.FC = () => {
                           </button>
                           {showSpouseTodayMenu && (
                             <div className="absolute sm:right-full sm:top-0 sm:mr-1 right-0 top-full mt-1 w-64 sm:w-64 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-2 max-h-80 overflow-y-auto z-50">
-                              <div className="px-3 py-2 border-b border-gray-700">
+                              <div className="px-3 py-2 border-b border-gray-700 flex justify-between items-center">
                                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
                                   {spouseProfile?.displayName || spouseEmail}'s Log
                                 </p>
+                                <span className="text-[10px] font-bold text-gray-400">
+                                  {spouseFoods.reduce((sum, f) => sum + f.calories, 0)} kcal
+                                </span>
                               </div>
                               {isLoadingSpouseFoods ? (
                                 <div className="px-4 py-6 text-center">

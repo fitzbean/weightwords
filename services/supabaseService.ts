@@ -44,6 +44,13 @@ export const signOut = async () => {
   return { error };
 };
 
+export const resetPassword = async (email: string) => {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+  return { error };
+};
+
 export const getCurrentUser = async () => {
   const { data: { user } } = await supabase.auth.getUser();
   return user;
@@ -356,7 +363,7 @@ export const getSharedFavoritedBreakdowns = async (userId: string): Promise<Favo
   }));
 };
 
-export const getSpouseEmail = async (spouseId: string): Promise<string | null> => {
+export const getSpouseInfo = async (spouseId: string): Promise<{ email: string | null; displayName: string | null }> => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   
   try {
@@ -370,16 +377,25 @@ export const getSpouseEmail = async (spouseId: string): Promise<string | null> =
     });
 
     if (!response.ok) {
-      console.error('Error fetching spouse email:', response.statusText);
-      return null;
+      console.error('Error fetching spouse info:', response.statusText);
+      return { email: null, displayName: null };
     }
 
     const data = await response.json();
-    return data.email || null;
+    return { 
+      email: data.email || null,
+      displayName: data.displayName || null
+    };
   } catch (error) {
-    console.error('Error fetching spouse email:', error);
-    return null;
+    console.error('Error fetching spouse info:', error);
+    return { email: null, displayName: null };
   }
+};
+
+// Keep old function for backwards compatibility
+export const getSpouseEmail = async (spouseId: string): Promise<string | null> => {
+  const info = await getSpouseInfo(spouseId);
+  return info.email;
 };
 
 export const removeSpouse = async (userId: string) => {
