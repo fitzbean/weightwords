@@ -495,28 +495,22 @@ Examples:
       
       const prompt = `The user has consumed ${currentProtein}g of protein today and needs ${targetProtein}g total (${proteinGap}g more). 
         
-        There are approximately ${hoursLeft} hours left in the day.
+        It is currently ${userHour}:00 (${hoursLeft} hours left in the day).
         
-        Make time-of-day-appropriate suggestions. 
+        Based on the current time, suggest an appropriate protein-rich food:
+        - Before 9am: Breakfast items (examples: eggs, Greek yogurt, protein shake, breakfast burrito)
+        - 9am-12pm: Lunch items (examples: chicken breast, tuna sandwich, protein bowl, grilled salmon)
+        - 12pm-5pm: Dinner items (examples: steak, pork chop, turkey, fish fillet) or substantial snacks
+        - After 5pm: Light snacks only (examples: protein bar, cottage cheese, jerky, nuts)
+        - Don't limit yourself to the examples - get creative!
 
-        Before 9am, suggest breakfast or snack options.
-        After 9am, suggest lunch or snack options.
-        After 12pm, suggest dinner or snack options.
-        After 6pm, suggest late-night or snack options.
-
-        Don't preface suggestions with "Breakfast:", "Lunch:", "Dinner:", or "Snack:".
-
-        Generate 1 SHORT, actionable one-liner suggestions (max 10 words each).
+        Generate 1 SHORT, actionable suggestion (max 10 words).
+        Don't preface with meal type labels.
         
-        50% of the time, suggest a meal option.
-        50% of the time, suggest a snack option.
-
-        All snack suggestions should be single servings
         Return ONLY a valid JSON array of strings (no markdown, no code blocks):
         ["suggestion 1"]
 
-        Examples:
-        ["Add Greek yogurt (20g protein)"]`;
+        Example: ["Grilled chicken breast (35g protein)"]`;
         
       console.log('Protein suggestions prompt:', prompt);
       const response = await ai.models.generateContent({
@@ -542,9 +536,12 @@ Examples:
         contents: `Provide detailed information about this protein suggestion: "${suggestion}"
         
         Give an engaging, informative breakdown that includes:
-        1. A brief summary of why this is a good protein choice
+        1. A brief summary of why this is a good protein choice (MUST include specific serving size)
         2. 2-4 key highlights (nutritional benefits, preparation ease, taste, etc.)
         3. A practical tip for incorporating it into their day
+        
+        IMPORTANT: In your summary, specify the exact serving size needed to get the protein amount mentioned.
+        Example: "A 6oz grilled chicken breast provides 35g of protein..."
         
         Keep it concise and actionable.`,
         config: {

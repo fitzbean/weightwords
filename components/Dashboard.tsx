@@ -193,6 +193,11 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   // Fetch protein suggestions only once per page load when protein is below target AND viewing today
   useEffect(() => {
+    // Don't fetch until we have a user ID
+    if (!effectiveUserId) {
+      return;
+    }
+    
     const isToday = externalSelectedDate.toDateString() === new Date().toDateString();
     const needsMoreProtein = totalProtein < targetProtein;
     
@@ -208,20 +213,26 @@ const Dashboard: React.FC<DashboardProps> = ({
       return;
     }
     
-    hasFetchedSuggestions.current = true;
+    // Debounce to wait for entries to stabilize after loading
+    const timeoutId = setTimeout(() => {
+      console.log('Fetching protein suggestions...', { totalProtein, targetProtein, entriesCount: entries.length });
+      
+      const fetchSuggestions = async () => {
+        try {
+          const suggestions = await getProteinSuggestions(totalProtein, targetProtein, profile?.timezone);
+          setProteinSuggestions(suggestions);
+          // Only set the flag after successful fetch
+          hasFetchedSuggestions.current = true;
+        } catch (error) {
+          console.error('Failed to fetch protein suggestions:', error);
+        }
+      };
+      
+      fetchSuggestions();
+    }, 500);
     
-    console.log('Fetching protein suggestions...');
-    const fetchSuggestions = async () => {
-      try {
-        const suggestions = await getProteinSuggestions(totalProtein, targetProtein, profile?.timezone);
-        setProteinSuggestions(suggestions);
-      } catch (error) {
-        console.error('Failed to fetch protein suggestions:', error);
-      }
-    };
-    
-    fetchSuggestions();
-  }, [totalProtein, targetProtein, externalSelectedDate, profile?.timezone]);
+    return () => clearTimeout(timeoutId);
+  }, [effectiveUserId, entries, externalSelectedDate, profile?.timezone]);
 
   const handleEstimate = async (textOverride?: string) => {
     // Use textOverride if provided (for voice recordings), otherwise use state
