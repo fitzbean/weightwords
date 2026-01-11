@@ -510,6 +510,8 @@ Examples:
         
         50% of the time, suggest a meal option.
         50% of the time, suggest a snack option.
+
+        All snack suggestions should be single servings
         Return ONLY a valid JSON array of strings (no markdown, no code blocks):
         ["suggestion 1"]
 
