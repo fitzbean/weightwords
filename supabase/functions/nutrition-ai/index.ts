@@ -416,6 +416,71 @@ Examples:
       });
     }
 
+    if (type === 'food-image') {
+      // Estimate nutrition directly from food image
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                inlineData: {
+                  mimeType: 'image/jpeg',
+                  data: image,
+                },
+              },
+              {
+                text: `Analyze this food image and estimate the nutrition information.
+
+                IMPORTANT:
+                - Identify all visible food items in the image
+                - Estimate reasonable portion sizes based on what you see
+                - Provide accurate calorie and macronutrient estimates
+                - If multiple items are visible, break them down separately
+                
+                Return ONLY a valid JSON object (no markdown, no code blocks) with this structure:
+                {
+                  "items": [
+                    {
+                      "name": "Food item name with estimated portion",
+                      "calories": number,
+                      "protein": number (grams),
+                      "carbs": number (grams),
+                      "fat": number (grams)
+                    }
+                  ],
+                  "totalCalories": number,
+                  "confidence": number between 0 and 1
+                }
+                
+                Example for a plate with chicken breast, rice, and broccoli:
+                {
+                  "items": [
+                    {"name": "Grilled chicken breast, 6 oz", "calories": 280, "protein": 53, "carbs": 0, "fat": 6},
+                    {"name": "White rice, 1 cup", "calories": 205, "protein": 4, "carbs": 45, "fat": 0},
+                    {"name": "Steamed broccoli, 1 cup", "calories": 55, "protein": 4, "carbs": 11, "fat": 1}
+                  ],
+                  "totalCalories": 540,
+                  "confidence": 0.8
+                }`,
+              },
+            ],
+          },
+        ],
+      });
+
+      console.log('Food image analysis raw response:', response.text);
+      let jsonText = response.text || '';
+      jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      const result = JSON.parse(jsonText);
+
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
     if (type === 'advice') {
       const { profile, recentLogs } = body;
       const logsSummary = recentLogs.map((l: any) => `${l.name} (${l.calories}kcal)`).join(', ');

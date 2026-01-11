@@ -111,3 +111,20 @@ export const getNutritionFromProductImage = async (base64Image: string): Promise
   }
   return data;
 };
+
+export const estimateFoodFromImage = async (base64Image: string): Promise<NutritionEstimate> => {
+  const response = await fetch(`${supabaseUrl}/functions/v1/nutrition-ai`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify({ image: base64Image, type: 'food-image' }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to estimate food from image');
+  }
+
+  return await response.json();
+};

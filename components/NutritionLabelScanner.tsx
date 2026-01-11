@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { extractNutritionFromImages, extractNutritionFromImage, getNutritionFromProductImage } from '../services/geminiService';
+import { extractNutritionFromImages, extractNutritionFromImage, getNutritionFromProductImage, estimateFoodFromImage } from '../services/geminiService';
 import { NutritionEstimate } from '../types';
 
 interface NutritionLabelScannerProps {
@@ -20,12 +20,14 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
   const streamRef = useRef<MediaStream | null>(null);
   const [captureStep, setCaptureStep] = useState<CaptureStep>('product');
   const [productImage, setProductImage] = useState<string | null>(null);
+  const [buttonPressed, setButtonPressed] = useState<'food' | 'brand' | null>(null);
 
   const resetState = useCallback(() => {
     console.log('resetState called');
     setCaptureStep('product');
     setProductImage(null);
     setError(null);
+    setButtonPressed(null);
   }, []);
 
   const stopCamera = useCallback(() => {
@@ -137,6 +139,7 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
       console.log('Image captured', imageData ? 'success' : 'failed');
       
       if (captureStep === 'product') {
+        setButtonPressed('brand');
         setProductImage(imageData);
         setCaptureStep('nutrition');
         setIsProcessing(false);
@@ -194,6 +197,41 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
       setIsProcessing(false);
     }
   }, [productImage, isProcessing, onScan, onScanEstimate, stopCamera, resetState, onClose]);
+
+  const handleCaptureFood = useCallback(async () => {
+    if (!isScanning || isProcessing) return;
+
+    setButtonPressed('food');
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      const imageData = captureImage();
+      
+      if (!imageData) {
+        setError('Failed to capture image. Please try again.');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Estimate nutrition directly from food image
+      const estimate = await estimateFoodFromImage(imageData);
+      
+      if (estimate && onScanEstimate) {
+        stopCamera();
+        resetState();
+        onClose();
+        onScanEstimate(estimate);
+      } else {
+        setError('Could not estimate food from image. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error estimating food from image:', err);
+      setError('Failed to estimate food. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [isScanning, isProcessing, captureImage, onScanEstimate, stopCamera, resetState, onClose]);
 
   const handleBack = useCallback(() => {
     setCaptureStep('product');
@@ -318,7 +356,20 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
           <p className="text-sm text-gray-400 mb-4">
             {stepInfo.instruction}
           </p>
-          <div className="flex gap-3 justify-center">
+          <div className="flex gap-3 justify-center flex-wrap">
+            {(buttonPressed === null || buttonPressed === 'food') && (
+              <button
+                onClick={handleCaptureFood}
+                disabled={!isScanning || isProcessing}
+                className="px-6 py-2 bg-orange-600 text-white rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-500"
+                style={{ 
+                  opacity: !isScanning || isProcessing ? 0.5 : 1,
+                  cursor: !isScanning || isProcessing ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isProcessing ? 'Analyzing...' : 'Capture Food'}
+              </button>
+            )}
             {captureStep === 'nutrition' && (
               <button
                 onClick={handleSkipLabel}
@@ -328,19 +379,21 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
                 {isProcessing ? 'Searching...' : 'No Nutrition Label'}
               </button>
             )}
-            <button
-              onClick={handleCapture}
-              disabled={!isScanning || isProcessing}
-              className={`px-6 py-2 text-white rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed ${
-                captureStep === 'product' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-green-600 hover:bg-green-500'
-              }`}
-              style={{ 
-                opacity: !isScanning || isProcessing ? 0.5 : 1,
-                cursor: !isScanning || isProcessing ? 'not-allowed' : 'pointer'
-              }}
-            >
-              {isProcessing ? 'Analyzing...' : captureStep === 'product' ? `Capture Product` : 'Capture Nutrition Label'}
-            </button>
+            {(buttonPressed === null || buttonPressed === 'brand') && (
+              <button
+                onClick={handleCapture}
+                disabled={!isScanning || isProcessing}
+                className={`px-6 py-2 text-white rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed ${
+                  captureStep === 'product' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-green-600 hover:bg-green-500'
+                }`}
+                style={{ 
+                  opacity: !isScanning || isProcessing ? 0.5 : 1,
+                  cursor: !isScanning || isProcessing ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {isProcessing ? 'Analyzing...' : captureStep === 'product' ? `Capture Brand` : 'Capture Nutrition Label'}
+              </button>
+            )}
           </div>
         </div>
       </div>

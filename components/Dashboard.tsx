@@ -816,11 +816,11 @@ const Dashboard: React.FC<DashboardProps> = ({
 
           {/* Calorie Progress - Under Log Your Meal */}
           <div className="mt-6 lg:mt-8 bg-gray-800 p-4 rounded-3xl shadow-sm border border-gray-700">
-            <h2 className="text-base font-black text-gray-100 mb-3">Calorie Progress</h2>
+            <h2 className="text-base font-black text-gray-100 mb-3">Today</h2>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-xs font-black text-gray-500 uppercase tracking-wider">Consumed</p>
+                  <p className="text-xs font-black text-gray-500 uppercase tracking-wider">Calories</p>
                   <p className="text-2xl font-black text-gray-100">{totalCalories}</p>
                 </div>
                 <div className="text-right">
