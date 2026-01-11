@@ -481,6 +481,104 @@ Examples:
       });
     }
 
+    if (type === 'protein-suggestions') {
+      const { currentProtein, targetProtein } = body;
+      const proteinGap = targetProtein - currentProtein;
+      
+      // Get current hour in user's timezone
+      const userHour = parseInt(new Intl.DateTimeFormat('en-US', { 
+        timeZone: body.timezone || 'America/Los_Angeles',
+        hour: 'numeric',
+        hour12: false 
+      }).format(new Date()));
+      const hoursLeft = 24 - userHour;
+      
+      const prompt = `The user has consumed ${currentProtein}g of protein today and needs ${targetProtein}g total (${proteinGap}g more). 
+        
+        There are approximately ${hoursLeft} hours left in the day.
+        
+        Make time-of-day-appropriate suggestions. 
+
+        Before 9am, suggest breakfast or snack options.
+        After 9am, suggest lunch or snack options.
+        After 12pm, suggest dinner or snack options.
+        After 6pm, suggest late-night or snack options.
+
+        Don't preface suggestions with "Breakfast:", "Lunch:", "Dinner:", or "Snack:".
+
+        Generate 1 SHORT, actionable one-liner suggestions (max 10 words each).
+        
+        50% of the time, suggest a meal option.
+        50% of the time, suggest a snack option.
+        Return ONLY a valid JSON array of strings (no markdown, no code blocks):
+        ["suggestion 1"]
+
+        Examples:
+        ["Add Greek yogurt (20g protein)"]`;
+        
+      console.log('Protein suggestions prompt:', prompt);
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: prompt,
+      });
+
+      let jsonText = response.text || '';
+      jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      const suggestions = JSON.parse(jsonText);
+
+      return new Response(JSON.stringify({ suggestions }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    if (type === 'protein-suggestion-detail') {
+      const { suggestion } = body;
+      
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: `Provide detailed information about this protein suggestion: "${suggestion}"
+        
+        Give an engaging, informative breakdown that includes:
+        1. A brief summary of why this is a good protein choice
+        2. 2-4 key highlights (nutritional benefits, preparation ease, taste, etc.)
+        3. A practical tip for incorporating it into their day
+        
+        Keep it concise and actionable.`,
+        config: {
+          thinkingConfig: {
+            thinkingLevel: ThinkingLevel.MINIMAL,
+          },
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              summary: { type: Type.STRING, description: 'Brief 2-3 sentence explanation of why this is a good protein choice' },
+              highlights: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    text: { type: Type.STRING, description: 'The highlight text' },
+                    isPositive: { type: Type.BOOLEAN, description: 'True if this is a positive/good thing (should almost always be true for protein suggestions)' },
+                  },
+                  required: ["text", "isPositive"],
+                }
+              },
+              tip: { type: Type.STRING, description: 'Quick practical tip for incorporating this protein into their day' },
+            },
+            required: ["summary", "highlights", "tip"],
+          },
+        },
+      });
+
+      const result = JSON.parse(response.text);
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
     if (type === 'advice') {
       const { profile, recentLogs } = body;
       const logsSummary = recentLogs.map((l: any) => `${l.name} (${l.calories}kcal)`).join(', ');

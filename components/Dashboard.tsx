@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, FoodEntry, FoodLog, NutritionEstimate, FoodItemEstimate, FavoritedBreakdown, ItemInsight } from '../types';
-import { estimateNutrition, getItemInsight } from '../services/geminiService';
+import { estimateNutrition, getItemInsight, getProteinSuggestions, getProteinSuggestionDetail, ProteinSuggestionDetail } from '../services/geminiService';
 import { getFoodLogs, addFoodLog, deleteFoodLog, supabase, getFavoritedBreakdowns, addFavoritedBreakdown, deleteFavoritedBreakdown, updateFavoritedBreakdown, getSharedFavoritedBreakdowns, addSpouse, removeSpouse, getWeeklyFoodLogs } from '../services/supabaseService';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { getWeekDates } from '../utils/dateUtils';
@@ -56,6 +56,11 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [showLabelScanner, setShowLabelScanner] = useState(false);
   const [breakdownItems, setBreakdownItems] = useState<FoodItemEstimate[]>([]);
   const [showPreviousDayWarning, setShowPreviousDayWarning] = useState(false);
+  const [proteinSuggestions, setProteinSuggestions] = useState<string[]>([]);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
+  const [suggestionDetail, setSuggestionDetail] = useState<ProteinSuggestionDetail | null>(null);
+  const [isLoadingSuggestionDetail, setIsLoadingSuggestionDetail] = useState(false);
+  const hasFetchedSuggestions = useRef(false);
 
   // Use impersonated user ID if impersonating, otherwise use real user ID
   const effectiveUserId = impersonatedUserId || user?.id;
@@ -180,8 +185,43 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const totalCalories = entries.reduce((sum, entry) => sum + entry.calories, 0);
+  const totalProtein = entries.reduce((sum, entry) => sum + (entry.protein || 0), 0);
+  const totalFat = entries.reduce((sum, entry) => sum + (entry.fat || 0), 0);
   const caloriesRemaining = (profile?.dailyCalorieTarget || 2000) - totalCalories;
   const progressPercent = Math.min(100, (totalCalories / (profile?.dailyCalorieTarget || 2000)) * 100);
+  const targetProtein = Math.round((profile?.weightLbs || 150) / 2.205 * 1.2);
+
+  // Fetch protein suggestions only once per page load when protein is below target AND viewing today
+  useEffect(() => {
+    const isToday = externalSelectedDate.toDateString() === new Date().toDateString();
+    const needsMoreProtein = totalProtein < targetProtein;
+    
+    // Reset flag when switching away from today or meeting goal
+    if (!isToday || !needsMoreProtein) {
+      setProteinSuggestions([]);
+      hasFetchedSuggestions.current = false;
+      return;
+    }
+    
+    // Only fetch once per session
+    if (hasFetchedSuggestions.current) {
+      return;
+    }
+    
+    hasFetchedSuggestions.current = true;
+    
+    console.log('Fetching protein suggestions...');
+    const fetchSuggestions = async () => {
+      try {
+        const suggestions = await getProteinSuggestions(totalProtein, targetProtein, profile?.timezone);
+        setProteinSuggestions(suggestions);
+      } catch (error) {
+        console.error('Failed to fetch protein suggestions:', error);
+      }
+    };
+    
+    fetchSuggestions();
+  }, [totalProtein, targetProtein, externalSelectedDate, profile?.timezone]);
 
   const handleEstimate = async (textOverride?: string) => {
     // Use textOverride if provided (for voice recordings), otherwise use state
@@ -359,6 +399,25 @@ const Dashboard: React.FC<DashboardProps> = ({
   const closeInsightModal = () => {
     setSelectedItem(null);
     setItemInsight(null);
+  };
+
+  const handleSuggestionClick = async (suggestion: string) => {
+    setSelectedSuggestion(suggestion);
+    setSuggestionDetail(null);
+    setIsLoadingSuggestionDetail(true);
+    try {
+      const detail = await getProteinSuggestionDetail(suggestion);
+      setSuggestionDetail(detail);
+    } catch (error) {
+      console.error('Failed to get suggestion detail:', error);
+    } finally {
+      setIsLoadingSuggestionDetail(false);
+    }
+  };
+
+  const closeSuggestionModal = () => {
+    setSelectedSuggestion(null);
+    setSuggestionDetail(null);
   };
 
   const removeBreakdownItem = (index: number) => {
@@ -845,16 +904,30 @@ const Dashboard: React.FC<DashboardProps> = ({
               
               <div className="flex justify-between items-center">
                 <div>
-                  <p className={`text-xs font-black ${caloriesRemaining < 0 ? 'text-red-400' : 'text-green-500'}`}>
-                    {caloriesRemaining < 0 ? 'Over by' : 'Remaining'}
+                  <p className="text-xs font-black text-gray-400">
+                    Protein: <span className="text-gray-100">{Math.round(totalProtein)}/{Math.round((profile?.weightLbs || 150) / 2.205 * 1.2)}g</span> • Fat: <span className="text-gray-100">{Math.round(totalFat)}/{Math.round((profile?.weightLbs || 150) * 0.25)}g</span>
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs font-black text-gray-100">
-                    {Math.round(Math.abs(caloriesRemaining))} kcal
+                    <span className={`${caloriesRemaining < 0 ? 'text-red-400' : 'text-green-500'}`}>
+                      {caloriesRemaining < 0 ? 'Over by' : 'Remaining'}
+                    </span> {Math.round(Math.abs(caloriesRemaining))} kcal
                   </p>
                 </div>
               </div>
+
+              {/* Protein Suggestions */}
+              {proteinSuggestions.length > 0 && (
+                <div className="mt-2">
+                  <button
+                    onClick={() => handleSuggestionClick(proteinSuggestions[0])}
+                    className="w-full text-left px-3 py-2 bg-blue-900/20 border border-blue-800/50 rounded-lg text-xs text-blue-300 hover:bg-blue-900/30 hover:border-blue-700 transition-all"
+                  >
+                    💡 {proteinSuggestions[0]}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1179,6 +1252,71 @@ const Dashboard: React.FC<DashboardProps> = ({
               </div>
             ) : (
               <p className="text-gray-400 text-center py-4">Failed to load insights. Tap to try again.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Protein Suggestion Detail Modal */}
+      {selectedSuggestion && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={closeSuggestionModal}>
+          <div 
+            className="bg-gray-800 rounded-3xl p-6 max-w-md w-full border border-gray-700 animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-xl font-black text-blue-400">💡 Protein Boost</h3>
+                <p className="text-sm text-gray-400 mt-1">{selectedSuggestion}</p>
+              </div>
+              <button
+                onClick={closeSuggestionModal}
+                className="p-1 text-gray-400 hover:text-gray-200 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {isLoadingSuggestionDetail ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <svg className="animate-spin h-8 w-8 text-blue-500 mb-3" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="text-gray-400 text-sm">Getting details...</p>
+              </div>
+            ) : suggestionDetail ? (
+              <div className="space-y-4">
+                <p className="text-gray-300 text-sm leading-relaxed">{suggestionDetail.summary}</p>
+
+                <div className="space-y-2">
+                  {suggestionDetail.highlights.map((highlight, idx) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <span className={`mt-0.5 ${highlight.isPositive ? 'text-blue-400' : 'text-yellow-400'}`}>
+                        {highlight.isPositive ? (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                        )}
+                      </span>
+                      <span className="text-gray-400 text-sm">{highlight.text}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-blue-900/20 rounded-xl p-3 mt-4 border border-blue-800/50">
+                  <p className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-1">💡 Quick Tip</p>
+                  <p className="text-gray-300 text-sm">{suggestionDetail.tip}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-400 text-center py-4">Failed to load details. Tap to try again.</p>
             )}
           </div>
         </div>

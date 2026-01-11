@@ -128,3 +128,47 @@ export const estimateFoodFromImage = async (base64Image: string): Promise<Nutrit
 
   return await response.json();
 };
+
+export const getProteinSuggestions = async (currentProtein: number, targetProtein: number, timezone?: string): Promise<string[]> => {
+  const response = await fetch(`${supabaseUrl}/functions/v1/nutrition-ai`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify({ currentProtein, targetProtein, timezone, type: 'protein-suggestions' }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to get protein suggestions');
+  }
+
+  const data = await response.json();
+  return data.suggestions || [];
+};
+
+export interface ProteinSuggestionDetail {
+  summary: string;
+  highlights: Array<{
+    text: string;
+    isPositive: boolean;
+  }>;
+  tip: string;
+}
+
+export const getProteinSuggestionDetail = async (suggestion: string): Promise<ProteinSuggestionDetail> => {
+  const response = await fetch(`${supabaseUrl}/functions/v1/nutrition-ai`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify({ suggestion, type: 'protein-suggestion-detail' }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to get protein suggestion detail');
+  }
+
+  return await response.json();
+};
