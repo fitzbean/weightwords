@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile, Gender, ActivityLevel, WeightGoal } from '../types';
 
 interface ProfileModalProps {
@@ -27,7 +27,38 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     weightGoal: initialData?.weightGoal || WeightGoal.MAINTAIN,
     timezone: initialData?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
     targetWeightLbs: initialData?.targetWeightLbs || undefined,
+    weighDay: initialData?.weighDay ?? 1, // Default to Monday
   });
+
+  // Update form data when initialData changes (e.g., when profile loads from database)
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        displayName: initialData.displayName || '',
+        age: initialData.age || 25,
+        gender: initialData.gender || Gender.MALE,
+        weightLbs: initialData.weightLbs || 150,
+        heightFt: initialData.heightFt || 5,
+        heightIn: initialData.heightIn || 10,
+        activityLevel: initialData.activityLevel || ActivityLevel.MODERATE,
+        weightGoal: initialData.weightGoal || WeightGoal.MAINTAIN,
+        timezone: initialData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+        targetWeightLbs: initialData.targetWeightLbs || undefined,
+        weighDay: initialData.weighDay ?? 1,
+      });
+    }
+  }, [initialData]);
+
+  // Days of the week for weigh day selector
+  const weekDays = [
+    { value: 0, label: 'Sunday' },
+    { value: 1, label: 'Monday' },
+    { value: 2, label: 'Tuesday' },
+    { value: 3, label: 'Wednesday' },
+    { value: 4, label: 'Thursday' },
+    { value: 5, label: 'Friday' },
+    { value: 6, label: 'Saturday' },
+  ];
 
   // Common US timezones
   const timezones = [
@@ -54,6 +85,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         dailyCalorieTarget: calculateDailyCalories(formData),
         spouseId: initialData?.spouseId,
         profileCompleted: true,
+        weighDay: formData.weighDay,
       });
       onClose();
     } catch (error) {
@@ -285,6 +317,25 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   <option key={tz.value} value={tz.value}>{tz.label}</option>
                 ))}
               </select>
+            </div>
+
+            {/* Weigh Day */}
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-2">
+                Weigh-In Day
+              </label>
+              <select
+                value={formData.weighDay}
+                onChange={(e) => setFormData({ ...formData, weighDay: parseInt(e.target.value) })}
+                className="w-full p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
+              >
+                {weekDays.map(day => (
+                  <option key={day.value} value={day.value}>{day.label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Your weekly progress will start on this day
+              </p>
             </div>
           </div>
 

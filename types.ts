@@ -35,6 +35,7 @@ export interface UserProfile {
   isAdmin?: boolean;
   displayName?: string;
   targetWeightLbs?: number;
+  weighDay?: number; // 0=Sunday, 1=Monday, ..., 6=Saturday - day the week starts for weigh-ins
 }
 
 export interface FoodEntry {

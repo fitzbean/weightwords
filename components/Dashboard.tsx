@@ -86,7 +86,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       loadEntries();
       loadWeeklyData();
     }
-  }, [profile?.timezone, externalSelectedDate]);
+  }, [profile?.timezone, profile?.weighDay, externalSelectedDate]);
 
   useEffect(() => {
     if (effectiveUserId && profile) {
@@ -153,7 +153,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const loadWeeklyData = async () => {
     if (!effectiveUserId) return;
-    const weekDates = getWeekDates(externalSelectedDate, profile?.timezone);
+    const weekDates = getWeekDates(externalSelectedDate, profile?.timezone, profile?.weighDay ?? 1);
     const data = await getWeeklyFoodLogs(effectiveUserId, weekDates, profile?.timezone);
     setWeeklyData(data.map(d => ({ date: d.date, totalCalories: d.totalCalories })));
   };
@@ -946,10 +946,19 @@ const Dashboard: React.FC<DashboardProps> = ({
           <div className="mt-6 lg:mt-8 bg-gray-800 p-4 rounded-3xl shadow-sm border border-gray-700">
             <h2 className="text-base font-black text-gray-100 mb-3">Weekly Progress</h2>
             <div className="space-y-2">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => {
+              {(() => {
+                // Generate day labels starting from weighDay
+                const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                const weighDay = profile?.weighDay ?? 1;
+                const rotatedDays = [...dayNames.slice(weighDay), ...dayNames.slice(0, weighDay)];
+                return rotatedDays;
+              })().map((day, index) => {
                 const dayData = weeklyData[index];
+                const weighDay = profile?.weighDay ?? 1;
+                // Calculate which actual day of week this index represents
+                const actualDayOfWeek = (weighDay + index) % 7;
                 const isToday = externalSelectedDate.toDateString() === new Date().toDateString() && 
-                               new Date(externalSelectedDate).getDay() === (index === 6 ? 0 : index + 1);
+                               new Date().getDay() === actualDayOfWeek;
                 const calories = dayData?.totalCalories || 0;
                 const percent = Math.min(100, (calories / (profile?.dailyCalorieTarget || 2000)) * 100);
                 
@@ -982,7 +991,10 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="mt-3 pt-3 border-t border-gray-700 space-y-2">
               {(() => {
                 const currentDayOfWeek = new Date().getDay(); // 0 = Sunday, 1 = Monday, etc.
-                const todayIndex = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1; // Convert to 0-6 (Mon-Sun)
+                const weighDay = profile?.weighDay ?? 1;
+                // Calculate today's index in the rotated week (0 = first day of week, 6 = last day)
+                let todayIndex = currentDayOfWeek - weighDay;
+                if (todayIndex < 0) todayIndex += 7;
                 const dailyTarget = profile?.dailyCalorieTarget || 2000;
                 
                 // Get today's calories and check if over target

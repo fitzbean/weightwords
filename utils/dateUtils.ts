@@ -1,19 +1,27 @@
 // Helper function to get week start and end dates
-export const getWeekDates = (date: Date, timezone?: string) => {
+// weighDay: 0=Sunday, 1=Monday, ..., 6=Saturday (defaults to Monday)
+export const getWeekDates = (date: Date, timezone?: string, weighDay: number = 1) => {
   const d = new Date(date);
   
   // Get the day of week (0 = Sunday, 1 = Monday, etc.)
-  const day = d.getDay();
+  const currentDay = d.getDay();
   
-  // Calculate Monday (start of week)
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday
-  const monday = new Date(d.setDate(diff));
+  // Calculate how many days back to get to the start of the week (weighDay)
+  // If currentDay is 3 (Wed) and weighDay is 1 (Mon), we need to go back 2 days
+  // If currentDay is 0 (Sun) and weighDay is 1 (Mon), we need to go back 6 days
+  let daysBack = currentDay - weighDay;
+  if (daysBack < 0) {
+    daysBack += 7; // Wrap around to previous week
+  }
   
-  // Get all days of the week
+  const weekStart = new Date(d);
+  weekStart.setDate(d.getDate() - daysBack);
+  
+  // Get all days of the week starting from weighDay
   const weekDates = [];
   for (let i = 0; i < 7; i++) {
-    const dayDate = new Date(monday);
-    dayDate.setDate(monday.getDate() + i);
+    const dayDate = new Date(weekStart);
+    dayDate.setDate(weekStart.getDate() + i);
     weekDates.push(dayDate);
   }
   

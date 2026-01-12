@@ -86,6 +86,7 @@ export const getProfile = async (userId: string): Promise<UserProfile | null> =>
     isAdmin: data.is_admin ?? false,
     displayName: data.display_name,
     targetWeightLbs: data.target_weight_lbs,
+    weighDay: data.weigh_day ?? 1, // Default to Monday
   };
   
   console.log('Mapped profile:', profile);
@@ -111,6 +112,7 @@ export const updateProfile = async (userId: string, profile: UserProfile) => {
       updated_at: new Date().toISOString(),
       display_name: profile.displayName,
       target_weight_lbs: profile.targetWeightLbs,
+      weigh_day: profile.weighDay ?? 1,
     })
     .eq('id', userId)
     .select()
