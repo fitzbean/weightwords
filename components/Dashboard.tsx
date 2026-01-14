@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { UserProfile, FoodEntry, FoodLog, NutritionEstimate, FoodItemEstimate, FavoritedBreakdown, ItemInsight } from '../types';
+import { UserProfile, FoodEntry, FoodLog, NutritionEstimate, FoodItemEstimate, FavoritedBreakdown, ItemInsight, WeighIn } from '../types';
 import { estimateNutrition, getItemInsight, getProteinSuggestions, getProteinSuggestionDetail, ProteinSuggestionDetail } from '../services/geminiService';
-import { getFoodLogs, addFoodLog, deleteFoodLog, supabase, getFavoritedBreakdowns, addFavoritedBreakdown, deleteFavoritedBreakdown, updateFavoritedBreakdown, getSharedFavoritedBreakdowns, addSpouse, removeSpouse, getWeeklyFoodLogs } from '../services/supabaseService';
+import { getFoodLogs, addFoodLog, deleteFoodLog, supabase, getFavoritedBreakdowns, addFavoritedBreakdown, deleteFavoritedBreakdown, updateFavoritedBreakdown, getSharedFavoritedBreakdowns, addSpouse, removeSpouse, getWeeklyFoodLogs, getWeighIns } from '../services/supabaseService';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { getWeekDates } from '../utils/dateUtils';
 import { sttService } from '../services/sttService';
@@ -61,6 +61,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [suggestionDetail, setSuggestionDetail] = useState<ProteinSuggestionDetail | null>(null);
   const [isLoadingSuggestionDetail, setIsLoadingSuggestionDetail] = useState(false);
   const hasFetchedSuggestions = useRef(false);
+  const [latestWeighIn, setLatestWeighIn] = useState<WeighIn | null>(null);
 
   // Use impersonated user ID if impersonating, otherwise use real user ID
   const effectiveUserId = impersonatedUserId || user?.id;
@@ -78,6 +79,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       loadEntries();
       loadFavoritedBreakdowns();
       loadWeeklyData();
+      loadLatestWeighIn();
     }
   }, [effectiveUserId, externalSelectedDate]);
 
@@ -184,12 +186,48 @@ const Dashboard: React.FC<DashboardProps> = ({
     setFavoritedBreakdowns(favorites);
   };
 
+  const loadLatestWeighIn = async () => {
+    if (!effectiveUserId) return;
+    const weighIns = await getWeighIns(effectiveUserId);
+    if (weighIns.length > 0) {
+      // Get the most recent weigh-in (array is sorted ascending by date)
+      setLatestWeighIn(weighIns[weighIns.length - 1]);
+    }
+  };
+
+  // Use latest weigh-in weight if available, otherwise fall back to profile weight
+  const currentWeight = latestWeighIn?.weightLbs || profile?.weightLbs || 150;
+  
+  // Calculate daily calorie target based on current weight (using Mifflin-St Jeor equation)
+  const calculateCurrentCalorieTarget = (): number => {
+    if (!profile) return 2000;
+    
+    const weightKg = currentWeight * 0.453592;
+    const heightCm = ((profile.heightFt || 5) * 12 + (profile.heightIn || 10)) * 2.54;
+    const age = profile.age || 25;
+    
+    // BMR calculation
+    let bmr = 10 * weightKg + 6.25 * heightCm - 5 * age;
+    if (profile.gender === 'female') {
+      bmr -= 161;
+    }
+    
+    // Apply activity level
+    const tdee = bmr * parseFloat(profile.activityLevel || '1.55');
+    
+    // Apply weight goal
+    return Math.round(tdee + parseFloat(profile.weightGoal || '0'));
+  };
+  
+  const dailyCalorieTarget = calculateCurrentCalorieTarget();
+  
   const totalCalories = entries.reduce((sum, entry) => sum + entry.calories, 0);
   const totalProtein = entries.reduce((sum, entry) => sum + (entry.protein || 0), 0);
   const totalFat = entries.reduce((sum, entry) => sum + (entry.fat || 0), 0);
-  const caloriesRemaining = (profile?.dailyCalorieTarget || 2000) - totalCalories;
-  const progressPercent = Math.min(100, (totalCalories / (profile?.dailyCalorieTarget || 2000)) * 100);
-  const targetProtein = Math.round((profile?.weightLbs || 150) / 2.205 * 1.2);
+  const caloriesRemaining = dailyCalorieTarget - totalCalories;
+  const progressPercent = Math.min(100, (totalCalories / dailyCalorieTarget) * 100);
+  const targetProtein = Math.round(currentWeight / 2.205 * 1.2);
+  const targetFat = Math.round(currentWeight * 0.275);
 
   // Fetch protein suggestions only once per page load when protein is below target AND viewing today
   useEffect(() => {
@@ -909,7 +947,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 </div>
                 <div className="text-right">
                   <p className="text-xs font-black text-gray-500 uppercase tracking-wider">Target</p>
-                  <p className="text-2xl font-black text-gray-100">{profile?.dailyCalorieTarget || 2000}</p>
+                  <p className="text-2xl font-black text-gray-100">{dailyCalorieTarget}</p>
                 </div>
               </div>
               
@@ -930,7 +968,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-xs font-black text-gray-400">
-                    Protein: <span className="text-gray-100">{Math.round(totalProtein)}/{Math.round((profile?.weightLbs || 150) / 2.205 * 1.2)}g</span> • Fat: <span className="text-gray-100">{Math.round(totalFat)}/{Math.round((profile?.weightLbs || 150) * 0.275)}g</span>
+                    Protein: <span className="text-gray-100">{Math.round(totalProtein)}/{targetProtein}g</span> • Fat: <span className="text-gray-100">{Math.round(totalFat)}/{targetFat}g</span>
                   </p>
                 </div>
                 <div className="text-right">
@@ -974,7 +1012,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 const isToday = externalSelectedDate.toDateString() === new Date().toDateString() && 
                                new Date().getDay() === actualDayOfWeek;
                 const calories = dayData?.totalCalories || 0;
-                const percent = Math.min(100, (calories / (profile?.dailyCalorieTarget || 2000)) * 100);
+                const percent = Math.min(100, (calories / dailyCalorieTarget) * 100);
                 
                 return (
                   <div key={day} className="flex items-center gap-3">
@@ -985,7 +1023,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                       <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
                         <div
                           className={`h-full transition-all duration-500 ease-out rounded-full ${
-                            calories > (profile?.dailyCalorieTarget || 2000) 
+                            calories > dailyCalorieTarget 
                               ? 'bg-red-500' 
                               : isToday 
                                 ? 'bg-green-500' 
@@ -1009,7 +1047,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 // Calculate today's index in the rotated week (0 = first day of week, 6 = last day)
                 let todayIndex = currentDayOfWeek - weighDay;
                 if (todayIndex < 0) todayIndex += 7;
-                const dailyTarget = profile?.dailyCalorieTarget || 2000;
+                const dailyTarget = dailyCalorieTarget;
                 
                 // Get today's calories and check if over target
                 const todayCalories = weeklyData[todayIndex]?.totalCalories || 0;
@@ -1031,7 +1069,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Weekly Total</span>
                       <span className="text-sm font-black text-gray-100">
-                        {weeklyTotalSoFar} / {(profile?.dailyCalorieTarget || 2000) * (todayIndex + 1)} kcal
+                        {weeklyTotalSoFar} / {dailyCalorieTarget * (todayIndex + 1)} kcal
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
@@ -1081,7 +1119,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                             <span className={`font-bold ${projectedWeightChange > 0 ? 'text-green-400' : 'text-red-400'}`}>
                               {projectedWeightChange > 0 ? 'lose' : 'gain'} {Math.abs(projectedWeightChange).toFixed(1)} lbs
                             </span>
-                            {' '}this week!  Keep it up{profile?.displayName ? `, ${profile.displayName}` : ''}! 🎉 🎊 🥳
+                            {' '}this week{projectedWeightChange > 0 ? '! Keep it up' : ''}{profile?.displayName ? `, ${profile.displayName}` : ''}{projectedWeightChange > 0 ? '! 🎉 🎊 🥳' : '. You are going the wrong way! LOCK IN 💪'}
                           </p>
                         </div>
                       );
