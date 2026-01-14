@@ -794,6 +794,20 @@ const Dashboard: React.FC<DashboardProps> = ({
                   <div>
                     <h3 className="text-xl font-black text-green-400 uppercase tracking-tight">Breakdown</h3>
                     <p className="text-xs font-bold text-green-500 uppercase tracking-widest mt-1">AI Detected {lastEstimate.items.length} items</p>
+                    <div className="flex gap-3 mt-2">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Protein</span>
+                        <span className="text-xs font-black text-blue-400">{breakdownItems.reduce((sum, i) => sum + i.protein, 0)}g</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-black text-yellow-500 uppercase tracking-widest">Fat</span>
+                        <span className="text-xs font-black text-yellow-400">{breakdownItems.reduce((sum, i) => sum + i.fat, 0)}g</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-black text-purple-500 uppercase tracking-widest">Carbs</span>
+                        <span className="text-xs font-black text-purple-400">{breakdownItems.reduce((sum, i) => sum + i.carbs, 0)}g</span>
+                      </div>
+                    </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <button
@@ -916,7 +930,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-xs font-black text-gray-400">
-                    Protein: <span className="text-gray-100">{Math.round(totalProtein)}/{Math.round((profile?.weightLbs || 150) / 2.205 * 1.2)}g</span> • Fat: <span className="text-gray-100">{Math.round(totalFat)}/{Math.round((profile?.weightLbs || 150) * 0.25)}g</span>
+                    Protein: <span className="text-gray-100">{Math.round(totalProtein)}/{Math.round((profile?.weightLbs || 150) / 2.205 * 1.2)}g</span> • Fat: <span className="text-gray-100">{Math.round(totalFat)}/{Math.round((profile?.weightLbs || 150) * 0.275)}g</span>
                   </p>
                 </div>
                 <div className="text-right">
@@ -1212,11 +1226,23 @@ const Dashboard: React.FC<DashboardProps> = ({
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="text-xl font-black text-gray-100">{selectedItem.name}</h3>
-                <div className="flex gap-3 mt-1">
-                  <span className="text-xs text-gray-500 font-bold">{selectedItem.calories} kcal</span>
-                  <span className="text-xs text-gray-500">P: {selectedItem.protein}g</span>
-                  <span className="text-xs text-gray-500">C: {selectedItem.carbs}g</span>
-                  <span className="text-xs text-gray-500">F: {selectedItem.fat}g</span>
+                <div className="flex gap-4 mt-2">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Calories</span>
+                    <span className="text-sm font-black text-gray-100">{selectedItem.calories} kcal</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Protein</span>
+                    <span className="text-sm font-black text-blue-400">{selectedItem.protein}g</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Fat</span>
+                    <span className="text-sm font-black text-yellow-400">{selectedItem.fat}g</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-purple-500 uppercase tracking-widest">Carbs</span>
+                    <span className="text-sm font-black text-purple-400">{selectedItem.carbs}g</span>
+                  </div>
                 </div>
               </div>
               <button
