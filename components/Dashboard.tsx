@@ -431,6 +431,18 @@ const Dashboard: React.FC<DashboardProps> = ({
     await loadWeeklyData();
   };
 
+  const addToBreakdown = (item: FoodItemEstimate) => {
+    setBreakdownItems(prev => [...prev, item]);
+    setLastEstimate(prev => {
+      const combinedItems = prev ? [...prev.items, item] : [item];
+      return {
+        items: combinedItems,
+        totalCalories: combinedItems.reduce((sum, i) => sum + i.calories, 0),
+        confidence: prev?.confidence || 0.9,
+      };
+    });
+  };
+
   const handleItemClick = async (item: FoodItemEstimate) => {
     setSelectedItem(item);
     setItemInsight(null);
@@ -1157,8 +1169,22 @@ const Dashboard: React.FC<DashboardProps> = ({
                   entries.map((entry) => (
                     <div key={entry.id} className="p-4 flex justify-between items-center group transition-all hover:bg-gray-700/50 cursor-pointer" onClick={() => handleItemClick(entry)}>
                       <div className="flex gap-3 items-center min-w-0 flex-1">
-                        <div className="w-8 h-8 rounded-lg bg-gray-800/50 flex items-center justify-center text-lg shrink-0">
+                        <div className="relative shrink-0">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addToBreakdown(entry);
+                            }}
+                            className="w-8 h-8 rounded-lg bg-gray-800/50 flex items-center justify-center text-lg hover:bg-gray-700 transition-colors relative"
+                            title="Add to breakdown"
+                          >
                             {getFoodEmoji(entry.name)}
+                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center text-white sm:opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" />
+                              </svg>
+                            </div>
+                          </button>
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="font-bold text-gray-100 text-sm truncate">{entry.name}</p>
