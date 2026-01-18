@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, ReferenceLine } from 'recharts';
-import { WeighIn, UserProfile } from '../types';
+import { WeighIn, UserProfile, Gender } from '../types';
 import { getWeighIns, addWeighIn, deleteWeighIn } from '../services/supabaseService';
 
 interface WeighInModalProps {
@@ -79,6 +79,26 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
   };
 
   const weightChange = getWeightChange();
+
+  const calculateIdealWeight = (prof: UserProfile | null): number | null => {
+    if (!prof) return null;
+    const { gender, heightFt, heightIn } = prof;
+    const totalHeightInches = heightFt * 12 + heightIn;
+    
+    // Devine Formula (1974)
+    // Men: IBW = 50 kg + 2.3 kg for each inch over 5 feet
+    // Women: IBW = 45.5 kg + 2.3 kg for each inch over 5 feet
+    // 1 kg = 2.20462 lbs
+    
+    if (totalHeightInches < 60) return null; // Formula is for 5ft+
+
+    const inchesOver5ft = totalHeightInches - 60;
+    let baseKg = gender === Gender.MALE ? 50.0 : 45.5;
+    const idealKg = baseKg + (2.3 * inchesOver5ft);
+    return Math.round(idealKg * 2.20462);
+  };
+
+  const idealWeight = calculateIdealWeight(profile);
 
   if (!isOpen) return null;
 
@@ -305,7 +325,7 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
                   </span>
                 </div>
                 {weighIns.length >= 2 && percentProgress > 0 && percentProgress < 200 && (
-                  <div>
+                  <div className="mb-2">
                     <div className="w-full bg-gray-700/50 rounded-full h-2 mb-1">
                       <div 
                         className="bg-gradient-to-r from-blue-500 to-blue-400 h-2 rounded-full transition-all duration-500"
@@ -314,6 +334,13 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
                     </div>
                     <p className="text-xs text-gray-400">
                       {percentProgress >= 100 ? '🎉 Target reached!' : `${percentProgress.toFixed(0)}% progress from start`}
+                    </p>
+                  </div>
+                )}
+                {idealWeight && (
+                  <div className="pt-2 border-t border-blue-800/20">
+                    <p className="text-[10px] text-blue-400/60 font-medium">
+                      Note: Your ideal weight (Devine Formula) is <span className="font-bold text-blue-400/80">{idealWeight} lbs</span>
                     </p>
                   </div>
                 )}

@@ -117,6 +117,23 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     return Math.round(tdee + parseFloat(weightGoal));
   };
 
+  const calculateIdealWeight = (data: typeof formData): number | null => {
+    const { gender, heightFt, heightIn } = data;
+    const totalHeightInches = heightFt * 12 + heightIn;
+    
+    // Devine Formula (1974)
+    // Men: IBW = 50 kg + 2.3 kg for each inch over 5 feet
+    // Women: IBW = 45.5 kg + 2.3 kg for each inch over 5 feet
+    // 1 kg = 2.20462 lbs
+    
+    if (totalHeightInches < 60) return null; // Formula is for 5ft+
+
+    const inchesOver5ft = totalHeightInches - 60;
+    let baseKg = gender === Gender.MALE ? 50.0 : 45.5;
+    const idealKg = baseKg + (2.3 * inchesOver5ft);
+    return Math.round(idealKg * 2.20462);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -301,6 +318,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                 className="w-full p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
                 placeholder="Optional"
               />
+              {calculateIdealWeight(formData) && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Ideal Weight (Devine Formula): <span className="text-blue-400 font-semibold">{calculateIdealWeight(formData)} lbs</span>
+                </p>
+              )}
             </div>
 
             {/* Timezone */}
