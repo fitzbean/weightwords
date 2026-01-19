@@ -453,9 +453,9 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
                     {percentProgress < 100 && projections && (
                       <div className="mt-2 space-y-1">
                         {projections.scheduledDate && (
-                          <p className="text-[10px] text-blue-400/80">
+                          <p className="text-[10px] text-white-400/80">
                             <p className="text-[10px] text-yellow-400/80 font-bold">Current Progress Goal</p>
-                            On pace for <span className="font-bold">{formatDateWithSuffix(projections.scheduledDate)}</span> —
+                            On pace for <span className="font-bold text-blue-400/80">{formatDateWithSuffix(projections.scheduledDate)}</span> —
                             {projections.daysAheadBase !== null && projections.daysAheadBase !== 0 && (
                               <span className={`ml-1 font-black ${projections.daysAheadBase > 0 ? 'text-green-400' : 'text-amber-400'}`}>
                                 {projections.daysAheadBase > 0 ? `${projections.daysAheadBase} days ahead schedule!` : `${Math.abs(projections.daysAheadBase)} days behind schedule!`}
@@ -469,7 +469,7 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
                 )}
                 {idealWeight && (
                   <div className="pt-2 border-t border-blue-800/20">
-                    <p className="text-[10px] text-blue-400/60 font-medium">
+                    <p className="text-[10px] text-white-400/60">
                       <p className="text-[10px] text-yellow-400/80 font-bold">Miller's Formula (Ideal Body Weight)</p>
                       Your ideal weight is <span className="font-bold text-blue-400/80">{idealWeight} lbs</span>
                       {projections?.idealWeightDate && (
