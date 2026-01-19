@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, ReferenceLine } from 'recharts';
-import { WeighIn, UserProfile, Gender } from '../types';
+import { WeighIn, UserProfile, Gender, WeightGoal } from '../types';
 import { getWeighIns, addWeighIn, deleteWeighIn } from '../services/supabaseService';
 
 interface WeighInModalProps {
@@ -78,6 +78,23 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
     return change;
   };
 
+  const getDaySuffix = (day: number) => {
+    if (day >= 11 && day <= 13) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  };
+
+  const formatDateWithSuffix = (date: Date) => {
+    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    const day = date.getDate();
+    const year = date.getFullYear();
+    return `${month} ${day}${getDaySuffix(day)}, ${year}`;
+  };
+
   const weightChange = getWeightChange();
 
   const calculateIdealWeight = (prof: UserProfile | null): number | null => {
@@ -85,16 +102,17 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
     const { gender, heightFt, heightIn } = prof;
     const totalHeightInches = heightFt * 12 + heightIn;
     
-    // Devine Formula (1974)
-    // Men: IBW = 50 kg + 2.3 kg for each inch over 5 feet
-    // Women: IBW = 45.5 kg + 2.3 kg for each inch over 5 feet
+    // Miller's Formula (1983)
+    // Men: IBW = 56.2 kg + 1.41 kg for each inch over 5 feet
+    // Women: IBW = 53.1 kg + 1.36 kg for each inch over 5 feet
     // 1 kg = 2.20462 lbs
     
     if (totalHeightInches < 60) return null; // Formula is for 5ft+
 
     const inchesOver5ft = totalHeightInches - 60;
-    let baseKg = gender === Gender.MALE ? 50.0 : 45.5;
-    const idealKg = baseKg + (2.3 * inchesOver5ft);
+    let baseKg = gender === Gender.MALE ? 56.2 : 53.1;
+    let kgPerInch = gender === Gender.MALE ? 1.41 : 1.36;
+    const idealKg = baseKg + (kgPerInch * inchesOver5ft);
     return Math.round(idealKg * 2.20462);
   };
 
@@ -106,7 +124,7 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[80vh] flex flex-col">
         <div className="flex justify-between items-center p-4 pb-0">
-          <h2 className="text-2xl font-black text-gray-100">Weigh-ins</h2>
+          <h2 className="text-2xl font-black text-gray-100 mb-4">Weigh-ins</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-200 text-2xl leading-none"
@@ -301,7 +319,6 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
         )}
 
         <form onSubmit={handleAddWeighIn} className="mb-6">
-          <h3 className="text-lg font-bold text-gray-100 mb-4">Add Weigh-in</h3>
           {profile?.targetWeightLbs && weighIns.length > 0 && (() => {
             const currentWeight = weighIns[weighIns.length - 1].weightLbs;
             const targetWeight = profile.targetWeightLbs;
@@ -310,6 +327,104 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
             const percentProgress = weighIns.length >= 2 
               ? ((weighIns[0].weightLbs - currentWeight) / (weighIns[0].weightLbs - targetWeight)) * 100
               : 0;
+            
+            // Calculate projections
+            const getProjections = () => {
+              if (weighIns.length < 2) return null;
+              
+              const firstWeighIn = weighIns[0];
+              const latestWeighIn = weighIns[weighIns.length - 1];
+              const diffLbs = firstWeighIn.weightLbs - latestWeighIn.weightLbs;
+              const remainingLbs = latestWeighIn.weightLbs - targetWeight;
+              
+              if (remainingLbs <= 0) return null;
+
+              const formatDuration = (targetDate: Date) => {
+                const now = new Date();
+                const diffTime = targetDate.getTime() - now.getTime();
+                const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                if (totalDays <= 0) return '';
+                
+                const months = Math.floor(totalDays / 30);
+                const remainingDays = totalDays % 30;
+                
+                let parts = [];
+                if (months > 0) parts.push(`${months}m`);
+                if (remainingDays > 0 || months === 0) parts.push(`${remainingDays}d`);
+                
+                return `(${parts.join(' ')})`;
+              };
+
+              // Current Trajectory (based on average loss per day since start)
+              const firstDate = new Date(firstWeighIn.date + 'T00:00:00');
+              const latestDate = new Date(latestWeighIn.date + 'T00:00:00');
+              const daysPassed = Math.max(1, (latestDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24));
+              const lbsPerDay = diffLbs / daysPassed;
+              
+              let trajectoryDate = null;
+              let trajectoryDuration = '';
+              if (lbsPerDay > 0) {
+                const daysRemaining = remainingLbs / lbsPerDay;
+                trajectoryDate = new Date();
+                trajectoryDate.setDate(trajectoryDate.getDate() + daysRemaining);
+                trajectoryDuration = formatDuration(trajectoryDate);
+              }
+
+              // Scheduled Date (based on profile weight goal)
+              let scheduledDate = null;
+              let scheduledDuration = '';
+              let baseScheduledDate = null;
+              let baseScheduledDuration = '';
+              const goalMap: Record<string, number> = {
+                [WeightGoal.LOSE_FAST]: 2,
+                [WeightGoal.LOSE]: 1,
+                [WeightGoal.MAINTAIN]: 0,
+                [WeightGoal.GAIN]: -0.5,
+                [WeightGoal.GAIN_FAST]: -1
+              };
+              const lbsPerWeek = goalMap[profile.weightGoal] || 0;
+              let idealWeightDate = null;
+              if (lbsPerWeek > 0) {
+                // Dynamic schedule from current weight
+                const weeksRemaining = remainingLbs / lbsPerWeek;
+                scheduledDate = new Date();
+                scheduledDate.setDate(scheduledDate.getDate() + (weeksRemaining * 7));
+                scheduledDuration = formatDuration(scheduledDate);
+
+                // Base schedule from start date and first weight
+                const totalLbsToLose = firstWeighIn.weightLbs - targetWeight;
+                const totalWeeksNeeded = totalLbsToLose / lbsPerWeek;
+                baseScheduledDate = new Date(firstDate);
+                baseScheduledDate.setDate(baseScheduledDate.getDate() + (totalWeeksNeeded * 7));
+                baseScheduledDuration = formatDuration(baseScheduledDate);
+
+                // Ideal weight projection
+                if (idealWeight && currentWeight > idealWeight) {
+                  const idealRemainingLbs = currentWeight - idealWeight;
+                  const weeksToIdeal = idealRemainingLbs / lbsPerWeek;
+                  idealWeightDate = new Date();
+                  idealWeightDate.setDate(idealWeightDate.getDate() + (weeksToIdeal * 7));
+                }
+              }
+
+              const daysAheadTrajectory = trajectoryDate && scheduledDate ? Math.round((scheduledDate.getTime() - trajectoryDate.getTime()) / (1000 * 60 * 60 * 24)) : null;
+              const daysAheadBase = scheduledDate && baseScheduledDate ? Math.round((baseScheduledDate.getTime() - scheduledDate.getTime()) / (1000 * 60 * 60 * 24)) : null;
+
+              return { 
+                trajectoryDate, 
+                trajectoryDuration, 
+                scheduledDate, 
+                scheduledDuration, 
+                baseScheduledDate,
+                baseScheduledDuration,
+                daysAheadTrajectory,
+                daysAheadBase,
+                idealWeightDate
+              };
+            };
+
+            const projections = getProjections();
             
             return (
               <div className="mb-4 p-4 bg-gradient-to-br from-blue-900/20 to-blue-900/10 border border-blue-800/30 rounded-xl">
@@ -335,18 +450,38 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
                     <p className="text-xs text-gray-400">
                       {percentProgress >= 100 ? '🎉 Target reached!' : `${percentProgress.toFixed(0)}% progress from start`}
                     </p>
+                    {percentProgress < 100 && projections && (
+                      <div className="mt-2 space-y-1">
+                        {projections.scheduledDate && (
+                          <p className="text-[10px] text-blue-400/80">
+                            <p className="text-[10px] text-yellow-400/80 font-bold">Current Progress Goal</p>
+                            On pace for <span className="font-bold">{formatDateWithSuffix(projections.scheduledDate)}</span> —
+                            {projections.daysAheadBase !== null && projections.daysAheadBase !== 0 && (
+                              <span className={`ml-1 font-black ${projections.daysAheadBase > 0 ? 'text-green-400' : 'text-amber-400'}`}>
+                                {projections.daysAheadBase > 0 ? `${projections.daysAheadBase} days ahead schedule!` : `${Math.abs(projections.daysAheadBase)} days behind schedule!`}
+                              </span>
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
                 {idealWeight && (
                   <div className="pt-2 border-t border-blue-800/20">
                     <p className="text-[10px] text-blue-400/60 font-medium">
-                      Note: Your ideal weight (Devine Formula) is <span className="font-bold text-blue-400/80">{idealWeight} lbs</span>
+                      <p className="text-[10px] text-yellow-400/80 font-bold">Miller's Formula (Ideal Body Weight)</p>
+                      Your ideal weight is <span className="font-bold text-blue-400/80">{idealWeight} lbs</span>
+                      {projections?.idealWeightDate && (
+                        <> — Est. reach by <span className="font-bold text-blue-400/80">{formatDateWithSuffix(projections.idealWeightDate)}</span></>
+                      )}
                     </p>
                   </div>
                 )}
               </div>
             );
           })()}
+          <h3 className="text-lg font-bold text-gray-100 mb-4">Add Weigh-in</h3>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">
