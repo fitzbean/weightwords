@@ -298,7 +298,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                 className="w-full p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
               >
                 <option value={WeightGoal.LOSE_FAST}>Lose 2 lbs per week</option>
+                <option value={WeightGoal.LOSE_ONE_HALF}>Lose 1.5 lbs per week</option>
                 <option value={WeightGoal.LOSE}>Lose 1 lb per week</option>
+                <option value={WeightGoal.LOSE_HALF}>Lose 0.5 lb per week</option>
                 <option value={WeightGoal.MAINTAIN}>Maintain weight</option>
                 <option value={WeightGoal.GAIN}>Gain 0.5 lb per week</option>
                 <option value={WeightGoal.GAIN_FAST}>Gain 1 lb per week</option>

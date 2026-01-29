@@ -11,7 +11,9 @@ export const ACTIVITY_LEVEL_OPTIONS = [
 
 export const GOAL_OPTIONS = [
   { value: WeightGoal.LOSE_FAST, label: 'Lose 2 lbs/week (-1000 kcal)' },
+  { value: WeightGoal.LOSE_ONE_HALF, label: 'Lose 1.5 lbs/week (-750 kcal)' },
   { value: WeightGoal.LOSE, label: 'Lose 1 lb/week (-500 kcal)' },
+  { value: WeightGoal.LOSE_HALF, label: 'Lose 0.5 lb/week (-250 kcal)' },
   { value: WeightGoal.MAINTAIN, label: 'Maintain Weight' },
   { value: WeightGoal.GAIN, label: 'Gain 1 lb/week (+500 kcal)' },
   { value: WeightGoal.GAIN_FAST, label: 'Gain 2 lbs/week (+1000 kcal)' },

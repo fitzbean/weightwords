@@ -14,7 +14,9 @@ export enum ActivityLevel {
 
 export enum WeightGoal {
   LOSE_FAST = '-1000',
+  LOSE_ONE_HALF = '-750',
   LOSE = '-500',
+  LOSE_HALF = '-250',
   MAINTAIN = '0',
   GAIN = '500',
   GAIN_FAST = '1000'

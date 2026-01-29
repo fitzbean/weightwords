@@ -378,7 +378,9 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
               let baseScheduledDuration = '';
               const goalMap: Record<string, number> = {
                 [WeightGoal.LOSE_FAST]: 2,
+                [WeightGoal.LOSE_ONE_HALF]: 1.5,
                 [WeightGoal.LOSE]: 1,
+                [WeightGoal.LOSE_HALF]: 0.5,
                 [WeightGoal.MAINTAIN]: 0,
                 [WeightGoal.GAIN]: -0.5,
                 [WeightGoal.GAIN_FAST]: -1
