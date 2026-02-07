@@ -55,6 +55,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [isLoadingInsight, setIsLoadingInsight] = useState(false);
   const [showLabelScanner, setShowLabelScanner] = useState(false);
   const [breakdownItems, setBreakdownItems] = useState<FoodItemEstimate[]>([]);
+  const [portionSizes, setPortionSizes] = useState<Record<number, number>>({});
   const [showPreviousDayWarning, setShowPreviousDayWarning] = useState(false);
   const [proteinSuggestions, setProteinSuggestions] = useState<string[]>([]);
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
@@ -355,17 +356,26 @@ const Dashboard: React.FC<DashboardProps> = ({
       return `${year}-${month}-${day}`;
     };
 
-    // Create an entry for each breakdown item (round calories to integer for DB)
-    const entries = breakdownItems.map(item => ({
-      user_id: effectiveUserId,
-      name: item.name,
-      calories: Math.round(item.calories),
-      protein: item.protein,
-      carbs: item.carbs,
-      fat: item.fat,
-      description: item.name,
-      date: getDateString(),
-    }));
+    // Create an entry for each breakdown item with portion size applied (round calories to integer for DB)
+    const entries = breakdownItems.map((item, idx) => {
+      const portion = portionSizes[idx] || 1;
+      return {
+        user_id: effectiveUserId,
+        name: item.name,
+        calories: Math.round(item.calories * portion),
+        protein: Math.round(item.protein * portion),
+        carbs: Math.round(item.carbs * portion),
+        fat: Math.round(item.fat * portion),
+        description: item.name,
+        date: getDateString(),
+      };
+    });
+
+    // Clear breakdown immediately so UI feels responsive
+    setFoodInput('');
+    setLastEstimate(null);
+    setBreakdownItems([]);
+    setPortionSizes({});
 
     // Insert all entries at once
     const { data, error } = await supabase
@@ -374,9 +384,6 @@ const Dashboard: React.FC<DashboardProps> = ({
     
     await loadEntries();
     await loadWeeklyData();
-    setFoodInput('');
-    setLastEstimate(null);
-    setBreakdownItems([]);
   };
 
   const confirmAddEntry = async () => {
@@ -400,17 +407,27 @@ const Dashboard: React.FC<DashboardProps> = ({
       return `${year}-${month}-${day}`;
     };
 
-    // Create an entry for each breakdown item (round calories to integer for DB)
-    const entries = breakdownItems.map(item => ({
-      user_id: effectiveUserId,
-      name: item.name,
-      calories: Math.round(item.calories),
-      protein: item.protein,
-      carbs: item.carbs,
-      fat: item.fat,
-      description: item.name,
-      date: getDateString(),
-    }));
+    // Create an entry for each breakdown item with portion size applied (round calories to integer for DB)
+    const entries = breakdownItems.map((item, idx) => {
+      const portion = portionSizes[idx] || 1;
+      return {
+        user_id: effectiveUserId,
+        name: item.name,
+        calories: Math.round(item.calories * portion),
+        protein: Math.round(item.protein * portion),
+        carbs: Math.round(item.carbs * portion),
+        fat: Math.round(item.fat * portion),
+        description: item.name,
+        date: getDateString(),
+      };
+    });
+
+    // Clear breakdown immediately so UI feels responsive
+    setFoodInput('');
+    setLastEstimate(null);
+    setBreakdownItems([]);
+    setPortionSizes({});
+    setShowPreviousDayWarning(false);
 
     // Insert all entries at once
     const { error } = await supabase
@@ -419,10 +436,6 @@ const Dashboard: React.FC<DashboardProps> = ({
     
     await loadEntries();
     await loadWeeklyData();
-    setFoodInput('');
-    setLastEstimate(null);
-    setBreakdownItems([]);
-    setShowPreviousDayWarning(false);
   };
 
   const deleteEntry = async (id: string) => {
@@ -485,6 +498,18 @@ const Dashboard: React.FC<DashboardProps> = ({
     const newItems = breakdownItems.filter((_, i) => i !== index);
     setBreakdownItems(newItems);
     
+    // Rebuild portion sizes with shifted indices
+    const newPortions: Record<number, number> = {};
+    let newIdx = 0;
+    for (let i = 0; i < breakdownItems.length; i++) {
+      if (i === index) continue;
+      if (portionSizes[i] && portionSizes[i] !== 1) {
+        newPortions[newIdx] = portionSizes[i];
+      }
+      newIdx++;
+    }
+    setPortionSizes(newPortions);
+    
     // Update last estimate
     if (newItems.length > 0) {
       setLastEstimate({
@@ -511,12 +536,15 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const useFavoritedBreakdown = (favorite: FavoritedBreakdown) => {
-    setLastEstimate({
-      items: favorite.breakdown,
-      totalCalories: favorite.totalCalories,
-      confidence: 1,
+    setBreakdownItems(prev => {
+      const combined = [...prev, ...favorite.breakdown];
+      setLastEstimate({
+        items: combined,
+        totalCalories: combined.reduce((sum, i) => sum + i.calories, 0),
+        confidence: 1,
+      });
+      return combined;
     });
-    setBreakdownItems(favorite.breakdown);
     setFoodInput('');
   };
 
@@ -847,15 +875,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <div className="flex gap-3 mt-2">
                       <div className="flex flex-col">
                         <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Protein</span>
-                        <span className="text-xs font-black text-blue-400">{breakdownItems.reduce((sum, i) => sum + i.protein, 0)}g</span>
+                        <span className="text-xs font-black text-blue-400">{Math.round(breakdownItems.reduce((sum, i, idx) => sum + i.protein * (portionSizes[idx] || 1), 0))}g</span>
                       </div>
                       <div className="flex flex-col">
                         <span className="text-[9px] font-black text-yellow-500 uppercase tracking-widest">Fat</span>
-                        <span className="text-xs font-black text-yellow-400">{breakdownItems.reduce((sum, i) => sum + i.fat, 0)}g</span>
+                        <span className="text-xs font-black text-yellow-400">{Math.round(breakdownItems.reduce((sum, i, idx) => sum + i.fat * (portionSizes[idx] || 1), 0))}g</span>
                       </div>
                       <div className="flex flex-col">
                         <span className="text-[9px] font-black text-purple-500 uppercase tracking-widest">Carbs</span>
-                        <span className="text-xs font-black text-purple-400">{breakdownItems.reduce((sum, i) => sum + i.carbs, 0)}g</span>
+                        <span className="text-xs font-black text-purple-400">{Math.round(breakdownItems.reduce((sum, i, idx) => sum + i.carbs * (portionSizes[idx] || 1), 0))}g</span>
                       </div>
                     </div>
                   </div>
@@ -870,7 +898,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                       </svg>
                     </button>
                     <div className="text-right">
-                      <div className="text-2xl font-black text-green-400">{lastEstimate.totalCalories}</div>
+                      <div className="text-2xl font-black text-green-400">{Math.round(breakdownItems.reduce((sum, i, idx) => sum + i.calories * (portionSizes[idx] || 1), 0))}</div>
                       <div className="text-[10px] font-black uppercase text-green-500 tracking-tighter">Total KCAL</div>
                                             {lastEstimate.servingSize && (
                         <div className="text-[8px] text-gray-500 mt-1">{lastEstimate.servingSize}</div>
@@ -900,14 +928,28 @@ const Dashboard: React.FC<DashboardProps> = ({
                           )}
                         </p>
                         <div className="flex gap-3 mt-1">
-                          <span className="text-[10px] text-gray-500 font-black">P: {item.protein}g</span>
-                          <span className="text-[10px] text-gray-500 font-black">C: {item.carbs}g</span>
-                          <span className="text-[10px] text-gray-500 font-black">F: {item.fat}g</span>
+                          <span className="text-[10px] text-gray-500 font-black">P: {Math.round(item.protein * (portionSizes[idx] || 1))}g</span>
+                          <span className="text-[10px] text-gray-500 font-black">C: {Math.round(item.carbs * (portionSizes[idx] || 1))}g</span>
+                          <span className="text-[10px] text-gray-500 font-black">F: {Math.round(item.fat * (portionSizes[idx] || 1))}g</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
+                        <select
+                          value={portionSizes[idx] || 1}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            setPortionSizes(prev => ({ ...prev, [idx]: parseFloat(e.target.value) }));
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="bg-gray-700 text-gray-200 text-xs font-bold rounded-lg px-2 py-1 border border-gray-600 outline-none cursor-pointer"
+                        >
+                          <option value={0.5}>0.5x</option>
+                          <option value={1}>1x</option>
+                          <option value={1.5}>1.5x</option>
+                          <option value={2}>2x</option>
+                        </select>
                         <div className="text-right">
-                          <span className="font-black text-gray-100">{item.calories}</span>
+                          <span className="font-black text-gray-100">{Math.round(item.calories * (portionSizes[idx] || 1))}</span>
                           <span className="text-[10px] font-black text-gray-500 uppercase ml-1">kcal</span>
                         </div>
                         <button
@@ -938,6 +980,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                         onClick={() => {
                             setLastEstimate(null);
                             setBreakdownItems([]);
+                            setPortionSizes({});
                         }}
                         className="px-6 py-4 bg-gray-700 text-gray-300 rounded-2xl font-bold border border-gray-600 hover:bg-gray-600 transition-all"
                     >
