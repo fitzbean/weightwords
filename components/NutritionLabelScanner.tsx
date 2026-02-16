@@ -26,6 +26,7 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
     console.log('resetState called');
     setCaptureStep('product');
     setProductImage(null);
+    setIsProcessing(false);
     setError(null);
     setButtonPressed(null);
   }, []);
