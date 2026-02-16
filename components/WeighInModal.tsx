@@ -168,21 +168,21 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
               )}
               {profile?.targetWeightLbs ? (() => {
                 const currentWeight = weighIns[weighIns.length - 1].weightLbs;
-                const targetWeight = profile.targetWeightLbs;
-                const remaining = currentWeight - targetWeight;
-                const isAboveTarget = remaining > 0;
+                const startingWeight = weighIns[0].weightLbs;
+                const totalLost = Math.max(0, startingWeight - currentWeight);
+                const hasLostWeight = totalLost > 0;
                 return (
-                  <div className={`bg-gradient-to-br ${isAboveTarget ? 'from-blue-900/40 to-blue-900/20 border-blue-800/30' : 'from-amber-900/40 to-amber-900/20 border-amber-800/30'} rounded-2xl p-4 border`}>
+                  <div className={`bg-gradient-to-br ${hasLostWeight ? 'from-blue-900/40 to-blue-900/20 border-blue-800/30' : 'from-amber-900/40 to-amber-900/20 border-amber-800/30'} rounded-2xl p-4 border`}>
                     <div className="flex items-center gap-2 mb-1">
-                      <div className={`w-8 h-8 ${isAboveTarget ? 'bg-blue-500/20' : 'bg-amber-500/20'} rounded-lg flex items-center justify-center`}>
-                        <svg className={`w-4 h-4 ${isAboveTarget ? 'text-blue-400' : 'text-amber-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className={`w-8 h-8 ${hasLostWeight ? 'bg-blue-500/20' : 'bg-amber-500/20'} rounded-lg flex items-center justify-center`}>
+                        <svg className={`w-4 h-4 ${hasLostWeight ? 'text-blue-400' : 'text-amber-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                         </svg>
                       </div>
                     </div>
-                    <p className={`text-[10px] font-bold ${isAboveTarget ? 'text-blue-400/70' : 'text-amber-400/70'} uppercase tracking-wider`}>To Target</p>
-                    <p className={`text-1xl font-black ${isAboveTarget ? 'text-blue-400' : 'text-amber-400'}`}>
-                      {isAboveTarget ? '-' : '+'}{Math.abs(remaining).toFixed(1)}<span className="text-sm ml-1 font-bold opacity-60">lbs</span>
+                    <p className={`text-[10px] font-bold ${hasLostWeight ? 'text-blue-400/70' : 'text-amber-400/70'} uppercase tracking-wider`}>TOTAL LOST</p>
+                    <p className={`text-1xl font-black ${hasLostWeight ? 'text-blue-400' : 'text-amber-400'}`}>
+                      {totalLost.toFixed(1)}<span className="text-sm ml-1 font-bold opacity-60">lbs</span>
                     </p>
                   </div>
                 );
