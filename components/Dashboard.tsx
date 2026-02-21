@@ -55,6 +55,9 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [isLoadingInsight, setIsLoadingInsight] = useState(false);
   const [showLabelScanner, setShowLabelScanner] = useState(false);
   const [breakdownItems, setBreakdownItems] = useState<FoodItemEstimate[]>([]);
+  const [calorieOverrides, setCalorieOverrides] = useState<(number | null)[]>([]);
+  const [editingCalorieIndex, setEditingCalorieIndex] = useState<number | null>(null);
+  const [editingCalorieValue, setEditingCalorieValue] = useState('');
   const [portionSizes, setPortionSizes] = useState<Record<number, number>>({});
   const [showPreviousDayWarning, setShowPreviousDayWarning] = useState(false);
   const [proteinSuggestions, setProteinSuggestions] = useState<string[]>([]);
@@ -63,6 +66,51 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [isLoadingSuggestionDetail, setIsLoadingSuggestionDetail] = useState(false);
   const hasFetchedSuggestions = useRef(false);
   const [latestWeighIn, setLatestWeighIn] = useState<WeighIn | null>(null);
+
+  const appendBreakdownItems = (items: FoodItemEstimate[]) => {
+    if (!items.length) return;
+    setBreakdownItems(prev => [...prev, ...items]);
+    setCalorieOverrides(prev => [...prev, ...items.map(() => null)]);
+  };
+
+  const resetBreakdownItems = () => {
+    setBreakdownItems([]);
+    setCalorieOverrides([]);
+    setEditingCalorieIndex(null);
+    setEditingCalorieValue('');
+  };
+
+  const getAdjustedCalories = (item: FoodItemEstimate, index: number) => {
+    const portion = portionSizes[index] || 1;
+    const override = calorieOverrides[index];
+    const baseCalories = item.calories * portion;
+    return override !== null && override !== undefined ? override : baseCalories;
+  };
+
+  const startEditingCalories = (index: number, initialValue: number) => {
+    setEditingCalorieIndex(index);
+    setEditingCalorieValue(initialValue.toString());
+  };
+
+  const saveEditedCalories = (index: number) => {
+    const parsed = parseFloat(editingCalorieValue);
+    if (Number.isNaN(parsed) || parsed < 0) {
+      alert('Please enter a valid calorie value.');
+      return;
+    }
+    setCalorieOverrides(prev => {
+      const next = [...prev];
+      next[index] = parsed;
+      return next;
+    });
+    setEditingCalorieIndex(null);
+    setEditingCalorieValue('');
+  };
+
+  const cancelEditingCalories = () => {
+    setEditingCalorieIndex(null);
+    setEditingCalorieValue('');
+  };
 
   // Use impersonated user ID if impersonating, otherwise use real user ID
   const effectiveUserId = impersonatedUserId || user?.id;
@@ -101,7 +149,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Handle items added from external sources (e.g., Spouse Today menu)
   useEffect(() => {
     if (itemToAdd) {
-      setBreakdownItems(prev => [...prev, itemToAdd]);
+      appendBreakdownItems([itemToAdd]);
       setLastEstimate(prev => ({
         items: prev ? [...prev.items, itemToAdd] : [itemToAdd],
         totalCalories: (prev?.totalCalories || 0) + itemToAdd.calories,
@@ -229,6 +277,10 @@ const Dashboard: React.FC<DashboardProps> = ({
   const progressPercent = Math.min(100, (totalCalories / dailyCalorieTarget) * 100);
   const targetProtein = Math.round(currentWeight / 2.205 * 1.2);
   const targetFat = Math.round(currentWeight * 0.275);
+  const breakdownTotalCalories = breakdownItems.reduce(
+    (sum, item, idx) => sum + getAdjustedCalories(item, idx),
+    0
+  );
 
   // Fetch protein suggestions only once per page load when protein is below target AND viewing today
   useEffect(() => {
@@ -285,7 +337,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       const estimate = await estimateNutrition(textToEstimate);
       console.log('Nutrition estimate received:', estimate);
       // Add new items to existing breakdown
-      setBreakdownItems(prev => [...prev, ...estimate.items]);
+      appendBreakdownItems(estimate.items);
       // Update last estimate with combined items
       const combinedItems = [...breakdownItems, ...estimate.items];
       setLastEstimate({
@@ -313,7 +365,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const handleLabelScanEstimate = (estimate: NutritionEstimate) => {
     setShowLabelScanner(false);
     // Add items directly from the estimate (already has source: 'web')
-    setBreakdownItems(prev => [...prev, ...estimate.items]);
+    appendBreakdownItems(estimate.items);
     setLastEstimate({
       items: [...breakdownItems, ...estimate.items],
       totalCalories: [...breakdownItems, ...estimate.items].reduce((sum, item) => sum + item.calories, 0),
@@ -359,10 +411,11 @@ const Dashboard: React.FC<DashboardProps> = ({
     // Create an entry for each breakdown item with portion size applied (round calories to integer for DB)
     const entries = breakdownItems.map((item, idx) => {
       const portion = portionSizes[idx] || 1;
+      const finalCalories = Math.round(getAdjustedCalories(item, idx));
       return {
         user_id: effectiveUserId,
         name: item.name,
-        calories: Math.round(item.calories * portion),
+        calories: finalCalories,
         protein: Math.round(item.protein * portion),
         carbs: Math.round(item.carbs * portion),
         fat: Math.round(item.fat * portion),
@@ -374,7 +427,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     // Clear breakdown immediately so UI feels responsive
     setFoodInput('');
     setLastEstimate(null);
-    setBreakdownItems([]);
+    resetBreakdownItems();
     setPortionSizes({});
 
     // Insert all entries at once
@@ -410,10 +463,11 @@ const Dashboard: React.FC<DashboardProps> = ({
     // Create an entry for each breakdown item with portion size applied (round calories to integer for DB)
     const entries = breakdownItems.map((item, idx) => {
       const portion = portionSizes[idx] || 1;
+      const finalCalories = Math.round(getAdjustedCalories(item, idx));
       return {
         user_id: effectiveUserId,
         name: item.name,
-        calories: Math.round(item.calories * portion),
+        calories: finalCalories,
         protein: Math.round(item.protein * portion),
         carbs: Math.round(item.carbs * portion),
         fat: Math.round(item.fat * portion),
@@ -425,7 +479,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     // Clear breakdown immediately so UI feels responsive
     setFoodInput('');
     setLastEstimate(null);
-    setBreakdownItems([]);
+    resetBreakdownItems();
     setPortionSizes({});
     setShowPreviousDayWarning(false);
 
@@ -445,7 +499,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const addToBreakdown = (item: FoodItemEstimate) => {
-    setBreakdownItems(prev => [...prev, item]);
+    appendBreakdownItems([item]);
     setLastEstimate(prev => {
       const combinedItems = prev ? [...prev.items, item] : [item];
       return {
@@ -497,6 +551,19 @@ const Dashboard: React.FC<DashboardProps> = ({
   const removeBreakdownItem = (index: number) => {
     const newItems = breakdownItems.filter((_, i) => i !== index);
     setBreakdownItems(newItems);
+    setCalorieOverrides(prev => {
+      const next = [...prev];
+      next.splice(index, 1);
+      return next;
+    });
+    setEditingCalorieIndex(prev => {
+      if (prev === null) return null;
+      if (prev === index) return null;
+      return prev > index ? prev - 1 : prev;
+    });
+    if (editingCalorieIndex === index) {
+      setEditingCalorieValue('');
+    }
     
     // Rebuild portion sizes with shifted indices
     const newPortions: Record<number, number> = {};
@@ -545,6 +612,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       });
       return combined;
     });
+    setCalorieOverrides(prev => [...prev, ...favorite.breakdown.map(() => null)]);
     setFoodInput('');
   };
 
@@ -898,7 +966,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                       </svg>
                     </button>
                     <div className="text-right">
-                      <div className="text-2xl font-black text-green-400">{Math.round(breakdownItems.reduce((sum, i, idx) => sum + i.calories * (portionSizes[idx] || 1), 0))}</div>
+                      <div className="text-2xl font-black text-green-400">{Math.round(breakdownTotalCalories)}</div>
                       <div className="text-[10px] font-black uppercase text-green-500 tracking-tighter">Total KCAL</div>
                                             {lastEstimate.servingSize && (
                         <div className="text-[8px] text-gray-500 mt-1">{lastEstimate.servingSize}</div>
@@ -948,9 +1016,72 @@ const Dashboard: React.FC<DashboardProps> = ({
                           <option value={1.5}>1.5x</option>
                           <option value={2}>2x</option>
                         </select>
-                        <div className="text-right">
-                          <span className="font-black text-gray-100">{Math.round(item.calories * (portionSizes[idx] || 1))}</span>
+                        <div className="text-right flex flex-col items-end gap-1">
+                          {editingCalorieIndex === idx ? (
+                            <div className="flex items-center gap-1 justify-end">
+                              <input
+                                type="number"
+                                step="1"
+                                min="0"
+                                value={editingCalorieValue}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  setEditingCalorieValue(e.target.value);
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    saveEditedCalories(idx);
+                                  } else if (e.key === 'Escape') {
+                                    e.preventDefault();
+                                    cancelEditingCalories();
+                                  }
+                                }}
+                                className="w-16 bg-gray-700 text-right text-xs font-black border border-gray-600 rounded-lg px-2 py-0.5 focus:outline-none focus:border-green-500"
+                              />
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  saveEditedCalories(idx);
+                                }}
+                                className="text-xs text-green-400 hover:text-green-200"
+                                title="Save calories"
+                              >
+                                ✓
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  cancelEditingCalories();
+                                }}
+                                className="text-xs text-red-400 hover:text-red-200"
+                                title="Cancel"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 justify-end">
+                              <span className="font-black text-gray-100">{Math.round(getAdjustedCalories(item, idx))}</span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startEditingCalories(idx, Math.round(getAdjustedCalories(item, idx)));
+                                }}
+                                className="text-gray-400 hover:text-gray-200"
+                                title="Edit calories"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 11l6-6 3.5 3.5-6 6H9v-3.5z"></path>
+                                </svg>
+                              </button>
+                            </div>
+                          )}
                           <span className="text-[10px] font-black text-gray-500 uppercase ml-1">kcal</span>
+                          {calorieOverrides[idx] != null && editingCalorieIndex !== idx && (
+                            <span className="text-[10px] text-yellow-300 uppercase tracking-wider">Edited</span>
+                          )}
                         </div>
                         <button
                           onClick={(e) => {
@@ -979,7 +1110,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <button
                         onClick={() => {
                             setLastEstimate(null);
-                            setBreakdownItems([]);
+                            resetBreakdownItems();
                             setPortionSizes({});
                         }}
                         className="px-6 py-4 bg-gray-700 text-gray-300 rounded-2xl font-bold border border-gray-600 hover:bg-gray-600 transition-all"
