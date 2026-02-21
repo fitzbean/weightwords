@@ -56,8 +56,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [showLabelScanner, setShowLabelScanner] = useState(false);
   const [breakdownItems, setBreakdownItems] = useState<FoodItemEstimate[]>([]);
   const [calorieOverrides, setCalorieOverrides] = useState<(number | null)[]>([]);
-  const [editingCalorieIndex, setEditingCalorieIndex] = useState<number | null>(null);
-  const [editingCalorieValue, setEditingCalorieValue] = useState('');
   const [portionSizes, setPortionSizes] = useState<Record<number, number>>({});
   const [showPreviousDayWarning, setShowPreviousDayWarning] = useState(false);
   const [proteinSuggestions, setProteinSuggestions] = useState<string[]>([]);
@@ -76,8 +74,6 @@ const Dashboard: React.FC<DashboardProps> = ({
   const resetBreakdownItems = () => {
     setBreakdownItems([]);
     setCalorieOverrides([]);
-    setEditingCalorieIndex(null);
-    setEditingCalorieValue('');
   };
 
   const getAdjustedCalories = (item: FoodItemEstimate, index: number) => {
@@ -85,31 +81,6 @@ const Dashboard: React.FC<DashboardProps> = ({
     const override = calorieOverrides[index];
     const baseCalories = item.calories * portion;
     return override !== null && override !== undefined ? override : baseCalories;
-  };
-
-  const startEditingCalories = (index: number, initialValue: number) => {
-    setEditingCalorieIndex(index);
-    setEditingCalorieValue(initialValue.toString());
-  };
-
-  const saveEditedCalories = (index: number) => {
-    const parsed = parseFloat(editingCalorieValue);
-    if (Number.isNaN(parsed) || parsed < 0) {
-      alert('Please enter a valid calorie value.');
-      return;
-    }
-    setCalorieOverrides(prev => {
-      const next = [...prev];
-      next[index] = parsed;
-      return next;
-    });
-    setEditingCalorieIndex(null);
-    setEditingCalorieValue('');
-  };
-
-  const cancelEditingCalories = () => {
-    setEditingCalorieIndex(null);
-    setEditingCalorieValue('');
   };
 
   // Use impersonated user ID if impersonating, otherwise use real user ID
@@ -556,14 +527,6 @@ const Dashboard: React.FC<DashboardProps> = ({
       next.splice(index, 1);
       return next;
     });
-    setEditingCalorieIndex(prev => {
-      if (prev === null) return null;
-      if (prev === index) return null;
-      return prev > index ? prev - 1 : prev;
-    });
-    if (editingCalorieIndex === index) {
-      setEditingCalorieValue('');
-    }
     
     // Rebuild portion sizes with shifted indices
     const newPortions: Record<number, number> = {};
@@ -1017,71 +980,54 @@ const Dashboard: React.FC<DashboardProps> = ({
                           <option value={2}>2x</option>
                         </select>
                         <div className="text-right flex flex-col items-end gap-1">
-                          {editingCalorieIndex === idx ? (
-                            <div className="flex items-center gap-1 justify-end">
-                              <input
-                                type="number"
-                                step="1"
-                                min="0"
-                                value={editingCalorieValue}
-                                onChange={(e) => {
-                                  e.stopPropagation();
-                                  setEditingCalorieValue(e.target.value);
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    saveEditedCalories(idx);
-                                  } else if (e.key === 'Escape') {
-                                    e.preventDefault();
-                                    cancelEditingCalories();
-                                  }
-                                }}
-                                className="w-16 bg-gray-700 text-right text-xs font-black border border-gray-600 rounded-lg px-2 py-0.5 focus:outline-none focus:border-green-500"
-                              />
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  saveEditedCalories(idx);
-                                }}
-                                className="text-xs text-green-400 hover:text-green-200"
-                                title="Save calories"
-                              >
-                                ✓
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  cancelEditingCalories();
-                                }}
-                                className="text-xs text-red-400 hover:text-red-200"
-                                title="Cancel"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 justify-end">
-                              <span className="font-black text-gray-100">{Math.round(getAdjustedCalories(item, idx))}</span>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  startEditingCalories(idx, Math.round(getAdjustedCalories(item, idx)));
-                                }}
-                                className="text-gray-400 hover:text-gray-200"
-                                title="Edit calories"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 11l6-6 3.5 3.5-6 6H9v-3.5z"></path>
-                                </svg>
-                              </button>
-                            </div>
-                          )}
-                          <span className="text-[10px] font-black text-gray-500 uppercase ml-1">kcal</span>
-                          {calorieOverrides[idx] != null && editingCalorieIndex !== idx && (
-                            <span className="text-[10px] text-yellow-300 uppercase tracking-wider">Edited</span>
-                          )}
+                          <div className="flex items-center gap-1 justify-end">
+                            <select
+                              value={Math.round(getAdjustedCalories(item, idx))}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                const val = parseFloat(e.target.value);
+                                setCalorieOverrides(prev => {
+                                  const next = [...prev];
+                                  next[idx] = val;
+                                  return next;
+                                });
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="bg-gray-700 text-gray-200 text-xs font-bold rounded-lg px-2 py-1 border border-gray-600 outline-none cursor-pointer"
+                            >
+                              {(() => {
+                                const baseVal = Math.round(item.calories);
+                                const currentVal = Math.round(getAdjustedCalories(item, idx));
+                                const options = new Set<number>();
+                                
+                                // Add current value to ensure it's always an option
+                                options.add(currentVal);
+                                
+                                // Calculate increment based on base calories (roughly 5% of base, rounded to nice numbers)
+                                const increment = baseVal < 50 ? 5 : baseVal < 100 ? 10 : baseVal < 200 ? 20 : baseVal < 500 ? 25 : 50;
+                                
+                                // Generate options from 0.5x to 2x of base value
+                                const minVal = Math.round(baseVal * 0.5);
+                                const maxVal = Math.round(baseVal * 2);
+                                
+                                for (let val = minVal; val <= maxVal; val += increment) {
+                                  if (val > 0) options.add(val);
+                                }
+                                
+                                // Ensure exact 0.5x, 1x, 1.5x, 2x multiples are included
+                                [0.5, 1, 1.5, 2].forEach(mult => {
+                                  const val = Math.round(baseVal * mult);
+                                  if (val > 0) options.add(val);
+                                });
+                                
+                                return Array.from(options).sort((a, b) => a - b).map(opt => (
+                                  <option key={opt} value={opt}>
+                                    {opt} kcal
+                                  </option>
+                                ));
+                              })()}
+                            </select>
+                          </div>
                         </div>
                         <button
                           onClick={(e) => {
@@ -1601,6 +1547,19 @@ const Dashboard: React.FC<DashboardProps> = ({
                   <p className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-1">💡 Quick Tip</p>
                   <p className="text-gray-300 text-sm">{suggestionDetail.tip}</p>
                 </div>
+
+                <button
+                  onClick={() => {
+                    if (selectedSuggestion) {
+                      closeSuggestionModal();
+                      handleEstimate(selectedSuggestion);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  className="w-full mt-4 py-3 bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest text-sm hover:bg-blue-700 shadow-xl shadow-black/50 transition-all active:scale-95"
+                >
+                  Add
+                </button>
               </div>
             ) : (
               <p className="text-gray-400 text-center py-4">Failed to load details. Tap to try again.</p>
