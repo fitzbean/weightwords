@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, FoodEntry, FoodLog, NutritionEstimate, FoodItemEstimate, FavoritedBreakdown, ItemInsight, WeighIn } from '../types';
 import { estimateNutrition, getItemInsight, getProteinSuggestions, getProteinSuggestionDetail, ProteinSuggestionDetail } from '../services/geminiService';
-import { getFoodLogs, addFoodLog, deleteFoodLog, supabase, getFavoritedBreakdowns, addFavoritedBreakdown, deleteFavoritedBreakdown, updateFavoritedBreakdown, getSharedFavoritedBreakdowns, addSpouse, removeSpouse, getWeeklyFoodLogs, getWeighIns } from '../services/supabaseService';
+import { getFoodLogs, addFoodLog, deleteFoodLog, updateFoodLog, supabase, getFavoritedBreakdowns, addFavoritedBreakdown, deleteFavoritedBreakdown, updateFavoritedBreakdown, getSharedFavoritedBreakdowns, addSpouse, removeSpouse, getWeeklyFoodLogs, getWeighIns } from '../services/supabaseService';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { getWeekDates } from '../utils/dateUtils';
 import { sttService } from '../services/sttService';
@@ -62,6 +62,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
   const [suggestionDetail, setSuggestionDetail] = useState<ProteinSuggestionDetail | null>(null);
   const [isLoadingSuggestionDetail, setIsLoadingSuggestionDetail] = useState(false);
+  const [editingCalorieEntry, setEditingCalorieEntry] = useState<FoodEntry | null>(null);
+  const [calorieEditValue, setCalorieEditValue] = useState<number>(0);
   const hasFetchedSuggestions = useRef(false);
   const [latestWeighIn, setLatestWeighIn] = useState<WeighIn | null>(null);
 
@@ -467,6 +469,24 @@ const Dashboard: React.FC<DashboardProps> = ({
     await deleteFoodLog(id);
     await loadEntries();
     await loadWeeklyData();
+  };
+
+  const handleCalorieEdit = (entry: FoodEntry) => {
+    setEditingCalorieEntry(entry);
+    setCalorieEditValue(entry.calories);
+  };
+
+  const handleSaveCalorieEdit = async () => {
+    if (!editingCalorieEntry) return;
+    
+    await updateFoodLog(editingCalorieEntry.id, { calories: calorieEditValue });
+    setEditingCalorieEntry(null);
+    await loadEntries();
+    await loadWeeklyData();
+  };
+
+  const closeCalorieEdit = () => {
+    setEditingCalorieEntry(null);
   };
 
   const addToBreakdown = (item: FoodItemEstimate) => {
@@ -1312,7 +1332,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
-                        <div className="text-right">
+                        <div 
+                          className="text-right cursor-pointer hover:bg-gray-700 rounded px-2 py-1 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCalorieEdit(entry);
+                          }}
+                          title="Edit calories"
+                        >
                             <span className="font-black text-gray-100 text-sm">{entry.calories}</span>
                             <span className="text-[8px] font-black text-gray-500 uppercase ml-0.5">kcal</span>
                         </div>
@@ -1564,6 +1591,89 @@ const Dashboard: React.FC<DashboardProps> = ({
             ) : (
               <p className="text-gray-400 text-center py-4">Failed to load details. Tap to try again.</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Calorie Edit Modal */}
+      {editingCalorieEntry && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={closeCalorieEdit}>
+          <div 
+            className="bg-gray-800 rounded-3xl p-6 max-w-sm w-full border border-gray-700 animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-lg font-black text-gray-100">Edit Calories</h3>
+                <p className="text-sm text-gray-400 mt-1">{editingCalorieEntry.name}</p>
+              </div>
+              <button
+                onClick={closeCalorieEdit}
+                className="p-1 text-gray-400 hover:text-gray-200 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-black text-gray-500 uppercase tracking-wider mb-2 block">Calories</label>
+                <select
+                  value={calorieEditValue}
+                  onChange={(e) => setCalorieEditValue(parseFloat(e.target.value))}
+                  className="w-full p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 outline-none cursor-pointer font-bold"
+                >
+                  {(() => {
+                    const baseVal = editingCalorieEntry.calories;
+                    const currentVal = calorieEditValue;
+                    const options = new Set<number>();
+                    
+                    // Add current value to ensure it's always an option
+                    options.add(currentVal);
+                    
+                    // Calculate increment based on base calories (roughly 5% of base, rounded to nice numbers)
+                    const increment = baseVal < 50 ? 5 : baseVal < 100 ? 10 : baseVal < 200 ? 20 : baseVal < 500 ? 25 : 50;
+                    
+                    // Generate options from 0.5x to 2x of base value
+                    const minVal = Math.round(baseVal * 0.5);
+                    const maxVal = Math.round(baseVal * 2);
+                    
+                    for (let val = minVal; val <= maxVal; val += increment) {
+                      if (val > 0) options.add(val);
+                    }
+                    
+                    // Ensure exact 0.5x, 1x, 1.5x, 2x multiples are included
+                    [0.5, 1, 1.5, 2].forEach(mult => {
+                      const val = Math.round(baseVal * mult);
+                      if (val > 0) options.add(val);
+                    });
+                    
+                    return Array.from(options).sort((a, b) => a - b).map(opt => (
+                      <option key={opt} value={opt}>
+                        {opt} kcal
+                      </option>
+                    ));
+                  })()}
+                </select>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleSaveCalorieEdit}
+                  className="flex-1 py-3 bg-green-600 text-white rounded-xl font-black uppercase tracking-widest text-sm hover:bg-green-700 shadow-xl shadow-black/50 transition-all active:scale-95"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={closeCalorieEdit}
+                  className="flex-1 py-3 bg-gray-700 text-gray-300 rounded-xl font-bold hover:bg-gray-600 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -195,6 +195,17 @@ export const deleteFoodLog = async (logId: string) => {
   return { error };
 };
 
+export const updateFoodLog = async (logId: string, updates: { calories?: number; protein?: number; carbs?: number; fat?: number }) => {
+  const { data, error } = await supabase
+    .from('food_logs')
+    .update(updates)
+    .eq('id', logId)
+    .select()
+    .single();
+  
+  return { data, error };
+};
+
 export const getWeeklyFoodLogs = async (userId: string, weekDates: Date[], timezone?: string): Promise<{ date: string; entries: FoodLog[]; totalCalories: number }[]> => {
   const results = [];
   
