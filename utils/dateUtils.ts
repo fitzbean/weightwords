@@ -28,6 +28,14 @@ export const getWeekDates = (date: Date, timezone?: string, weighDay: number = 1
   return weekDates;
 };
 
+// Helper function to get YYYY-MM-DD from a Date using its local parts (browser local time)
+export const getLocalDateKey = (date: Date): string => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
 // Helper function to get local date string in timezone
 export const getLocalDateString = (date: Date, timezone: string): string => {
   // Use Intl.DateTimeFormat to get the correct date parts in the target timezone

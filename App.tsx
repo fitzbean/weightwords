@@ -8,6 +8,33 @@ import WeighInModal from './components/WeighInModal';
 import AdminModal from './components/AdminModal';
 import { supabase, getCurrentUser, getProfile, updateProfile, signOut, onAuthStateChange, getSpouseInfo, getFoodLogs } from './services/supabaseService';
 import { APP_CONFIG } from './appConfig';
+import { getLocalDateKey } from './utils/dateUtils';
+
+const MAINTENANCE_DAYS_STORAGE_KEY = 'weightwords_maintenance_days';
+
+const loadMaintenanceDays = (userId: string | undefined): Set<string> => {
+  if (!userId || typeof window === 'undefined') return new Set();
+  try {
+    const raw = window.localStorage.getItem(`${MAINTENANCE_DAYS_STORAGE_KEY}:${userId}`);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? new Set(parsed) : new Set();
+  } catch {
+    return new Set();
+  }
+};
+
+const saveMaintenanceDays = (userId: string | undefined, days: Set<string>) => {
+  if (!userId || typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(
+      `${MAINTENANCE_DAYS_STORAGE_KEY}:${userId}`,
+      JSON.stringify(Array.from(days))
+    );
+  } catch {
+    // ignore storage errors
+  }
+};
 
 const App: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -38,6 +65,31 @@ const App: React.FC = () => {
   const [spouseFoods, setSpouseFoods] = useState<FoodLog[]>([]);
   const [isLoadingSpouseFoods, setIsLoadingSpouseFoods] = useState(false);
   const [itemToAdd, setItemToAdd] = useState<FoodItemEstimate | null>(null);
+
+  // Maintenance Day state (per-date flags stored in localStorage per user)
+  const [maintenanceDays, setMaintenanceDays] = useState<Set<string>>(new Set());
+
+  // Load maintenance days whenever the effective user changes
+  useEffect(() => {
+    const effectiveUserId = impersonatedUser?.id || user?.id;
+    setMaintenanceDays(loadMaintenanceDays(effectiveUserId));
+  }, [user?.id, impersonatedUser?.id]);
+
+  const toggleMaintenanceDay = (date: Date) => {
+    const effectiveUserId = impersonatedUser?.id || user?.id;
+    if (!effectiveUserId) return;
+    const key = getLocalDateKey(date);
+    setMaintenanceDays(prev => {
+      const next = new Set<string>(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      saveMaintenanceDays(effectiveUserId, next);
+      return next;
+    });
+  };
 
   useEffect(() => {
     let isInitialized = false;
@@ -500,6 +552,41 @@ const App: React.FC = () => {
                         </svg>
                         Weigh-ins
                       </button>
+                      {(() => {
+                        const key = getLocalDateKey(selectedDate);
+                        const isMaint = maintenanceDays.has(key);
+                        const isToday = selectedDate.getTime() === getToday().getTime();
+                        const dayLabel = isToday
+                          ? 'Today'
+                          : selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                        return (
+                          <button
+                            onClick={() => {
+                              toggleMaintenanceDay(selectedDate);
+                              setShowUserMenu(false);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 flex items-center gap-3"
+                          >
+                            <svg className={`w-4 h-4 ${isMaint ? 'text-yellow-400' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                              {/* Balance scale icon */}
+                              <path d="M12 3v18" />
+                              <path d="M5 21h14" />
+                              <path d="M6 8h12" />
+                              <path d="M6 8l-3 7a4 4 0 008 0l-3-7" />
+                              <path d="M18 8l-3 7a4 4 0 008 0l-3-7" />
+                            </svg>
+                            <div className="flex-1">
+                              <div>{isMaint ? 'Maintenance Day' : 'Maintenance Day'}</div>
+                              <div className="text-xs text-gray-400 font-normal">{dayLabel}</div>
+                            </div>
+                            {isMaint ? (
+                              <span className="text-[10px] font-black uppercase tracking-widest text-yellow-400 bg-yellow-900/30 px-1.5 py-0.5 rounded">On</span>
+                            ) : (
+                              <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-700/30 px-1.5 py-0.5 rounded">Off</span>
+                            )}
+                          </button>
+                        );
+                      })()}
                       {profile?.isAdmin && (
                         <>
                           <hr className="my-1 border-gray-700" />
@@ -550,6 +637,7 @@ const App: React.FC = () => {
             impersonatedUserId={impersonatedUser?.id}
             itemToAdd={itemToAdd}
             onItemAdded={() => setItemToAdd(null)}
+            maintenanceDays={maintenanceDays}
           />
         ) : (
           <div className="animate-in fade-in duration-500 translate-y-0">

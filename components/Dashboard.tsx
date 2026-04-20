@@ -4,7 +4,7 @@ import { UserProfile, FoodEntry, FoodLog, NutritionEstimate, FoodItemEstimate, F
 import { estimateNutrition, getItemInsight, getProteinSuggestions, getProteinSuggestionDetail, ProteinSuggestionDetail } from '../services/geminiService';
 import { getFoodLogs, addFoodLog, deleteFoodLog, updateFoodLog, supabase, getFavoritedBreakdowns, addFavoritedBreakdown, deleteFavoritedBreakdown, updateFavoritedBreakdown, getSharedFavoritedBreakdowns, addSpouse, removeSpouse, getWeeklyFoodLogs, getWeighIns } from '../services/supabaseService';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { getWeekDates } from '../utils/dateUtils';
+import { getWeekDates, getLocalDateKey } from '../utils/dateUtils';
 import { sttService } from '../services/sttService';
 import NutritionLabelScanner from './NutritionLabelScanner';
 
@@ -21,6 +21,7 @@ interface DashboardProps {
   impersonatedUserId?: string;
   itemToAdd?: FoodItemEstimate | null;
   onItemAdded?: () => void;
+  maintenanceDays?: Set<string>;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ 
@@ -35,7 +36,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   realProfile = null,
   impersonatedUserId,
   itemToAdd,
-  onItemAdded
+  onItemAdded,
+  maintenanceDays = new Set<string>()
 }) => {
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [foodInput, setFoodInput] = useState('');
@@ -220,9 +222,10 @@ const Dashboard: React.FC<DashboardProps> = ({
   // Use latest weigh-in weight if available, otherwise fall back to profile weight
   const currentWeight = latestWeighIn?.weightLbs || profile?.weightLbs || 150;
   
-  // Calculate daily calorie target based on current weight (using Mifflin-St Jeor equation)
-  const calculateCurrentCalorieTarget = (): number => {
-    if (!profile) return 2000;
+  // Calculate daily calorie targets based on current weight (using Mifflin-St Jeor equation)
+  // Returns both the goal-adjusted target and the maintenance (TDEE) target
+  const calculateCalorieTargets = (): { goalTarget: number; maintenanceTarget: number } => {
+    if (!profile) return { goalTarget: 2000, maintenanceTarget: 2000 };
     
     const weightKg = currentWeight * 0.453592;
     const heightCm = ((profile.heightFt || 5) * 12 + (profile.heightIn || 10)) * 2.54;
@@ -237,11 +240,23 @@ const Dashboard: React.FC<DashboardProps> = ({
     // Apply activity level
     const tdee = bmr * parseFloat(profile.activityLevel || '1.55');
     
-    // Apply weight goal
-    return Math.round(tdee + parseFloat(profile.weightGoal || '0'));
+    return {
+      goalTarget: Math.round(tdee + parseFloat(profile.weightGoal || '0')),
+      maintenanceTarget: Math.round(tdee),
+    };
   };
   
-  const dailyCalorieTarget = calculateCurrentCalorieTarget();
+  const { goalTarget: goalCalorieTarget, maintenanceTarget: maintenanceCalorieTarget } = calculateCalorieTargets();
+  
+  const isDateMaintenance = (date: Date): boolean => maintenanceDays.has(getLocalDateKey(date));
+  const getTargetForDate = (date: Date): number =>
+    isDateMaintenance(date) ? maintenanceCalorieTarget : goalCalorieTarget;
+  
+  const isSelectedMaintenance = isDateMaintenance(externalSelectedDate);
+  const dailyCalorieTarget = isSelectedMaintenance ? maintenanceCalorieTarget : goalCalorieTarget;
+
+  // Dates for the currently-viewed week (used to check per-day maintenance flags)
+  const weekDateObjs = getWeekDates(externalSelectedDate, profile?.timezone, profile?.weighDay ?? 1);
   
   const totalCalories = entries.reduce((sum, entry) => sum + entry.calories, 0);
   const totalProtein = entries.reduce((sum, entry) => sum + (entry.protein || 0), 0);
@@ -1089,8 +1104,18 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* Calorie Progress - Under Log Your Meal */}
-          <div className="mt-6 lg:mt-8 bg-gray-800 p-4 rounded-3xl shadow-sm border border-gray-700">
-            <h2 className="text-base font-black text-gray-100 mb-3">Today</h2>
+          <div className={`mt-6 lg:mt-8 bg-gray-800 p-4 rounded-3xl shadow-sm border ${isSelectedMaintenance ? 'border-yellow-600/60' : 'border-gray-700'}`}>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-black text-gray-100">Today</h2>
+              {isSelectedMaintenance && (
+                <span
+                  className="text-[10px] font-black uppercase tracking-widest text-yellow-400 bg-yellow-900/30 border border-yellow-800/60 px-2 py-0.5 rounded-full"
+                  title={`Using maintenance target (${maintenanceCalorieTarget} kcal) instead of weight-loss target (${goalCalorieTarget} kcal).`}
+                >
+                  ⚖ Maintenance Day
+                </span>
+              )}
+            </div>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <div>
@@ -1163,8 +1188,11 @@ const Dashboard: React.FC<DashboardProps> = ({
                 const actualDayOfWeek = (weighDay + index) % 7;
                 const isToday = externalSelectedDate.toDateString() === new Date().toDateString() && 
                                new Date().getDay() === actualDayOfWeek;
+                const weekDateObj = weekDateObjs[index];
+                const dayIsMaintenance = weekDateObj ? isDateMaintenance(weekDateObj) : false;
+                const dayTarget = dayIsMaintenance ? maintenanceCalorieTarget : goalCalorieTarget;
                 const calories = dayData?.totalCalories || 0;
-                const percent = Math.min(100, (calories / dailyCalorieTarget) * 100);
+                const percent = Math.min(100, (calories / dayTarget) * 100);
                 
                 return (
                   <div key={day} className="flex items-center gap-3">
@@ -1175,18 +1203,20 @@ const Dashboard: React.FC<DashboardProps> = ({
                       <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
                         <div
                           className={`h-full transition-all duration-500 ease-out rounded-full ${
-                            calories > dailyCalorieTarget 
+                            calories > dayTarget 
                               ? 'bg-red-500' 
-                              : isToday 
-                                ? 'bg-green-500' 
-                                : 'bg-blue-500'
+                              : dayIsMaintenance
+                                ? 'bg-yellow-500'
+                                : isToday 
+                                  ? 'bg-green-500' 
+                                  : 'bg-blue-500'
                           }`}
                           style={{ width: `${Math.min(100, percent)}%` }}
                         ></div>
                       </div>
                     </div>
-                    <span className={`text-xs font-black text-right w-12 ${isToday ? 'text-green-500' : 'text-gray-400'}`}>
-                      {calories}
+                    <span className={`text-xs font-black text-right w-12 ${isToday ? 'text-green-500' : 'text-gray-400'}`} title={dayIsMaintenance ? `Maintenance day • target ${dayTarget} kcal` : undefined}>
+                      {calories}{dayIsMaintenance ? ' ⚖' : ''}
                     </span>
                   </div>
                 );
@@ -1199,29 +1229,37 @@ const Dashboard: React.FC<DashboardProps> = ({
                 // Calculate today's index in the rotated week (0 = first day of week, 6 = last day)
                 let todayIndex = currentDayOfWeek - weighDay;
                 if (todayIndex < 0) todayIndex += 7;
-                const dailyTarget = dailyCalorieTarget;
-                
+
+                // Per-day targets respecting maintenance day flags
+                const perDayTargets = weekDateObjs.map(d => getTargetForDate(d));
+                const todayTarget = perDayTargets[todayIndex] ?? goalCalorieTarget;
+                const maintenanceDaysCount = perDayTargets.filter((_, i) => {
+                  const d = weekDateObjs[i];
+                  return d ? isDateMaintenance(d) : false;
+                }).length;
+
                 // Get today's calories and check if over target
                 const todayCalories = weeklyData[todayIndex]?.totalCalories || 0;
-                const isTodayOver = todayCalories > dailyTarget;
+                const isTodayOver = todayCalories > todayTarget;
                 
                 // Completed days (before today)
                 const weeklyTotalBeforeToday = weeklyData.slice(0, todayIndex).reduce((sum, day) => sum + day.totalCalories, 0);
-                const weeklyTargetBeforeToday = dailyTarget * todayIndex;
+                const weeklyTargetBeforeToday = perDayTargets.slice(0, todayIndex).reduce((sum, t) => sum + t, 0);
                 
                 // For deficit calculation: use completed days, and include today ONLY if over target
                 // If today is over, include today's full calories and target (not just overage)
                 const effectiveTotal = weeklyTotalBeforeToday + (isTodayOver ? todayCalories : 0);
-                const effectiveTarget = weeklyTargetBeforeToday + (isTodayOver ? dailyTarget : 0);
+                const effectiveTarget = weeklyTargetBeforeToday + (isTodayOver ? todayTarget : 0);
                 
                 const weeklyTotalSoFar = weeklyData.reduce((sum, day) => sum + day.totalCalories, 0);
+                const weeklyTargetThroughToday = perDayTargets.slice(0, todayIndex + 1).reduce((sum, t) => sum + t, 0);
                 
                 return (
                   <>
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Weekly Total</span>
                       <span className="text-sm font-black text-gray-100">
-                        {weeklyTotalSoFar} / {dailyCalorieTarget * (todayIndex + 1)} kcal
+                        {weeklyTotalSoFar} / {weeklyTargetThroughToday} kcal
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
@@ -1243,20 +1281,31 @@ const Dashboard: React.FC<DashboardProps> = ({
                         {todayIndex > 0 ? Math.round(weeklyTotalBeforeToday / todayIndex) : 0} kcal
                       </span>
                     </div>
+                    {maintenanceDaysCount > 0 && (
+                      <div className="flex justify-between items-center mt-1">
+                        <span className="text-xs font-black text-yellow-400 uppercase tracking-wider">Maintenance Days</span>
+                        <span className="text-sm font-black text-yellow-400">
+                          {maintenanceDaysCount} / 7
+                        </span>
+                      </div>
+                    )}
                     {(() => {
                       // Calculate projected weight change based on weekly deficit/surplus
                       // 3500 calories = 1 lb of weight
                       
                       // First, calculate the baseline weight change from the profile's weight goal
-                      // Weight goal is negative for loss (e.g., -1000 for 2 lbs/week loss)
+                      // Weight goal is negative for loss (e.g., -1000 for 2 lbs/week loss).
+                      // Maintenance days contribute zero to the baseline deficit.
                       const weightGoalValue = parseFloat(profile?.weightGoal || '0');
-                      const baselineWeeklyDeficit = -weightGoalValue * 7; // Negate: -(-1000) * 7 = +7000 cal deficit/week
+                      const nonMaintenanceDays = 7 - maintenanceDaysCount;
+                      const baselineWeeklyDeficit = -weightGoalValue * nonMaintenanceDays;
                       
                       // Then, calculate additional deficit/surplus from eating above/below target
-                      // Use effectiveTotal/effectiveTarget which only counts today if over target
-                      const daysToProject = effectiveTarget > 0 ? (effectiveTarget / dailyTarget) : Math.max(1, todayIndex);
+                      // Use effectiveTotal/effectiveTarget which only counts today if over target.
+                      // Project per-day variance over the full 7-day week.
+                      const daysElapsed = todayIndex + (isTodayOver ? 1 : 0);
                       const additionalDeficit = effectiveTarget - effectiveTotal;
-                      const projectedAdditionalDeficit = daysToProject > 0 ? (additionalDeficit / daysToProject) * 7 : 0;
+                      const projectedAdditionalDeficit = daysElapsed > 0 ? (additionalDeficit / daysElapsed) * 7 : 0;
                       
                       // Total projected deficit includes both baseline goal and actual performance
                       const totalProjectedDeficit = baselineWeeklyDeficit + projectedAdditionalDeficit;
