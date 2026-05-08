@@ -68,6 +68,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [calorieEditValue, setCalorieEditValue] = useState<number>(0);
   const hasFetchedSuggestions = useRef(false);
   const [latestWeighIn, setLatestWeighIn] = useState<WeighIn | null>(null);
+  const [addToSpouseFood, setAddToSpouseFood] = useState(false);
 
   const appendBreakdownItems = (items: FoodItemEstimate[]) => {
     if (!items.length) return;
@@ -364,6 +365,64 @@ const Dashboard: React.FC<DashboardProps> = ({
     });
   };
 
+  const getDateString = (date: Date) => {
+    if (profile?.timezone) {
+      const formatter = new Intl.DateTimeFormat('en-CA', { 
+        timeZone: profile.timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+      return formatter.format(date);
+    }
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const saveEntryForDate = async (date: Date) => {
+    if (!effectiveUserId || !lastEstimate || breakdownItems.length === 0) return;
+
+    const ownEntries = breakdownItems.map((item, idx) => {
+      const portion = portionSizes[idx] || 1;
+      const finalCalories = Math.round(getAdjustedCalories(item, idx));
+      return {
+        user_id: effectiveUserId,
+        name: item.name,
+        calories: finalCalories,
+        protein: Math.round(item.protein * portion),
+        carbs: Math.round(item.carbs * portion),
+        fat: Math.round(item.fat * portion),
+        description: item.name,
+        date: getDateString(date),
+      };
+    });
+    const entries = addToSpouseFood && profile?.spouseId
+      ? [
+          ...ownEntries,
+          ...ownEntries.map(entry => ({
+            ...entry,
+            user_id: profile.spouseId,
+          })),
+        ]
+      : ownEntries;
+
+    setFoodInput('');
+    setLastEstimate(null);
+    resetBreakdownItems();
+    setPortionSizes({});
+    setShowPreviousDayWarning(false);
+    setAddToSpouseFood(false);
+
+    const { error } = await supabase
+      .from('food_logs')
+      .insert(entries);
+    
+    await loadEntries();
+    await loadWeeklyData();
+  };
+
   const addEntry = async () => {
     if (!effectiveUserId || !lastEstimate || breakdownItems.length === 0) return;
 
@@ -378,106 +437,18 @@ const Dashboard: React.FC<DashboardProps> = ({
       return;
     }
 
-    // Helper to get date string in user's timezone
-    const getDateString = () => {
-      if (profile?.timezone) {
-        const formatter = new Intl.DateTimeFormat('en-CA', { 
-          timeZone: profile.timezone,
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        });
-        return formatter.format(externalSelectedDate);
-      }
-      // Fallback: use local date parts
-      const year = externalSelectedDate.getFullYear();
-      const month = String(externalSelectedDate.getMonth() + 1).padStart(2, '0');
-      const day = String(externalSelectedDate.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
-
-    // Create an entry for each breakdown item with portion size applied (round calories to integer for DB)
-    const entries = breakdownItems.map((item, idx) => {
-      const portion = portionSizes[idx] || 1;
-      const finalCalories = Math.round(getAdjustedCalories(item, idx));
-      return {
-        user_id: effectiveUserId,
-        name: item.name,
-        calories: finalCalories,
-        protein: Math.round(item.protein * portion),
-        carbs: Math.round(item.carbs * portion),
-        fat: Math.round(item.fat * portion),
-        description: item.name,
-        date: getDateString(),
-      };
-    });
-
-    // Clear breakdown immediately so UI feels responsive
-    setFoodInput('');
-    setLastEstimate(null);
-    resetBreakdownItems();
-    setPortionSizes({});
-
-    // Insert all entries at once
-    const { data, error } = await supabase
-      .from('food_logs')
-      .insert(entries);
-    
-    await loadEntries();
-    await loadWeeklyData();
+    await saveEntryForDate(externalSelectedDate);
   };
 
   const confirmAddEntry = async () => {
-    if (!effectiveUserId || !lastEstimate || breakdownItems.length === 0) return;
+    await saveEntryForDate(externalSelectedDate);
+  };
 
-    // Helper to get date string in user's timezone
-    const getDateString = () => {
-      if (profile?.timezone) {
-        const formatter = new Intl.DateTimeFormat('en-CA', { 
-          timeZone: profile.timezone,
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        });
-        return formatter.format(externalSelectedDate);
-      }
-      // Fallback: use local date parts
-      const year = externalSelectedDate.getFullYear();
-      const month = String(externalSelectedDate.getMonth() + 1).padStart(2, '0');
-      const day = String(externalSelectedDate.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
-
-    // Create an entry for each breakdown item with portion size applied (round calories to integer for DB)
-    const entries = breakdownItems.map((item, idx) => {
-      const portion = portionSizes[idx] || 1;
-      const finalCalories = Math.round(getAdjustedCalories(item, idx));
-      return {
-        user_id: effectiveUserId,
-        name: item.name,
-        calories: finalCalories,
-        protein: Math.round(item.protein * portion),
-        carbs: Math.round(item.carbs * portion),
-        fat: Math.round(item.fat * portion),
-        description: item.name,
-        date: getDateString(),
-      };
-    });
-
-    // Clear breakdown immediately so UI feels responsive
-    setFoodInput('');
-    setLastEstimate(null);
-    resetBreakdownItems();
-    setPortionSizes({});
-    setShowPreviousDayWarning(false);
-
-    // Insert all entries at once
-    const { error } = await supabase
-      .from('food_logs')
-      .insert(entries);
-    
-    await loadEntries();
-    await loadWeeklyData();
+  const addEntryToToday = async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    await saveEntryForDate(today);
+    externalSetSelectedDate(today);
   };
 
   const deleteEntry = async (id: string) => {
@@ -1081,6 +1052,21 @@ const Dashboard: React.FC<DashboardProps> = ({
                   ))}
                 </div>
 
+                {profile?.spouseId && (
+                  <label className="flex items-center justify-between gap-4 mb-4 p-3 bg-gray-800/60 rounded-2xl border border-gray-700 cursor-pointer">
+                    <div>
+                      <p className="text-sm font-black text-gray-100">Also add to spouse's food</p>
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Creates the same entries for your spouse</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={addToSpouseFood}
+                      onChange={(e) => setAddToSpouseFood(e.target.checked)}
+                      className="w-5 h-5 accent-green-600"
+                    />
+                  </label>
+                )}
+
                 <div className="flex gap-4">
                     <button
                         onClick={addEntry}
@@ -1093,6 +1079,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                             setLastEstimate(null);
                             resetBreakdownItems();
                             setPortionSizes({});
+                            setAddToSpouseFood(false);
                         }}
                         className="px-6 py-4 bg-gray-700 text-gray-300 rounded-2xl font-bold border border-gray-600 hover:bg-gray-600 transition-all"
                     >
@@ -1751,12 +1738,18 @@ const Dashboard: React.FC<DashboardProps> = ({
               You're about to add food entries for {externalSelectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}. 
               Are you sure you want to continue?
             </p>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => setShowPreviousDayWarning(false)}
                 className="flex-1 py-3 bg-gray-700 text-gray-300 rounded-xl font-bold hover:bg-gray-600"
               >
                 Cancel
+              </button>
+              <button
+                onClick={addEntryToToday}
+                className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest text-sm hover:bg-blue-700"
+              >
+                Add to Today
               </button>
               <button
                 onClick={confirmAddEntry}

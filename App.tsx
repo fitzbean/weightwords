@@ -389,17 +389,17 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
       <nav className="bg-gray-800 border-b border-gray-700 py-3 px-3 sm:py-4 sm:px-6 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-6xl mx-auto flex justify-between items-center flex-wrap sm:flex-nowrap gap-4">
-          <div className="flex items-center gap-2">
+        <div className="max-w-6xl mx-auto flex justify-between items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 min-w-0">
             <div className="bg-green-600 text-white p-1.5 rounded-lg shadow-md shadow-green-900">
                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
             </div>
-            <span className="text-l font-black text-gray-100 tracking-tight">{APP_CONFIG.app.name.toUpperCase()}<span className="text-green-500">{APP_CONFIG.app.nameHighlight.toUpperCase()}</span> <span className="text-xs bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded ml-1 font-bold uppercase">{APP_CONFIG.app.tagline}</span></span>
+            <span className="text-base sm:text-l font-black text-gray-100 tracking-tight whitespace-nowrap">{APP_CONFIG.app.name.toUpperCase()}<span className="text-green-500">{APP_CONFIG.app.nameHighlight.toUpperCase()}</span> <span className="text-[10px] sm:text-xs bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded ml-1 font-bold uppercase">{APP_CONFIG.app.tagline}</span></span>
           </div>
           
           {profile && (
-            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-               <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-1 sm:gap-4 flex-shrink-0">
+               <div className="flex items-center gap-0.5 sm:gap-2">
                   <button
                     onClick={() => {
                       const newDate = new Date(selectedDate);
@@ -413,8 +413,9 @@ const App: React.FC = () => {
                     </svg>
                   </button>
                   <div className="text-right">
-                    <p className="text-xs sm:text-sm font-bold text-gray-300 cursor-pointer hover:text-gray-200 transition-colors">
-                      {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                    <p className="text-xs sm:text-sm font-bold text-gray-300 cursor-pointer hover:text-gray-200 transition-colors whitespace-nowrap">
+                      <span className="sm:hidden">{selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                      <span className="hidden sm:inline">{selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
                     </p>
                   </div>
                   {selectedDate.getTime() !== getToday().getTime() && (
