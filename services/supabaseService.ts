@@ -337,23 +337,13 @@ export const addSpouse = async (userId: string, spouseEmail: string) => {
 
   const { userId: spouseProfileId } = await response.json();
   
-  // Update current user's profile with spouse ID
-  const { data, error } = await supabase
-    .from('user_profiles')
-    .update({ spouse_id: spouseProfileId })
-    .eq('id', userId)
-    .select()
-    .single();
+  // Use SECURITY DEFINER function to set both sides atomically (bypasses RLS)
+  const { error } = await supabase.rpc('set_spouse_relationship', {
+    user_id: userId,
+    spouse_user_id: spouseProfileId,
+  });
   
-  // Also update spouse's profile to create bidirectional relationship
-  if (data) {
-    await supabase
-      .from('user_profiles')
-      .update({ spouse_id: userId })
-      .eq('id', spouseProfileId);
-  }
-  
-  return { data, error };
+  return { data: { success: !error }, error };
 };
 
 export const getSharedFavoritedBreakdowns = async (userId: string): Promise<FavoritedBreakdown[]> => {
@@ -412,27 +402,12 @@ export const getSpouseEmail = async (spouseId: string): Promise<string | null> =
 };
 
 export const removeSpouse = async (userId: string) => {
-  // Get current profile to find spouse
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('spouse_id')
-    .eq('id', userId)
-    .single();
+  // Use SECURITY DEFINER function to clear both sides atomically (bypasses RLS)
+  const { error } = await supabase.rpc('clear_spouse_relationship', {
+    user_id: userId,
+  });
   
-  if (profile?.spouse_id) {
-    // Remove spouse reference from both users
-    await supabase
-      .from('user_profiles')
-      .update({ spouse_id: null })
-      .eq('id', userId);
-    
-    await supabase
-      .from('user_profiles')
-      .update({ spouse_id: null })
-      .eq('id', profile.spouse_id);
-  }
-  
-  return { error: null };
+  return { error };
 };
 
 // Weigh-in functions

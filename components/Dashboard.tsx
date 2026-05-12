@@ -417,7 +417,12 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     const { error } = await supabase
       .from('food_logs')
-      .insert(entries);
+      .insert(entries)
+      .select();
+    
+    if (error) {
+      console.error('saveEntryForDate insert error:', { error, entries, effectiveUserId, addToSpouseFood, spouseId: profile?.spouseId });
+    }
     
     await loadEntries();
     await loadWeeklyData();
