@@ -38,7 +38,7 @@ const KEYWORD_MAP: Record<FoodCategory, string[]> = {
     'popcorn', 'popcorn',
     'granola bar', 'protein bar', 'kind bar', 'clif bar', 'luna bar',
     'fruit snack', 'gummy', 'gummies',
-    'rice cake', 'rice cakes', 'stick',
+    'rice cake', 'rice cakes', 'stick', 'string cheese',
     'beef jerky', 'jerky',
     'yogurt', 'greek yogurt',
     'ice cream', 'gelato', 'frozen yogurt',
@@ -68,7 +68,7 @@ const KEYWORD_MAP: Record<FoodCategory, string[]> = {
   ],
   booze: [
     'beer', 'ipa', 'lager', 'stout', 'ale', 'pilsner', 'hefeweizen',
-    'wine', 'red wine', 'white wine', 'rosé', 'champagne', 'prosecco', 'merlot', 'cabernet', 'pinot',
+    'wine', 'red wine', 'white wine', 'rosé', 'rose', 'champagne', 'prosecco', 'merlot', 'cabernet', 'pinot',
     'cocktail', 'margarita', 'martini', 'mojito', 'old fashioned', 'negroni', 'mule',
     'whiskey', 'whisky', 'bourbon', 'scotch', 'rye',
     'vodka', 'gin', 'rum', 'tequila', 'mezcal',
