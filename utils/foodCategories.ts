@@ -87,9 +87,8 @@ export function categorizeFavorite(favorite: FavoritedBreakdown | { name: string
     ...(favorite.breakdown || []).map(item => item.name),
   ].join(' ').toLowerCase();
 
-  // Check in order: booze first (since "beer" could also match "drinks"),
-  // then meals (more specific), then snacks, then drinks
-  for (const category of ['booze', 'meals', 'snacks', 'drinks'] as FoodCategory[]) {
+  // Check in order: booze first (so "beer" doesn't land in drinks), then snacks, then meals, then drinks
+  for (const category of ['booze', 'snacks', 'meals', 'drinks'] as FoodCategory[]) {
     const keywords = KEYWORD_MAP[category];
     if (keywords.some(kw => searchText.includes(kw))) {
       return category;
