@@ -38,7 +38,7 @@ const KEYWORD_MAP: Record<FoodCategory, string[]> = {
     'popcorn', 'popcorn',
     'granola bar', 'protein bar', 'kind bar', 'clif bar', 'luna bar',
     'fruit snack', 'gummy', 'gummies',
-    'rice cake', 'rice cakes',
+    'rice cake', 'rice cakes', 'stick',
     'beef jerky', 'jerky',
     'yogurt', 'greek yogurt',
     'ice cream', 'gelato', 'frozen yogurt',
