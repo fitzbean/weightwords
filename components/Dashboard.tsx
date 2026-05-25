@@ -341,8 +341,10 @@ const Dashboard: React.FC<DashboardProps> = ({
       });
       // Clear the input after adding
       setFoodInput('');
-    } catch (error) {
-      alert("Failed to estimate calories. Please try again.");
+} catch (error: any) {
+      const message = error?.message || error?.toString() || 'Unknown error';
+      alert(`Failed to estimate calories: ${message}`);
+      console.error('Estimate error:', error);
     } finally {
       setIsEstimating(false);
     }
