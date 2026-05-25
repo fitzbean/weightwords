@@ -14,7 +14,9 @@ export const estimateNutrition = async (description: string): Promise<NutritionE
   });
 
   if (!response.ok) {
-    throw new Error('Failed to estimate nutrition');
+    const errorText = await response.text();
+    console.error('Supabase function error:', response.status, errorText);
+    throw new Error(`Failed to estimate nutrition: ${response.status} - ${errorText}`);
   }
 
   return await response.json();
