@@ -40,7 +40,7 @@ const KEYWORD_MAP: Record<FoodCategory, string[]> = {
     'fruit snack', 'gummy', 'gummies',
     'rice cake', 'rice cakes', 'stick', 'string cheese', 'hard boiled egg',
     'beef jerky', 'jerky',
-    'yogurt', 'greek yogurt',
+    'yogurt', 'greek yogurt', 'cottage cheese',
     'ice cream', 'gelato', 'frozen yogurt', 'slice',
     'muffin', 'donut', 'doughnut', 'pastry', 'croissant',
     'toast', 'bagel', 'cereal', 'granola', 'oatmeal',
