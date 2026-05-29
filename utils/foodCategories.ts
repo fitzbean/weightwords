@@ -77,6 +77,7 @@ const KEYWORD_MAP: Record<FoodCategory, string[]> = {
     'cider', 'hard cider',
     'liquor', 'spirit',
     'sake', 'soju',
+    'chelada',
   ],
   other: [],
 };
