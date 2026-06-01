@@ -196,33 +196,33 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
           ) : (
             <>
               {/* Stat cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                <div className="bg-gradient-to-br from-green-900/40 to-green-900/20 rounded-2xl p-4 border border-green-800/30">
-                  <p className="text-[10px] font-bold text-green-400/70 uppercase tracking-wider">Days Logged</p>
-                  <p className="text-2xl font-black text-green-400 mt-1">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4">
+                <div className="bg-gradient-to-br from-green-900/40 to-green-900/20 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-green-800/30">
+                  <p className="text-[9px] sm:text-[10px] font-bold text-green-400/70 uppercase tracking-wider">Days Logged</p>
+                  <p className="text-lg sm:text-2xl font-black text-green-400 mt-1">
                     {summary.daysCount}
-                    <span className="text-xs ml-1 font-bold text-green-400/60">/ {dayCount}</span>
+                    <span className="text-[10px] sm:text-xs ml-1 font-bold text-green-400/60">/ {dayCount}</span>
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-blue-900/40 to-blue-900/20 rounded-2xl p-4 border border-blue-800/30">
-                  <p className="text-[10px] font-bold text-blue-400/70 uppercase tracking-wider">Daily Avg</p>
-                  <p className="text-2xl font-black text-blue-400 mt-1">
+                <div className="bg-gradient-to-br from-blue-900/40 to-blue-900/20 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-blue-800/30">
+                  <p className="text-[9px] sm:text-[10px] font-bold text-blue-400/70 uppercase tracking-wider">Daily Avg</p>
+                  <p className="text-lg sm:text-2xl font-black text-blue-400 mt-1">
                     {summary.avg.toLocaleString()}
-                    <span className="text-xs ml-1 font-bold text-blue-400/60">kcal</span>
+                    <span className="text-[10px] sm:text-xs ml-1 font-bold text-blue-400/60">kcal</span>
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-amber-900/40 to-amber-900/20 rounded-2xl p-4 border border-amber-800/30">
-                  <p className="text-[10px] font-bold text-amber-400/70 uppercase tracking-wider">Highest</p>
-                  <p className="text-2xl font-black text-amber-400 mt-1">
+                <div className="bg-gradient-to-br from-amber-900/40 to-amber-900/20 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-amber-800/30">
+                  <p className="text-[9px] sm:text-[10px] font-bold text-amber-400/70 uppercase tracking-wider">Highest</p>
+                  <p className="text-lg sm:text-2xl font-black text-amber-400 mt-1">
                     {summary.max.toLocaleString()}
-                    <span className="text-xs ml-1 font-bold text-amber-400/60">kcal</span>
+                    <span className="text-[10px] sm:text-xs ml-1 font-bold text-amber-400/60">kcal</span>
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-purple-900/40 to-purple-900/20 rounded-2xl p-4 border border-purple-800/30">
-                  <p className="text-[10px] font-bold text-purple-400/70 uppercase tracking-wider">Total</p>
-                  <p className="text-2xl font-black text-purple-400 mt-1">
+                <div className="bg-gradient-to-br from-purple-900/40 to-purple-900/20 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-purple-800/30">
+                  <p className="text-[9px] sm:text-[10px] font-bold text-purple-400/70 uppercase tracking-wider">Total</p>
+                  <p className="text-lg sm:text-2xl font-black text-purple-400 mt-1">
                     {summary.total.toLocaleString()}
-                    <span className="text-xs ml-1 font-bold text-purple-400/60">kcal</span>
+                    <span className="text-[10px] sm:text-xs ml-1 font-bold text-purple-400/60">kcal</span>
                   </p>
                 </div>
               </div>
