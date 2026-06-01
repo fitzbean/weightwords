@@ -144,7 +144,7 @@ export const getFoodLogs = async (userId: string, date?: Date, timezone?: string
   
   if (date) {
     // Use timezone to get the correct date string
-    const dateStr = timezone 
+    const dateStr = timezone
       ? getLocalDateString(date, timezone)
       : date.toISOString().split('T')[0];
     query = query.eq('date', dateStr);
@@ -165,6 +165,72 @@ export const getFoodLogs = async (userId: string, date?: Date, timezone?: string
     date: new Date(log.date),
     createdAt: new Date(log.created_at),
   }));
+};
+
+// Fetch food logs within a date range (inclusive on both ends).
+// Dates should be supplied as local Date objects; the timezone is used to
+// convert them to the correct YYYY-MM-DD strings that the database stores.
+export const getFoodLogsInRange = async (
+  userId: string,
+  startDate: Date,
+  endDate: Date,
+  timezone?: string
+): Promise<FoodLog[]> => {
+  const startStr = timezone
+    ? getLocalDateString(startDate, timezone)
+    : startDate.toISOString().split('T')[0];
+  const endStr = timezone
+    ? getLocalDateString(endDate, timezone)
+    : endDate.toISOString().split('T')[0];
+
+  const { data, error } = await supabase
+    .from('food_logs')
+    .select('*')
+    .eq('user_id', userId)
+    .gte('date', startStr)
+    .lte('date', endStr)
+    .order('date', { ascending: true });
+
+  if (error || !data) return [];
+
+  return data.map(log => ({
+    id: log.id,
+    name: log.name,
+    calories: log.calories,
+    protein: log.protein,
+    carbs: log.carbs,
+    fat: log.fat,
+    description: log.description,
+    date: new Date(log.date),
+    createdAt: new Date(log.created_at),
+  }));
+};
+
+// Get the earliest date the user has any food logs for. Used to support
+// an "All time" range option without scanning the entire table client-side.
+export const getEarliestFoodLogDate = async (
+  userId: string,
+  timezone?: string
+): Promise<Date | null> => {
+  const { data, error } = await supabase
+    .from('food_logs')
+    .select('date')
+    .eq('user_id', userId)
+    .order('date', { ascending: true })
+    .limit(1);
+
+  if (error || !data || data.length === 0) return null;
+
+  // data[0].date is a YYYY-MM-DD string. Parse it as a local date so the
+  // returned value is consistent regardless of the user's timezone.
+  const [year, month, day] = data[0].date.split('-').map(Number);
+  if (timezone) {
+    // Re-anchor into the user's timezone by formatting now -> local parts
+    // and combining them with the earliest date. We only need a Date that
+    // represents the day, so a local construction is sufficient.
+    void timezone;
+  }
+  return new Date(year, month - 1, day);
 };
 
 export const addFoodLog = async (userId: string, log: Omit<FoodLog, 'id' | 'date' | 'createdAt'>, timezone?: string) => {

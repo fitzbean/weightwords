@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard';
 import AuthForm from './components/AuthForm';
 import WeighInModal from './components/WeighInModal';
 import AdminModal from './components/AdminModal';
+import CalorieHistoryModal from './components/CalorieHistoryModal';
 import { supabase, getCurrentUser, getProfile, updateProfile, signOut, onAuthStateChange, getSpouseInfo, getFoodLogs } from './services/supabaseService';
 import { APP_CONFIG } from './appConfig';
 import { getLocalDateKey } from './utils/dateUtils';
@@ -47,6 +48,7 @@ const App: React.FC = () => {
   const [spouseEmail, setSpouseEmail] = useState<string | null>(null);
   const [spouseProfile, setSpouseProfile] = useState<UserProfile | null>(null);
   const [showWeighInModal, setShowWeighInModal] = useState(false);
+  const [showCalorieHistoryModal, setShowCalorieHistoryModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -553,6 +555,18 @@ const App: React.FC = () => {
                         </svg>
                         Weigh-ins
                       </button>
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          setShowCalorieHistoryModal(true);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 flex items-center gap-3"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        Calorie history
+                      </button>
                       {(() => {
                         const key = getLocalDateKey(selectedDate);
                         const isMaint = maintenanceDays.has(key);
@@ -677,6 +691,13 @@ const App: React.FC = () => {
         isOpen={showAdminModal}
         onClose={() => setShowAdminModal(false)}
         onImpersonate={handleImpersonate}
+      />
+
+      <CalorieHistoryModal
+        isOpen={showCalorieHistoryModal}
+        onClose={() => setShowCalorieHistoryModal(false)}
+        userId={impersonatedUser?.id || user?.id}
+        profile={impersonatedUser?.profile || profile}
       />
 
       <footer className="mt-20 border-t border-gray-800 py-12 text-center">
