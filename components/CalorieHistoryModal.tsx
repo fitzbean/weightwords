@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { UserProfile, FoodLog } from '../types';
-import { getFoodLogsInRange, getEarliestFoodLogDate } from '../services/supabaseService';
+import { UserProfile, FoodLog, WeighIn } from '../types';
+import { getFoodLogsInRange, getEarliestFoodLogDate, getWeighIns } from '../services/supabaseService';
 
 interface CalorieHistoryModalProps {
   isOpen: boolean;
@@ -19,10 +19,10 @@ interface RangeOption {
 }
 
 const RANGE_OPTIONS: RangeOption[] = [
-  { key: '1m', label: '1 Month', months: 1 },
-  { key: '3m', label: '3 Months', months: 3 },
-  { key: '6m', label: '6 Months', months: 6 },
-  { key: 'all', label: 'All Time', months: null },
+  { key: '1m', label: '1M', months: 1 },
+  { key: '3m', label: '3M', months: 3 },
+  { key: '6m', label: '6M', months: 6 },
+  { key: 'all', label: 'ALL', months: null },
 ];
 
 // Build a YYYY-MM-DD string from a Date in the browser's local timezone
@@ -46,8 +46,38 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [earliestDate, setEarliestDate] = useState<Date | null>(null);
+  const [weighIns, setWeighIns] = useState<WeighIn[]>([]);
 
   const timezone = profile?.timezone;
+
+  // Calculate daily calorie targets based on current weight (using Mifflin-St Jeor equation)
+  const calculateCalorieTargets = (): { goalTarget: number; maintenanceTarget: number } => {
+    if (!profile) return { goalTarget: 2000, maintenanceTarget: 2000 };
+
+    const latestWeighIn = weighIns.length > 0 ? weighIns[weighIns.length - 1] : null;
+    const currentWeight = latestWeighIn?.weightLbs || profile.weightLbs || 150;
+
+    const weightKg = currentWeight * 0.453592;
+    const heightCm = ((profile.heightFt || 5) * 12 + (profile.heightIn || 10)) * 2.54;
+    const age = profile.age || 25;
+
+    // BMR calculation
+    let bmr = 10 * weightKg + 6.25 * heightCm - 5 * age;
+    if (profile.gender === 'female') {
+      bmr -= 161;
+    }
+
+    // Apply activity level
+    const tdee = bmr * parseFloat(profile.activityLevel || '1.55');
+
+    return {
+      goalTarget: Math.round(tdee + parseFloat(profile.weightGoal || '0')),
+      maintenanceTarget: Math.round(tdee),
+    };
+  };
+
+  const { goalTarget: goalCalorieTarget } = calculateCalorieTargets();
+  const dailyTarget = goalCalorieTarget;
 
   // Determine the active start/end dates for the selected range
   const rangeBounds = useMemo(() => {
@@ -75,6 +105,13 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
       getEarliestFoodLogDate(userId, timezone).then(d => setEarliestDate(d));
     }
   }, [isOpen, userId, timezone]);
+
+  // Load weigh-ins to calculate accurate calorie target
+  useEffect(() => {
+    if (isOpen && userId) {
+      getWeighIns(userId).then(data => setWeighIns(data));
+    }
+  }, [isOpen, userId]);
 
   // Fetch logs whenever the range or bounds change
   useEffect(() => {
@@ -140,8 +177,6 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
 
   if (!isOpen) return null;
 
-  const dailyTarget = profile?.dailyCalorieTarget;
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[80vh] flex flex-col">
@@ -196,33 +231,33 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
           ) : (
             <>
               {/* Stat cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4">
-                <div className="bg-gradient-to-br from-green-900/40 to-green-900/20 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-green-800/30">
-                  <p className="text-[9px] sm:text-[10px] font-bold text-green-400/70 uppercase tracking-wider">Days Logged</p>
-                  <p className="text-lg sm:text-2xl font-black text-green-400 mt-1">
+              <div className="grid grid-cols-4 gap-1 sm:gap-3 mb-3">
+                <div className="bg-gradient-to-br from-green-900/40 to-green-900/20 rounded-lg sm:rounded-2xl p-1.5 sm:p-4 border border-green-800/30">
+                  <p className="text-[8px] sm:text-[10px] font-bold text-green-400/70 uppercase tracking-wider leading-tight">Days Logged</p>
+                  <p className="text-xs sm:text-2xl font-black text-green-400 mt-0.5 sm:mt-1">
                     {summary.daysCount}
-                    <span className="text-[10px] sm:text-xs ml-1 font-bold text-green-400/60">/ {dayCount}</span>
+                    <span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-bold text-green-400/60">/ {dayCount}</span>
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-blue-900/40 to-blue-900/20 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-blue-800/30">
-                  <p className="text-[9px] sm:text-[10px] font-bold text-blue-400/70 uppercase tracking-wider">Daily Avg</p>
-                  <p className="text-lg sm:text-2xl font-black text-blue-400 mt-1">
+                <div className="bg-gradient-to-br from-blue-900/40 to-blue-900/20 rounded-lg sm:rounded-2xl p-1.5 sm:p-4 border border-blue-800/30">
+                  <p className="text-[8px] sm:text-[10px] font-bold text-blue-400/70 uppercase tracking-wider leading-tight">Daily Avg</p>
+                  <p className="text-xs sm:text-2xl font-black text-blue-400 mt-0.5 sm:mt-1">
                     {summary.avg.toLocaleString()}
-                    <span className="text-[10px] sm:text-xs ml-1 font-bold text-blue-400/60">kcal</span>
+                    <span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-bold text-blue-400/60">kcal</span>
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-amber-900/40 to-amber-900/20 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-amber-800/30">
-                  <p className="text-[9px] sm:text-[10px] font-bold text-amber-400/70 uppercase tracking-wider">Highest</p>
-                  <p className="text-lg sm:text-2xl font-black text-amber-400 mt-1">
+                <div className="bg-gradient-to-br from-amber-900/40 to-amber-900/20 rounded-lg sm:rounded-2xl p-1.5 sm:p-4 border border-amber-800/30">
+                  <p className="text-[8px] sm:text-[10px] font-bold text-amber-400/70 uppercase tracking-wider leading-tight">Highest</p>
+                  <p className="text-xs sm:text-2xl font-black text-amber-400 mt-0.5 sm:mt-1">
                     {summary.max.toLocaleString()}
-                    <span className="text-[10px] sm:text-xs ml-1 font-bold text-amber-400/60">kcal</span>
+                    <span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-bold text-amber-400/60">kcal</span>
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-purple-900/40 to-purple-900/20 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-purple-800/30">
-                  <p className="text-[9px] sm:text-[10px] font-bold text-purple-400/70 uppercase tracking-wider">Total</p>
-                  <p className="text-lg sm:text-2xl font-black text-purple-400 mt-1">
+                <div className="bg-gradient-to-br from-purple-900/40 to-purple-900/20 rounded-lg sm:rounded-2xl p-1.5 sm:p-4 border border-purple-800/30">
+                  <p className="text-[8px] sm:text-[10px] font-bold text-purple-400/70 uppercase tracking-wider leading-tight">Total</p>
+                  <p className="text-xs sm:text-2xl font-black text-purple-400 mt-0.5 sm:mt-1">
                     {summary.total.toLocaleString()}
-                    <span className="text-[10px] sm:text-xs ml-1 font-bold text-purple-400/60">kcal</span>
+                    <span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-bold text-purple-400/60">kcal</span>
                   </p>
                 </div>
               </div>
@@ -239,9 +274,11 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
                     {dailyTarget != null && (
                       <div className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-900/30 text-blue-400">
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v8" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h8" />
                         </svg>
-                        Target: {dailyTarget.toLocaleString()} kcal
+                        {dailyTarget.toLocaleString()} <span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-bold text-blue-400/60">kcal</span>
                       </div>
                     )}
                   </div>
@@ -321,11 +358,11 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
                         type="monotone"
                         dataKey="calories"
                         stroke="url(#calorieLineGradient)"
-                        strokeWidth={3}
+                        strokeWidth={1.5}
                         fill="url(#calorieGradient)"
                         connectNulls={false}
                         dot={false}
-                        activeDot={{ r: 6, fill: '#34D399', stroke: '#fff', strokeWidth: 2 }}
+                        activeDot={{ r: 5, fill: '#34D399', stroke: '#fff', strokeWidth: 2 }}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
