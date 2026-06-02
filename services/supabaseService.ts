@@ -418,7 +418,6 @@ export const getSharedFavoritedBreakdowns = async (userId: string): Promise<Favo
       current_user_id: userId 
     });
   
-  console.log('Shared favorites query:', { data, error, userId });
   
   if (error || !data) return [];
   
@@ -591,4 +590,57 @@ export const getUserById = async (userId: string): Promise<UserProfile | null> =
     displayName: data.display_name,
     targetWeightLbs: data.target_weight_lbs,
   };
+};
+
+// Maintenance days functions
+export const getMaintenanceDays = async (userId: string): Promise<Set<string>> => {
+  const { data, error } = await supabase
+    .from('maintenance_days')
+    .select('date')
+    .eq('user_id', userId);
+
+  if (error || !data) return new Set();
+
+  return new Set(data.map((d: any) => d.date));
+};
+
+export const addMaintenanceDay = async (userId: string, date: string): Promise<{ error?: string }> => {
+  const { error } = await supabase
+    .from('maintenance_days')
+    .insert({ user_id: userId, date });
+
+  if (error) return { error: error.message };
+  return {};
+};
+
+export const removeMaintenanceDay = async (userId: string, date: string): Promise<{ error?: string }> => {
+  const { error } = await supabase
+    .from('maintenance_days')
+    .delete()
+    .eq('user_id', userId)
+    .eq('date', date);
+
+  if (error) return { error: error.message };
+  return {};
+};
+
+export const syncMaintenanceDaysFromLocalStorage = async (userId: string, localStorageDays: Set<string>): Promise<{ synced: number; error?: string }> => {
+  if (localStorageDays.size === 0) return { synced: 0 };
+
+  const { data: existingDays } = await supabase
+    .from('maintenance_days')
+    .select('date')
+    .eq('user_id', userId);
+
+  const existingSet = new Set(existingDays?.map((d: any) => d.date) || []);
+  const toSync = Array.from(localStorageDays).filter(date => !existingSet.has(date));
+
+  if (toSync.length === 0) return { synced: 0 };
+
+  const { error } = await supabase
+    .from('maintenance_days')
+    .insert(toSync.map(date => ({ user_id: userId, date })));
+
+  if (error) return { synced: 0, error: error.message };
+  return { synced: toSync.length };
 };

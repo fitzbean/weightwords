@@ -7,7 +7,7 @@ import AuthForm from './components/AuthForm';
 import WeighInModal from './components/WeighInModal';
 import AdminModal from './components/AdminModal';
 import CalorieHistoryModal from './components/CalorieHistoryModal';
-import { supabase, getCurrentUser, getProfile, updateProfile, signOut, onAuthStateChange, getSpouseInfo, getFoodLogs } from './services/supabaseService';
+import { supabase, getCurrentUser, getProfile, updateProfile, signOut, onAuthStateChange, getSpouseInfo, getFoodLogs, getMaintenanceDays, addMaintenanceDay, removeMaintenanceDay, syncMaintenanceDaysFromLocalStorage } from './services/supabaseService';
 import { APP_CONFIG } from './appConfig';
 import { getLocalDateKey } from './utils/dateUtils';
 
@@ -71,24 +71,48 @@ const App: React.FC = () => {
   // Maintenance Day state (per-date flags stored in localStorage per user)
   const [maintenanceDays, setMaintenanceDays] = useState<Set<string>>(new Set());
 
-  // Load maintenance days whenever the effective user changes
+  // Load maintenance days from DB whenever the effective user changes
   useEffect(() => {
     const effectiveUserId = impersonatedUser?.id || user?.id;
-    setMaintenanceDays(loadMaintenanceDays(effectiveUserId));
+    if (!effectiveUserId) return;
+
+    const loadMaintenanceDaysFromDB = async () => {
+      // First, sync any localStorage entries to DB (one-time migration)
+      const localStorageDays = loadMaintenanceDays(effectiveUserId);
+      if (localStorageDays.size > 0) {
+        const syncResult = await syncMaintenanceDaysFromLocalStorage(effectiveUserId, localStorageDays);
+        if (syncResult.synced > 0) {
+          // Clear localStorage after successful sync
+          try {
+            window.localStorage.removeItem(`${MAINTENANCE_DAYS_STORAGE_KEY}:${effectiveUserId}`);
+          } catch {
+            // ignore
+          }
+        }
+      }
+
+      // Load from DB
+      const dbDays = await getMaintenanceDays(effectiveUserId);
+      setMaintenanceDays(dbDays);
+    };
+
+    loadMaintenanceDaysFromDB();
   }, [user?.id, impersonatedUser?.id]);
 
-  const toggleMaintenanceDay = (date: Date) => {
+  const toggleMaintenanceDay = async (date: Date) => {
     const effectiveUserId = impersonatedUser?.id || user?.id;
     if (!effectiveUserId) return;
     const key = getLocalDateKey(date);
+
     setMaintenanceDays(prev => {
       const next = new Set<string>(prev);
       if (next.has(key)) {
         next.delete(key);
+        removeMaintenanceDay(effectiveUserId, key);
       } else {
         next.add(key);
+        addMaintenanceDay(effectiveUserId, key);
       }
-      saveMaintenanceDays(effectiveUserId, next);
       return next;
     });
   };
