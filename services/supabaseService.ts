@@ -154,17 +154,21 @@ export const getFoodLogs = async (userId: string, date?: Date, timezone?: string
   
   if (error || !data) return [];
   
-  return data.map(log => ({
-    id: log.id,
-    name: log.name,
-    calories: log.calories,
-    protein: log.protein,
-    carbs: log.carbs,
-    fat: log.fat,
-    description: log.description,
-    date: new Date(log.date),
-    createdAt: new Date(log.created_at),
-  }));
+  return data.map(log => {
+    // Parse YYYY-MM-DD as local midnight to avoid UTC off-by-one
+    const [y, m, d] = log.date.split('-').map(Number);
+    return {
+      id: log.id,
+      name: log.name,
+      calories: log.calories,
+      protein: log.protein,
+      carbs: log.carbs,
+      fat: log.fat,
+      description: log.description,
+      date: new Date(y, m - 1, d),
+      createdAt: new Date(log.created_at),
+    };
+  });
 };
 
 // Fetch food logs within a date range (inclusive on both ends).
@@ -193,17 +197,21 @@ export const getFoodLogsInRange = async (
 
   if (error || !data) return [];
 
-  return data.map(log => ({
-    id: log.id,
-    name: log.name,
-    calories: log.calories,
-    protein: log.protein,
-    carbs: log.carbs,
-    fat: log.fat,
-    description: log.description,
-    date: new Date(log.date),
-    createdAt: new Date(log.created_at),
-  }));
+  return data.map(log => {
+    // Parse YYYY-MM-DD as local midnight to avoid UTC off-by-one
+    const [y, m, d] = log.date.split('-').map(Number);
+    return {
+      id: log.id,
+      name: log.name,
+      calories: log.calories,
+      protein: log.protein,
+      carbs: log.carbs,
+      fat: log.fat,
+      description: log.description,
+      date: new Date(y, m - 1, d),
+      createdAt: new Date(log.created_at),
+    };
+  });
 };
 
 // Get the earliest date the user has any food logs for. Used to support
@@ -288,17 +296,21 @@ export const getWeeklyFoodLogs = async (userId: string, weekDates: Date[], timez
       .order('created_at', { ascending: false });
     
     if (!error && data) {
-      const entries: FoodLog[] = data.map(log => ({
-        id: log.id,
-        name: log.name,
-        calories: log.calories,
-        protein: log.protein,
-        carbs: log.carbs,
-        fat: log.fat,
-        description: log.description,
-        date: new Date(log.date),
-        createdAt: new Date(log.created_at),
-      }));
+      const entries: FoodLog[] = data.map(log => {
+        // Parse YYYY-MM-DD as local midnight to avoid UTC off-by-one
+        const [y, m, d] = log.date.split('-').map(Number);
+        return {
+          id: log.id,
+          name: log.name,
+          calories: log.calories,
+          protein: log.protein,
+          carbs: log.carbs,
+          fat: log.fat,
+          description: log.description,
+          date: new Date(y, m - 1, d),
+          createdAt: new Date(log.created_at),
+        };
+      });
       
       const totalCalories = entries.reduce((sum, entry) => sum + entry.calories, 0);
       
