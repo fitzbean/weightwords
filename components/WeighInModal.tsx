@@ -184,7 +184,7 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
                         </svg>
                       </div>
                       <div>
-                        <p className={`text-[8px] sm:text-[10px] font-bold ${hasLostWeight ? 'text-blue-400/70' : 'text-amber-400/70'} uppercase tracking-wider leading-tight`}>TOTAL LOST</p>
+                        <p className={`text-[8px] sm:text-[10px] font-bold ${hasLostWeight ? 'text-blue-400/70' : 'text-amber-400/70'} uppercase tracking-wider leading-tight`}>TOTAL</p>
                         <p className={`text-xs sm:text-2xl font-black ${hasLostWeight ? 'text-blue-400' : 'text-amber-400'} mt-0.5 sm:mt-1`}>
                           {totalLost.toFixed(1)}<span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-bold opacity-60">lbs</span>
                         </p>

@@ -173,7 +173,35 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
 
   // Determine chart granularity label (day vs month) for the X axis
   const dayCount = chartData.length;
-  const showMonthTicks = dayCount > 60;
+
+  // Precompute compact X-axis labels: show the month name the first time a new
+  // month appears among the visible ticks, otherwise just the day number.
+  // Index-aligned to chartData; empty string means "no label" for that tick.
+  const xAxisLabels = useMemo(() => {
+    const labels: string[] = new Array(chartData.length).fill('');
+    if (chartData.length === 0) return labels;
+
+    const targetTickCount = 8;
+    const step = Math.max(1, Math.floor(chartData.length / targetTickCount));
+
+    const showIndices: number[] = [];
+    for (let i = 0; i < chartData.length; i += step) showIndices.push(i);
+    if (showIndices[showIndices.length - 1] !== chartData.length - 1) {
+      showIndices.push(chartData.length - 1);
+    }
+
+    let lastMonth = -1;
+    for (const i of showIndices) {
+      const d = new Date(chartData[i].key + 'T00:00:00');
+      const month = d.getMonth();
+      labels[i] = month !== lastMonth
+        ? d.toLocaleDateString('en-US', { month: 'short' })
+        : d.getDate().toString();
+      lastMonth = month;
+    }
+
+    return labels;
+  }, [chartData]);
 
   if (!isOpen) return null;
 
@@ -302,8 +330,8 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
                         tick={{ fill: '#6B7280', fontSize: 11 }}
                         tickLine={false}
                         axisLine={false}
-                        interval={showMonthTicks ? Math.max(1, Math.floor(dayCount / 8)) : 'preserveStartEnd'}
-                        minTickGap={20}
+                        interval={0}
+                        tickFormatter={(_value: string, index: number) => xAxisLabels[index] ?? ''}
                       />
                       <YAxis
                         stroke="#4B5563"
