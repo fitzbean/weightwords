@@ -1,14 +1,9 @@
--- Add is_admin column to user_profiles table
-ALTER TABLE user_profiles 
-ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false;
+-- Grant necessary permissions to the function owner for food_logs access
+GRANT USAGE ON SCHEMA public TO postgres;
+GRANT SELECT ON food_logs TO postgres;
 
--- Create an index for faster queries
-CREATE INDEX IF NOT EXISTS idx_user_profiles_is_admin ON user_profiles(is_admin);
-
--- Drop existing function if it exists (to allow changing return type)
 DROP FUNCTION IF EXISTS get_all_users_with_profiles();
 
--- Get all users with their profiles (admin only)
 CREATE OR REPLACE FUNCTION get_all_users_with_profiles()
 RETURNS TABLE (
   user_id uuid,
@@ -25,10 +20,11 @@ RETURNS TABLE (
   user_spouse_id uuid,
   user_timezone text,
   user_is_admin boolean,
-  user_last_sign_in_at timestamptz
+  user_last_food_date timestamptz
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 BEGIN
   -- Only allow admins to use this function
@@ -55,9 +51,14 @@ BEGIN
     p.spouse_id AS user_spouse_id,
     p.timezone::text AS user_timezone,
     p.is_admin AS user_is_admin,
-    u.last_sign_in_at AS user_last_sign_in_at
+    fl.last_food_date AS user_last_food_date
   FROM auth.users u
   LEFT JOIN user_profiles p ON u.id = p.id
-  ORDER BY u.last_sign_in_at DESC NULLS LAST;
+  LEFT JOIN (
+    SELECT user_id, MAX(date) AS last_food_date
+    FROM food_logs
+    GROUP BY user_id
+  ) fl ON u.id = fl.user_id
+  ORDER BY fl.last_food_date DESC NULLS LAST;
 END;
 $$;

@@ -43,7 +43,7 @@ const KEYWORD_MAP: Record<FoodCategory, string[]> = {
     'yogurt', 'greek yogurt', 'cottage cheese',
     'ice cream', 'gelato', 'frozen yogurt', 'slice',
     'muffin', 'donut', 'doughnut', 'pastry', 'croissant',
-    'toast', 'bagel', 'cereal', 'granola', 'oatmeal',
+    'toast', 'bagel', 'cereal', 'granola', 'oatmeal', 'bone broth'
   ],
   meals: [
     'chicken', 'steak', 'beef', 'pork', 'lamb', 'turkey', 'bacon', 'ham', 'sausage',

@@ -548,6 +548,7 @@ export const getAllUsers = async (): Promise<Array<{id: string, email: string, p
   return (data || []).map((userData: any) => ({
     id: userData.user_id,
     email: userData.user_email || 'No email',
+    lastFoodDate: userData.user_last_food_date,
     profile: userData.user_age ? {
       age: userData.user_age,
       gender: userData.user_gender as Gender,

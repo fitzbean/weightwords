@@ -11,6 +11,7 @@ interface AdminModalProps {
 interface UserItem {
   id: string;
   email: string;
+  lastFoodDate: string | null;
   profile: UserProfile | null;
 }
 
@@ -97,6 +98,11 @@ const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, onImpersonate 
                   >
                     <div className="flex-1">
                       <p className="text-gray-100 font-medium">{user.email}</p>
+                      {user.lastFoodDate && (
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Last food entry: {new Date(user.lastFoodDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      )}
                       {user.profile && (
                         <div className="flex items-center gap-4 mt-1">
                           <span className="text-xs text-gray-400">

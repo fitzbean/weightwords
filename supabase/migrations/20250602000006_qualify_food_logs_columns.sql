@@ -1,14 +1,6 @@
--- Add is_admin column to user_profiles table
-ALTER TABLE user_profiles 
-ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false;
-
--- Create an index for faster queries
-CREATE INDEX IF NOT EXISTS idx_user_profiles_is_admin ON user_profiles(is_admin);
-
--- Drop existing function if it exists (to allow changing return type)
+-- Fully qualify food_logs columns to avoid ambiguity with RETURNS TABLE variables
 DROP FUNCTION IF EXISTS get_all_users_with_profiles();
 
--- Get all users with their profiles (admin only)
 CREATE OR REPLACE FUNCTION get_all_users_with_profiles()
 RETURNS TABLE (
   user_id uuid,
@@ -25,15 +17,15 @@ RETURNS TABLE (
   user_spouse_id uuid,
   user_timezone text,
   user_is_admin boolean,
-  user_last_sign_in_at timestamptz
+  user_last_food_date timestamptz
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 BEGIN
-  -- Only allow admins to use this function
   IF NOT EXISTS (
-    SELECT 1 FROM user_profiles up
+    SELECT 1 FROM public.user_profiles AS up
     WHERE up.id = auth.uid() AND up.is_admin = true
   ) THEN
     RAISE EXCEPTION 'Access denied: Admin privileges required';
@@ -55,9 +47,14 @@ BEGIN
     p.spouse_id AS user_spouse_id,
     p.timezone::text AS user_timezone,
     p.is_admin AS user_is_admin,
-    u.last_sign_in_at AS user_last_sign_in_at
-  FROM auth.users u
-  LEFT JOIN user_profiles p ON u.id = p.id
-  ORDER BY u.last_sign_in_at DESC NULLS LAST;
+    fl.last_food_date AS user_last_food_date
+  FROM auth.users AS u
+  LEFT JOIN public.user_profiles AS p ON u.id = p.id
+  LEFT JOIN (
+    SELECT logs.user_id AS fl_user_id, MAX(logs.date) AS last_food_date
+    FROM public.food_logs AS logs
+    GROUP BY logs.user_id
+  ) AS fl ON u.id = fl.fl_user_id
+  ORDER BY fl.last_food_date DESC NULLS LAST;
 END;
 $$;

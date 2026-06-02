@@ -8,17 +8,20 @@ interface CalorieHistoryModalProps {
   onClose: () => void;
   userId: string;
   profile: UserProfile | null;
+  maintenanceDays?: Set<string>;
 }
 
-type RangeKey = '1m' | '3m' | '6m' | 'all';
+type RangeKey = '7d' | '1m' | '3m' | '6m' | 'all';
 
 interface RangeOption {
   key: RangeKey;
   label: string;
+  days?: number;
   months: number | null; // null = all time
 }
 
 const RANGE_OPTIONS: RangeOption[] = [
+  { key: '7d', label: '7D', days: 7, months: 0 },
   { key: '1m', label: '1M', months: 1 },
   { key: '3m', label: '3M', months: 3 },
   { key: '6m', label: '6M', months: 6 },
@@ -40,8 +43,8 @@ const addDays = (date: Date, days: number): Date => {
   return next;
 };
 
-const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClose, userId, profile }) => {
-  const [range, setRange] = useState<RangeKey>('1m');
+const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClose, userId, profile, maintenanceDays }) => {
+  const [range, setRange] = useState<RangeKey>('7d');
   const [logs, setLogs] = useState<FoodLog[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,6 +95,8 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
       } else {
         start = addDays(end, -365);
       }
+    } else if (option?.days) {
+      start = addDays(end, -(option.days - 1));
     } else {
       // Subtract months using actual date arithmetic
       start = new Date(today.getFullYear(), today.getMonth() - option.months, today.getDate());
@@ -229,7 +234,7 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
         <div className="flex-1 overflow-y-auto px-6 pb-6">
           {/* Range selector */}
           <div className="mt-4 mb-5">
-            <div className="grid grid-cols-4 gap-2 bg-gray-900/40 border border-gray-700/50 rounded-xl p-1">
+            <div className="grid grid-cols-5 gap-2 bg-gray-900/40 border border-gray-700/50 rounded-xl p-1">
               {RANGE_OPTIONS.map(option => {
                 const isActive = option.key === range;
                 return (
@@ -389,7 +394,33 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
                         strokeWidth={1.5}
                         fill="url(#calorieGradient)"
                         connectNulls={false}
-                        dot={false}
+                        dot={(props: any) => {
+                          const { cx, cy, payload, index } = props;
+                          if (
+                            cx == null ||
+                            cy == null ||
+                            payload?.calories == null ||
+                            !maintenanceDays?.has(payload.key)
+                          ) {
+                            return <g key={`dot-${index}`} />;
+                          }
+                          return (
+                            <g key={`dot-${index}`}>
+                              <circle cx={cx} cy={cy} r={8} fill="#F59E0B" stroke="#111827" strokeWidth={2} />
+                              <text
+                                x={cx}
+                                y={cy}
+                                textAnchor="middle"
+                                dominantBaseline="central"
+                                fontSize={9}
+                                fontWeight="bold"
+                                fill="#111827"
+                              >
+                                M
+                              </text>
+                            </g>
+                          );
+                        }}
                         activeDot={{ r: 5, fill: '#34D399', stroke: '#fff', strokeWidth: 2 }}
                       />
                     </AreaChart>

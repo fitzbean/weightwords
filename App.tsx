@@ -186,7 +186,6 @@ const App: React.FC = () => {
       const effectiveProfile = impersonatedUser?.profile || profile;
       if (effectiveProfile?.spouseId) {
         const spouseInfo = await getSpouseInfo(effectiveProfile.spouseId);
-        console.log('Spouse info fetched:', { spouseInfo, spouseId: effectiveProfile.spouseId });
         setSpouseEmail(spouseInfo.email);
         // Create a minimal profile object with just displayName for the UI
         if (spouseInfo.displayName) {
@@ -698,6 +697,7 @@ const App: React.FC = () => {
         onClose={() => setShowCalorieHistoryModal(false)}
         userId={impersonatedUser?.id || user?.id}
         profile={impersonatedUser?.profile || profile}
+        maintenanceDays={maintenanceDays}
       />
 
       <footer className="mt-20 border-t border-gray-800 py-12 text-center">
