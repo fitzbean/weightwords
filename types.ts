@@ -48,6 +48,7 @@ export interface FoodEntry {
   protein: number;
   carbs: number;
   fat: number;
+  fiber: number;
 }
 
 export interface FoodItemEstimate {
@@ -56,6 +57,7 @@ export interface FoodItemEstimate {
   protein: number;
   carbs: number;
   fat: number;
+  fiber: number;
   source?: 'estimated' | 'web' | 'label';
 }
 
@@ -75,6 +77,7 @@ export interface FoodLog {
   protein: number;
   carbs: number;
   fat: number;
+  fiber: number;
   description: string;
   date: Date;
   createdAt: Date;

@@ -196,8 +196,9 @@ const Dashboard: React.FC<DashboardProps> = ({
       name: log.name,
       calories: log.calories,
       protein: log.protein,
-      carbs: log.carbs,
+carbs: log.carbs,
       fat: log.fat,
+      fiber: log.fiber,
     }));
     setEntries(entries);
   };
@@ -263,7 +264,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   
   const totalCalories = entries.reduce((sum, entry) => sum + entry.calories, 0);
   const totalProtein = entries.reduce((sum, entry) => sum + (entry.protein || 0), 0);
-  const totalFat = entries.reduce((sum, entry) => sum + (entry.fat || 0), 0);
+const totalFat = entries.reduce((sum, entry) => sum + (entry.fat || 0), 0);
+  const totalFiber = entries.reduce((sum, entry) => sum + (entry.fiber || 0), 0);
   const caloriesRemaining = dailyCalorieTarget - totalCalories;
   const progressPercent = Math.min(100, (totalCalories / dailyCalorieTarget) * 100);
   const targetProtein = Math.round(currentWeight / 2.205 * 1.2);
@@ -394,10 +396,11 @@ const Dashboard: React.FC<DashboardProps> = ({
       return {
         user_id: effectiveUserId,
         name: item.name,
-        calories: finalCalories,
+calories: finalCalories,
         protein: Math.round(item.protein * portion),
         carbs: Math.round(item.carbs * portion),
         fat: Math.round(item.fat * portion),
+        fiber: Math.round(item.fiber * portion),
         description: item.name,
         date: getDateString(date),
       };
@@ -1173,7 +1176,7 @@ const useFavoritedBreakdown = (favorite: FavoritedBreakdown) => {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-xs font-black text-gray-400">
-                    Protein: <span className="text-gray-100">{Math.round(totalProtein)}/{targetProtein}g</span> • Fat: <span className="text-gray-100">{Math.round(totalFat)}/{targetFat}g</span>
+                    Protein: <span className="text-gray-100">{Math.round(totalProtein)}/{targetProtein}g</span> • Fat: <span className="text-gray-100">{Math.round(totalFat)}/{targetFat}g</span> • Fiber: <span className="text-gray-100">{Math.round(totalFiber)}g</span>
                   </p>
                 </div>
                 <div className="text-right">

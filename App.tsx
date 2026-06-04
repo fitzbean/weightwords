@@ -366,6 +366,7 @@ const App: React.FC = () => {
       protein: food.protein,
       carbs: food.carbs,
       fat: food.fat,
+      fiber: food.fiber,
     });
   };
 
@@ -556,7 +557,7 @@ const App: React.FC = () => {
                                     <div className="flex-1 min-w-0">
                                       <div className="text-sm text-gray-200 font-medium truncate">{food.name}</div>
                                       <div className="text-xs text-gray-500">
-                                        {food.calories} kcal • P:{food.protein}g C:{food.carbs}g F:{food.fat}g
+                                        {food.calories} kcal • P:{food.protein}g C:{food.carbs}g F:{food.fat}g • Fiber:{food.fiber}g
                                       </div>
                                     </div>
                                   </button>

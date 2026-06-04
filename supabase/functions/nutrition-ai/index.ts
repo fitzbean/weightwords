@@ -68,6 +68,7 @@ Examples:
               "protein": number,
               "carbs": number,
               "fat": number,
+              "fiber": number,
               "servingSize": "serving size description",
               "sourceUrl": "URL where you found this",
               "confidence": number between 0 and 1
@@ -93,6 +94,7 @@ Examples:
               protein: webResult.protein,
               carbs: webResult.carbs,
               fat: webResult.fat,
+              fiber: webResult.fiber || 0,
               source: 'web',
             }],
             totalCalories: webResult.calories,
@@ -119,7 +121,7 @@ Examples:
         model: 'gemini-3.1-flash-lite',
         contents: `Analyze the following meal description: "${description}". 
         Break it down into individual components (e.g., if it says 'eggs and toast', create separate entries for eggs and toast). 
-        For each item, estimate calories and macros (Protein, Carbs, Fat in grams).
+        For each item, estimate calories and macros (Protein, Carbs, Fat, Fiber in grams).
         
         IMPORTANT: Keep food names concise and clean:
         - Use title case (first letter capitalized)
@@ -149,6 +151,7 @@ Examples:
                     protein: { type: Type.NUMBER, description: 'Protein in grams' },
                     carbs: { type: Type.NUMBER, description: 'Carbs in grams' },
                     fat: { type: Type.NUMBER, description: 'Fat in grams' },
+                    fiber: { type: Type.NUMBER, description: 'Fiber in grams' },
                   },
                   required: ["name", "calories", "protein", "carbs", "fat"],
                 }
@@ -173,7 +176,7 @@ Examples:
     if (type === 'item-insight') {
       const response = await ai.models.generateContent({
         model: 'gemini-3.1-flash-lite',
-        contents: `Provide a quick nutritional insight for: "${item.name}" (${item.calories} kcal, P: ${item.protein}g, C: ${item.carbs}g, F: ${item.fat}g).
+        contents: `Provide a quick nutritional insight for: "${item.name}" (${item.calories} kcal, P: ${item.protein}g, C: ${item.carbs}g, F: ${item.fat}g${item.fiber ? `, Fiber: ${item.fiber}g` : ''}).
         
         Give a brief, engaging summary that includes:
         1. A one-line verdict (is this generally healthy, moderate, or indulgent?)
@@ -272,11 +275,12 @@ Examples:
           Return ONLY a valid JSON object (no markdown, no code blocks) with these fields:
           {
             "name": "Full product name",
-            "calories": number,
-            "protein": number,
-            "carbs": number,
-            "fat": number,
-            "servingSize": "serving size description",
+              "calories": number,
+              "protein": number,
+              "carbs": number,
+              "fat": number,
+              "fiber": number,
+              "servingSize": "serving size description",
             "sourceUrl": "URL where you found this",
             "confidence": number between 0 and 1
           }`,
@@ -294,10 +298,11 @@ Examples:
           items: [{
             name: webResult.name,
             calories: webResult.calories,
-            protein: webResult.protein,
-            carbs: webResult.carbs,
-            fat: webResult.fat,
-            source: 'web',
+              protein: webResult.protein,
+              carbs: webResult.carbs,
+              fat: webResult.fat,
+              fiber: webResult.fiber || 0,
+              source: 'web',
           }],
           totalCalories: webResult.calories,
           confidence: webResult.confidence,
@@ -341,10 +346,10 @@ Examples:
                 IMPORTANT: Try to identify what product this is from any visible text, branding, or context in the image.
                 
                 Return a simple text description in this format:
-                "[Product Name], [serving size], [calories] calories, [protein]g protein, [carbs]g carbs, [fat]g fat"
-                
-                Examples:
-                - "Cheerios cereal, 1 cup (28g), 100 calories, 3g protein, 20g carbs, 2g fat"
+"[Product Name], [serving size], [calories] calories, [protein]g protein, [carbs]g carbs, [fat]g fat, [fiber]g fiber"
+
+Examples:
+- "Cheerios cereal, 1 cup (28g), 100 calories, 3g protein, 20g carbs, 2g fat, 3g fiber"
                 - "Coca-Cola, 12 fl oz can, 140 calories, 0g protein, 39g carbs, 0g fat"
                 - "Greek yogurt, 1 container (150g), 120 calories, 15g protein, 8g carbs, 0g fat"
                 
@@ -392,12 +397,12 @@ Examples:
                 Please identify the product and extract the nutrition information.
                 
                 Return a simple text description in this format:
-                "[Product Name by Brand], [serving size], [calories] calories, [protein]g protein, [carbs]g carbs, [fat]g fat"
-                
-                Examples:
-                - "Cheerios by General Mills, 1 cup (28g), 100 calories, 3g protein, 20g carbs, 2g fat"
-                - "Coca-Cola Classic, 12 fl oz can, 140 calories, 0g protein, 39g carbs, 0g fat"
-                - "Chobani Greek Yogurt Vanilla, 1 container (150g), 120 calories, 15g protein, 8g carbs, 0g fat"
+"[Product Name by Brand], [serving size], [calories] calories, [protein]g protein, [carbs]g carbs, [fat]g fat, [fiber]g fiber"
+
+Examples:
+- "Cheerios by General Mills, 1 cup (28g), 100 calories, 3g protein, 20g carbs, 2g fat, 3g fiber"
+- "Coca-Cola Classic, 12 fl oz can, 140 calories, 0g protein, 39g carbs, 0g fat, 0g fiber"
+- "Chobani Greek Yogurt Vanilla, 1 container (150g), 120 calories, 15g protein, 8g carbs, 0g fat, 0g fiber"
                 
                 Be specific with the product name - include flavor, variety, or type if visible.
                 
@@ -447,7 +452,8 @@ Examples:
                       "calories": number,
                       "protein": number (grams),
                       "carbs": number (grams),
-                      "fat": number (grams)
+                      "fat": number (grams),
+                      "fiber": number (grams)
                     }
                   ],
                   "totalCalories": number,
@@ -457,13 +463,13 @@ Examples:
                 Example for a plate with chicken breast, rice, and broccoli:
                 {
                   "items": [
-                    {"name": "Grilled chicken breast, 6 oz", "calories": 280, "protein": 53, "carbs": 0, "fat": 6},
-                    {"name": "White rice, 1 cup", "calories": 205, "protein": 4, "carbs": 45, "fat": 0},
-                    {"name": "Steamed broccoli, 1 cup", "calories": 55, "protein": 4, "carbs": 11, "fat": 1}
+                    {"name": "Grilled chicken breast, 6 oz", "calories": 280, "protein": 53, "carbs": 0, "fat": 6, "fiber": 0},
+                    {"name": "White rice, 1 cup", "calories": 205, "protein": 4, "carbs": 45, "fat": 0, "fiber": 1},
+                    {"name": "Steamed broccoli, 1 cup", "calories": 55, "protein": 4, "carbs": 11, "fat": 1, "fiber": 5}
                   ],
                   "totalCalories": 540,
                   "confidence": 0.8
-                }`,
+                }`
               },
             ],
           },

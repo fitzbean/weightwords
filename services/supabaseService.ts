@@ -158,12 +158,13 @@ export const getFoodLogs = async (userId: string, date?: Date, timezone?: string
     // Parse YYYY-MM-DD as local midnight to avoid UTC off-by-one
     const [y, m, d] = log.date.split('-').map(Number);
     return {
-      id: log.id,
+id: log.id,
       name: log.name,
       calories: log.calories,
       protein: log.protein,
       carbs: log.carbs,
       fat: log.fat,
+      fiber: log.fiber,
       description: log.description,
       date: new Date(y, m - 1, d),
       createdAt: new Date(log.created_at),
@@ -207,6 +208,7 @@ export const getFoodLogsInRange = async (
       protein: log.protein,
       carbs: log.carbs,
       fat: log.fat,
+      fiber: log.fiber,
       description: log.description,
       date: new Date(y, m - 1, d),
       createdAt: new Date(log.created_at),
@@ -251,6 +253,7 @@ export const addFoodLog = async (userId: string, log: Omit<FoodLog, 'id' | 'date
       protein: log.protein,
       carbs: log.carbs,
       fat: log.fat,
+      fiber: log.fiber,
       description: log.description,
       date: timezone ? getLocalDateString(new Date(), timezone) : new Date().toISOString().split('T')[0],
     })
@@ -269,7 +272,7 @@ export const deleteFoodLog = async (logId: string) => {
   return { error };
 };
 
-export const updateFoodLog = async (logId: string, updates: { calories?: number; protein?: number; carbs?: number; fat?: number }) => {
+export const updateFoodLog = async (logId: string, updates: { calories?: number; protein?: number; carbs?: number; fat?: number; fiber?: number }) => {
   const { data, error } = await supabase
     .from('food_logs')
     .update(updates)
@@ -306,6 +309,7 @@ export const getWeeklyFoodLogs = async (userId: string, weekDates: Date[], timez
           protein: log.protein,
           carbs: log.carbs,
           fat: log.fat,
+          fiber: log.fiber,
           description: log.description,
           date: new Date(y, m - 1, d),
           createdAt: new Date(log.created_at),
