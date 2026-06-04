@@ -400,7 +400,7 @@ calories: finalCalories,
         protein: Math.round(item.protein * portion),
         carbs: Math.round(item.carbs * portion),
         fat: Math.round(item.fat * portion),
-        fiber: Math.round(item.fiber * portion),
+        fiber: Math.round((item.fiber || 0) * portion),
         description: item.name,
         date: getDateString(date),
       };
