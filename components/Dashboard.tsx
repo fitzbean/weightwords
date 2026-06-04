@@ -270,6 +270,7 @@ const totalFat = entries.reduce((sum, entry) => sum + (entry.fat || 0), 0);
   const progressPercent = Math.min(100, (totalCalories / dailyCalorieTarget) * 100);
   const targetProtein = Math.round(currentWeight / 2.205 * 1.2);
   const targetFat = Math.round(currentWeight * 0.275);
+  const targetFiber = Math.round((maintenanceCalorieTarget / 1000) * 14); // 14g per 1000 kcal (FDA guideline)
   const breakdownTotalCalories = breakdownItems.reduce(
     (sum, item, idx) => sum + getAdjustedCalories(item, idx),
     0
@@ -1176,7 +1177,7 @@ const useFavoritedBreakdown = (favorite: FavoritedBreakdown) => {
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-xs font-black text-gray-400">
-                    Protein: <span className="text-gray-100">{Math.round(totalProtein)}/{targetProtein}g</span> • Fat: <span className="text-gray-100">{Math.round(totalFat)}/{targetFat}g</span> • Fiber: <span className="text-gray-100">{Math.round(totalFiber)}g</span>
+                    Protein: <span className="text-gray-100">{Math.round(totalProtein)}/{targetProtein}g</span> • Fat: <span className="text-gray-100">{Math.round(totalFat)}/{targetFat}g</span> • Fiber: <span className="text-gray-100">{Math.round(totalFiber)}/{targetFiber}g</span>
                   </p>
                 </div>
                 <div className="text-right">
