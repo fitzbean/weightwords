@@ -1247,8 +1247,8 @@ const useFavoritedBreakdown = (favorite: FavoritedBreakdown) => {
                         ></div>
                       </div>
                     </div>
-                    <span className={`text-xs font-black text-right w-12 ${isToday ? 'text-green-500' : 'text-gray-400'}`} title={dayIsMaintenance ? `Maintenance day • target ${dayTarget} kcal` : undefined}>
-                      {calories}{dayIsMaintenance ? ' ⚖' : ''}
+                    <span className={`text-xs font-black text-right w-14 whitespace-nowrap ${isToday ? 'text-green-500' : 'text-gray-400'}`} title={dayIsMaintenance ? `Maintenance day • target ${dayTarget} kcal` : undefined}>
+                      {calories}{dayIsMaintenance ? '⚖' : ''}
                     </span>
                   </div>
                 );
