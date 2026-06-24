@@ -1154,18 +1154,20 @@ const useFavoritedBreakdown = (favorite: FavoritedBreakdown) => {
                   <p className="text-xs font-black text-gray-500 uppercase tracking-wider">Calories</p>
                   <p className="text-2xl font-black text-gray-100">{totalCalories}</p>
                 </div>
+                <div className="text-center">
+                  <p className="text-xs font-black text-gray-500 uppercase tracking-wider">
+                    <span className={`${caloriesRemaining < 0 ? 'text-red-400' : 'text-green-500'}`}>
+                      {caloriesRemaining < 0 ? 'Over by' : 'Remaining'}
+                    </span>
+                  </p>
+                  <p className={`text-2xl font-black ${caloriesRemaining < 0 ? 'text-red-400' : 'text-green-500'}`}>
+                    {Math.round(Math.abs(caloriesRemaining))} <span className="text-xs">kcal</span>
+                  </p>
+                </div>
                 <div className="text-right">
                   <p className="text-xs font-black text-gray-500 uppercase tracking-wider">Target</p>
                   <p className="text-2xl font-black text-gray-100">{dailyCalorieTarget}</p>
                 </div>
-              </div>
-              
-              <div className="flex justify-end">
-                <p className="text-xs font-black text-gray-100">
-                  <span className={`${caloriesRemaining < 0 ? 'text-red-400' : 'text-green-500'}`}>
-                    {caloriesRemaining < 0 ? 'Over by' : 'Remaining'}
-                  </span> {Math.round(Math.abs(caloriesRemaining))} kcal
-                </p>
               </div>
               
               <div className="relative">
