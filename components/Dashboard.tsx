@@ -1160,6 +1160,14 @@ const useFavoritedBreakdown = (favorite: FavoritedBreakdown) => {
                 </div>
               </div>
               
+              <div className="flex justify-end">
+                <p className="text-xs font-black text-gray-100">
+                  <span className={`${caloriesRemaining < 0 ? 'text-red-400' : 'text-green-500'}`}>
+                    {caloriesRemaining < 0 ? 'Over by' : 'Remaining'}
+                  </span> {Math.round(Math.abs(caloriesRemaining))} kcal
+                </p>
+              </div>
+              
               <div className="relative">
                 <div className="w-full bg-gray-700 rounded-full h-4 overflow-hidden">
                   <div
@@ -1178,13 +1186,6 @@ const useFavoritedBreakdown = (favorite: FavoritedBreakdown) => {
                 <div>
                   <p className="text-xs font-black text-gray-400">
                     Protein: <span className="text-gray-100">{Math.round(totalProtein)}/{targetProtein}g</span> • Fat: <span className="text-gray-100">{Math.round(totalFat)}/{targetFat}g</span> • Fiber: <span className="text-gray-100">{Math.round(totalFiber)}/{targetFiber}g</span>
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-black text-gray-100">
-                    <span className={`${caloriesRemaining < 0 ? 'text-red-400' : 'text-green-500'}`}>
-                      {caloriesRemaining < 0 ? 'Over by' : 'Remaining'}
-                    </span> {Math.round(Math.abs(caloriesRemaining))} kcal
                   </p>
                 </div>
               </div>
