@@ -27,7 +27,7 @@ serve(async (req) => {
       let isBrandedProduct = false;
       if (!hasNutritionNumbers && !hasNutritionTerms) {
         const brandCheck = await ai.models.generateContent({
-          model: 'gemini-3.1-flash-lite',
+          model: 'gemini-3.5-flash-lite',
           contents: `Does this text contain a specific brand, restaurant, or store name? Answer only "yes" or "no".
           
 Text: "${description}"
@@ -53,7 +53,7 @@ Examples:
         // Use web search for product nutrition
         try {
           const webResponse = await ai.models.generateContent({
-            model: 'gemini-3.1-flash-lite',
+            model: 'gemini-3.5-flash-lite',
             contents: `Search for nutrition facts for: "${description}". 
             IMPORTANT: 
             - Find the official nutrition information from the manufacturer's website or reliable sources
@@ -118,7 +118,7 @@ Examples:
       
       // Regular estimation for meals or when web search fails
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite',
+        model: 'gemini-3.5-flash-lite',
         contents: `Analyze the following meal description: "${description}". 
         Break it down into individual components (e.g., if it says 'eggs and toast', create separate entries for eggs and toast). 
         For each item, estimate calories and macros (Protein, Carbs, Fat, Fiber in grams).
@@ -175,7 +175,7 @@ Examples:
     
     if (type === 'item-insight') {
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite',
+        model: 'gemini-3.5-flash-lite',
         contents: `Provide a quick nutritional insight for: "${item.name}" (${item.calories} kcal, P: ${item.protein}g, C: ${item.carbs}g, F: ${item.fat}g${item.fiber ? `, Fiber: ${item.fiber}g` : ''}).
         
         Give a brief, engaging summary that includes:
@@ -221,7 +221,7 @@ Examples:
     if (type === 'product-image') {
       // First, identify the brand/product from the image
       const brandResponse = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite',
+        model: 'gemini-3.5-flash-lite',
         contents: [
           {
             role: 'user',
@@ -265,7 +265,7 @@ Examples:
       // Now use web search to find nutrition info for this product
       try {
         const webResponse = await ai.models.generateContent({
-          model: 'gemini-3.1-flash-lite',
+          model: 'gemini-3.5-flash-lite',
           contents: `Search for nutrition facts for: "${productName}". 
           IMPORTANT: 
           - Find the official nutrition information from the manufacturer's website or reliable sources
@@ -329,7 +329,7 @@ Examples:
 
     if (type === 'nutrition-label') {
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite',
+        model: 'gemini-3.5-flash-lite',
         contents: [
           {
             role: 'user',
@@ -372,7 +372,7 @@ Examples:
 
     if (type === 'nutrition-label-dual') {
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite',
+        model: 'gemini-3.5-flash-lite',
         contents: [
           {
             role: 'user',
@@ -424,7 +424,7 @@ Examples:
     if (type === 'food-image') {
       // Estimate nutrition directly from food image
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite',
+        model: 'gemini-3.5-flash-lite',
         contents: [
           {
             role: 'user',
@@ -520,7 +520,7 @@ Examples:
         
       console.log('Protein suggestions prompt:', prompt);
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite',
+        model: 'gemini-3.5-flash-lite',
         contents: prompt,
       });
 
@@ -538,7 +538,7 @@ Examples:
       const { suggestion } = body;
       
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite',
+        model: 'gemini-3.5-flash-lite',
         contents: `Provide detailed information about this protein suggestion: "${suggestion}"
         
         Give an engaging, informative breakdown that includes:
@@ -601,7 +601,7 @@ Examples:
       `;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite',
+        model: 'gemini-3.5-flash-lite',
         contents: prompt,
       });
 
