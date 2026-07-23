@@ -39,14 +39,14 @@ const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, onImpersonate 
     }
   };
 
-  const filteredUsers = users.filter(user => 
+  const filteredUsers = users.filter(user =>
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (user.profile?.spouseId && user.email.includes(searchTerm))
   );
 
   const handleImpersonate = async (userId: string, profile: UserProfile) => {
     if (!profile) return;
-    
+
     setIsLoadingUser(userId);
     try {
       onImpersonate(userId, profile);
@@ -59,82 +59,85 @@ const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose, onImpersonate 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
-        <div className="flex justify-between items-center p-6 pb-4 border-b border-gray-700">
-          <h2 className="text-2xl font-black text-gray-100">Admin Panel</h2>
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4">
+      <div className="bg-card border border-line rounded-t-3xl sm:rounded-3xl shadow-pop w-full max-w-2xl max-h-[90dvh] overflow-y-auto p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300 flex flex-col">
+        {/* mobile grab handle */}
+        <div className="w-10 h-1 rounded-full bg-line2 mx-auto mb-4 sm:hidden" />
+
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="font-display text-lg font-bold text-snow">Admin Panel</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-200 text-2xl leading-none"
+            className="w-11 h-11 flex items-center justify-center rounded-xl text-mist hover:text-snow hover:bg-card2 transition-colors"
           >
-            ×
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+            </svg>
           </button>
         </div>
 
-        <div className="p-6">
-          {/* Search */}
-          <div className="mb-6">
-            <input
-              type="text"
-              placeholder="Search users by email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
-            />
-          </div>
+        {/* Search */}
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder="Search users by email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full h-12 px-4 rounded-2xl bg-canvas/60 border border-line text-snow placeholder-mist focus:border-brand-500/60 focus:ring-4 focus:ring-brand-500/10 outline-none transition"
+          />
+        </div>
 
-          {/* User List */}
-          <div className="overflow-y-auto max-h-[500px]">
-            {loading ? (
-              <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {filteredUsers.map(user => (
-                  <div
-                    key={user.id}
-                    className="p-4 bg-gray-700/50 rounded-xl hover:bg-gray-700 transition-colors"
-                  >
-                    <div className="flex-1">
-                      <p className="text-gray-100 font-medium">{user.email}</p>
-                      {user.lastFoodDate && (
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          Last food entry: {new Date(user.lastFoodDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </p>
-                      )}
-                      {user.profile && (
-                        <div className="flex items-center gap-4 mt-1">
-                          <span className="text-xs text-gray-400">
-                            {user.profile.age}y, {user.profile.gender === 'male' ? 'M' : 'F'}, {user.profile.weightLbs}lbs
-                          </span>
-                          {user.profile.isAdmin && (
-                            <span className="text-xs bg-purple-900/30 text-purple-400 px-2 py-0.5 rounded-full">
-                              ADMIN
-                            </span>
-                          )}
-                          {user.profile.spouseId && (
-                            <span className="text-xs bg-blue-900/30 text-blue-400 px-2 py-0.5 rounded-full">
-                              Has Spouse
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
+        {/* User List */}
+        <div className="overflow-y-auto max-h-[500px]">
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-400"></div>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {filteredUsers.map(user => (
+                <div
+                  key={user.id}
+                  className="min-h-[44px] p-4 rounded-xl hover:bg-card2 transition-colors"
+                >
+                  <div className="flex-1">
+                    <p className="text-snow font-medium">{user.email}</p>
+                    {user.lastFoodDate && (
+                      <p className="text-xs text-mist mt-0.5">
+                        Last food entry: {new Date(user.lastFoodDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    )}
                     {user.profile && (
-                      <button
-                        onClick={() => handleImpersonate(user.id, user.profile!)}
-                        disabled={isLoadingUser === user.id}
-                        className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                      >
-                        {isLoadingUser === user.id ? 'Loading...' : 'View As User'}
-                      </button>
+                      <div className="flex items-center gap-4 mt-1">
+                        <span className="text-xs text-fog">
+                          {user.profile.age}y, {user.profile.gender === 'male' ? 'M' : 'F'}, {user.profile.weightLbs}lbs
+                        </span>
+                        {user.profile.isAdmin && (
+                          <span className="text-xs bg-violet-400/10 text-violet-400 px-2 py-0.5 rounded-full">
+                            ADMIN
+                          </span>
+                        )}
+                        {user.profile.spouseId && (
+                          <span className="text-xs bg-sky-400/10 text-sky-400 px-2 py-0.5 rounded-full">
+                            Has Spouse
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  {user.profile && (
+                    <button
+                      onClick={() => handleImpersonate(user.id, user.profile!)}
+                      disabled={isLoadingUser === user.id}
+                      className="mt-3 h-11 px-4 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-semibold text-sm transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none"
+                    >
+                      {isLoadingUser === user.id ? 'Loading...' : 'View As User'}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -3,14 +3,89 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0A0E0C">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>WeightWords</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        canvas: '#0A0E0C',
+                        card: '#121815',
+                        card2: '#1A211D',
+                        line: '#242E29',
+                        line2: '#313D37',
+                        mist: '#7F8C86',
+                        fog: '#B4BFB9',
+                        snow: '#EFF3F1',
+                        brand: {
+                            300: '#6EE7B7',
+                            400: '#34D399',
+                            500: '#10B981',
+                            600: '#059669',
+                            700: '#047857',
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                        display: ['"Space Grotesk"', 'Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        card: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 8px 24px -12px rgba(0,0,0,0.6)',
+                        pop: '0 16px 48px -12px rgba(0,0,0,0.8)',
+                        glow: '0 4px 24px -6px rgba(16,185,129,0.45)',
+                    },
+                    borderRadius: {
+                        '4xl': '1.75rem',
+                    },
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
+        html { color-scheme: dark; }
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f9fafb;
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: #0A0E0C;
+            background-image:
+                radial-gradient(1200px 500px at 50% -10%, rgba(16, 185, 129, 0.07), transparent 70%),
+                radial-gradient(800px 400px at 100% 100%, rgba(16, 185, 129, 0.03), transparent 70%);
+            background-attachment: fixed;
+            color: #EFF3F1;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+        }
+        ::selection { background: rgba(16, 185, 129, 0.35); }
+        *:focus-visible { outline: 2px solid rgba(52, 211, 153, 0.7); outline-offset: 2px; }
+        /* Slim, dark scrollbars */
+        * { scrollbar-width: thin; scrollbar-color: #313D37 transparent; }
+        *::-webkit-scrollbar { width: 6px; height: 6px; }
+        *::-webkit-scrollbar-thumb { background: #313D37; border-radius: 9999px; }
+        *::-webkit-scrollbar-track { background: transparent; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        input, select, textarea { accent-color: #10B981; }
+        select option { background-color: #1A211D; color: #EFF3F1; }
+        /* Simple keyframe fallbacks for animate-in utilities used across the app */
+        @keyframes ww-fade-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes ww-zoom-in { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+        .animate-in.fade-in.duration-500 { animation: ww-fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .animate-in.fade-in.zoom-in-95 { animation: ww-zoom-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        /* Deliberate bottom-sheet entrance on mobile; a softer scale+fade dialog entrance on desktop */
+        @keyframes ww-sheet-up { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes ww-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+        .animate-in.fade-in.slide-in-from-bottom-4 { animation: ww-sheet-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        .ww-backdrop-in { animation: ww-backdrop-in 0.25s ease-out both; }
+        @media (max-width: 639px) {
+            @keyframes ww-sheet-up { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
+            .animate-in.fade-in.slide-in-from-bottom-4 { animation-duration: 0.45s; }
         }
     </style>
 <script type="importmap">

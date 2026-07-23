@@ -266,38 +266,41 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
     : { title: 'Step 2: Nutrition Label', instruction: 'Now point camera at the nutrition facts label' };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-2xl p-6 max-w-lg w-full">
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4">
+      <div className="bg-card border border-line rounded-t-3xl sm:rounded-3xl shadow-pop w-full max-w-lg max-h-[90dvh] overflow-y-auto p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300">
+        {/* mobile grab handle */}
+        <div className="w-10 h-1 rounded-full bg-line2 mx-auto mb-4 sm:hidden" />
         <div className="flex justify-between items-center mb-2">
-          <h2 className="text-2xl font-black text-gray-100">Scan Product</h2>
+          <h2 className="font-display text-xl font-bold text-snow">Scan Product</h2>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-200 text-2xl leading-none"
+            className="w-11 h-11 flex items-center justify-center rounded-xl text-mist hover:text-snow hover:bg-card2 transition-colors text-2xl leading-none"
+            aria-label="Close"
           >
             ×
           </button>
         </div>
-        
+
         {/* Step indicator */}
         <div className="flex items-center gap-2 mb-4">
           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-            captureStep === 'product' ? 'bg-green-500 text-white' : 'bg-gray-600 text-gray-300'
+            captureStep === 'product' ? 'bg-brand-500 text-emerald-950' : 'bg-card2 border border-line2 text-fog'
           }`}>
             {productImage ? '✓' : '1'}
           </div>
-          <div className="flex-1 h-1 bg-gray-600 rounded">
-            <div className={`h-full bg-green-500 rounded transition-all ${productImage ? 'w-full' : 'w-0'}`}></div>
+          <div className="flex-1 h-1 bg-card2 rounded">
+            <div className={`h-full bg-brand-500 rounded transition-all ${productImage ? 'w-full' : 'w-0'}`}></div>
           </div>
           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-            captureStep === 'nutrition' ? 'bg-green-500 text-white' : 'bg-gray-600 text-gray-300'
+            captureStep === 'nutrition' ? 'bg-brand-500 text-emerald-950' : 'bg-card2 border border-line2 text-fog'
           }`}>
             2
           </div>
         </div>
-        
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{stepInfo.title}</p>
-        
-        <div className="relative bg-black rounded-xl overflow-hidden mb-4">
+
+        <p className="text-[11px] font-semibold text-mist uppercase tracking-[0.14em] mb-2">{stepInfo.title}</p>
+
+        <div className="relative bg-black rounded-2xl overflow-hidden border border-line mb-4">
           <video
             ref={videoRef}
             className="w-full h-64 object-cover"
@@ -309,11 +312,11 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
           {!isScanning && !error && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
-                <svg className="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-16 h-16 mx-auto mb-4 text-mist" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
                 </svg>
-                <p className="text-gray-400">Initializing camera...</p>
+                <p className="text-fog">Initializing camera...</p>
               </div>
             </div>
           )}
@@ -321,10 +324,10 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
           {error && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center px-4">
-                <svg className="w-16 h-16 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-16 h-16 mx-auto mb-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
                 </svg>
-                <p className="text-red-400">{error}</p>
+                <p className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm">{error}</p>
               </div>
             </div>
           )}
@@ -332,11 +335,11 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
           {isProcessing && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
               <div className="text-center">
-                <svg className="animate-spin h-12 w-12 mx-auto mb-4 text-white" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin h-12 w-12 mx-auto mb-4 text-brand-400" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <p className="text-white font-bold">Analyzing product...</p>
+                <p className="text-snow font-semibold">Analyzing product...</p>
               </div>
             </div>
           )}
@@ -344,17 +347,17 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
           {/* Scanning frame overlay */}
           {isScanning && !isProcessing && (
             <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute inset-4 border-2 border-white border-opacity-50 rounded-lg"></div>
-              <div className={`absolute top-4 left-4 w-8 h-8 border-t-4 border-l-4 rounded-tl-lg ${captureStep === 'product' ? 'border-blue-400' : 'border-green-400'}`}></div>
-              <div className={`absolute top-4 right-4 w-8 h-8 border-t-4 border-r-4 rounded-tr-lg ${captureStep === 'product' ? 'border-blue-400' : 'border-green-400'}`}></div>
-              <div className={`absolute bottom-4 left-4 w-8 h-8 border-b-4 border-l-4 rounded-bl-lg ${captureStep === 'product' ? 'border-blue-400' : 'border-green-400'}`}></div>
-              <div className={`absolute bottom-4 right-4 w-8 h-8 border-b-4 border-r-4 rounded-br-lg ${captureStep === 'product' ? 'border-blue-400' : 'border-green-400'}`}></div>
+              <div className="absolute inset-4 border-2 border-white/50 rounded-lg"></div>
+              <div className={`absolute top-4 left-4 w-8 h-8 border-t-4 border-l-4 rounded-tl-lg ${captureStep === 'product' ? 'border-sky-400' : 'border-brand-400'}`}></div>
+              <div className={`absolute top-4 right-4 w-8 h-8 border-t-4 border-r-4 rounded-tr-lg ${captureStep === 'product' ? 'border-sky-400' : 'border-brand-400'}`}></div>
+              <div className={`absolute bottom-4 left-4 w-8 h-8 border-b-4 border-l-4 rounded-bl-lg ${captureStep === 'product' ? 'border-sky-400' : 'border-brand-400'}`}></div>
+              <div className={`absolute bottom-4 right-4 w-8 h-8 border-b-4 border-r-4 rounded-br-lg ${captureStep === 'product' ? 'border-sky-400' : 'border-brand-400'}`}></div>
             </div>
           )}
         </div>
         
         <div className="text-center">
-          <p className="text-sm text-gray-400 mb-4">
+          <p className="text-sm text-fog mb-4">
             {stepInfo.instruction}
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
@@ -362,11 +365,7 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
               <button
                 onClick={handleCaptureFood}
                 disabled={!isScanning || isProcessing}
-                className="px-6 py-2 bg-orange-600 text-white rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-500"
-                style={{ 
-                  opacity: !isScanning || isProcessing ? 0.5 : 1,
-                  cursor: !isScanning || isProcessing ? 'not-allowed' : 'pointer'
-                }}
+                className="h-12 px-5 rounded-2xl bg-card2 border border-line2 text-fog font-semibold text-sm hover:text-snow hover:border-line2 transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none"
               >
                 {isProcessing ? 'Analyzing...' : 'Capture Food'}
               </button>
@@ -375,7 +374,7 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
               <button
                 onClick={handleSkipLabel}
                 disabled={isProcessing}
-                className="px-6 py-2 bg-purple-600 text-white rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-500"
+                className="h-12 px-5 rounded-2xl bg-card2 border border-line2 text-fog font-semibold text-sm hover:text-snow hover:border-line2 transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none"
               >
                 {isProcessing ? 'Searching...' : 'No Nutrition Label'}
               </button>
@@ -384,13 +383,7 @@ const NutritionLabelScanner: React.FC<NutritionLabelScannerProps> = ({ isOpen, o
               <button
                 onClick={handleCapture}
                 disabled={!isScanning || isProcessing}
-                className={`px-6 py-2 text-white rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed ${
-                  captureStep === 'product' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-green-600 hover:bg-green-500'
-                }`}
-                style={{ 
-                  opacity: !isScanning || isProcessing ? 0.5 : 1,
-                  cursor: !isScanning || isProcessing ? 'not-allowed' : 'pointer'
-                }}
+                className="h-12 px-6 rounded-2xl bg-brand-500 hover:bg-brand-400 text-emerald-950 font-bold text-sm transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none shadow-glow"
               >
                 {isProcessing ? 'Analyzing...' : captureStep === 'product' ? `Capture Brand` : 'Capture Nutrition Label'}
               </button>

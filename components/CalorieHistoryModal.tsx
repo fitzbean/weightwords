@@ -211,12 +211,14 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[80vh] flex flex-col">
-        <div className="flex justify-between items-center p-4 pb-0">
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 ww-backdrop-in">
+      <div className="bg-card border border-line rounded-t-3xl sm:rounded-3xl shadow-pop w-full max-w-4xl max-h-[90dvh] flex flex-col pb-[max(1.5rem,env(safe-area-inset-bottom))] animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300">
+        {/* mobile grab handle */}
+        <div className="w-10 h-1 rounded-full bg-line2 mx-auto mt-3 sm:hidden shrink-0" />
+        <div className="flex justify-between items-center p-6 pb-0 shrink-0">
           <div>
-            <h2 className="text-2xl font-black text-gray-100">Calorie History</h2>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <h2 className="font-display text-xl font-bold text-snow">Calorie History</h2>
+            <p className="text-xs text-mist mt-0.5">
               {rangeBounds.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               {' – '}
               {rangeBounds.end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -224,7 +226,7 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-200 text-2xl leading-none"
+            className="w-11 h-11 flex items-center justify-center rounded-xl text-mist hover:text-snow hover:bg-card2 transition-colors text-2xl leading-none"
             aria-label="Close"
           >
             ×
@@ -234,17 +236,17 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
         <div className="flex-1 overflow-y-auto px-6 pb-6">
           {/* Range selector */}
           <div className="mt-4 mb-5">
-            <div className="grid grid-cols-5 gap-2 bg-gray-900/40 border border-gray-700/50 rounded-xl p-1">
+            <div className="grid grid-cols-5 gap-1 bg-canvas/60 border border-line rounded-2xl p-1">
               {RANGE_OPTIONS.map(option => {
                 const isActive = option.key === range;
                 return (
                   <button
                     key={option.key}
                     onClick={() => setRange(option.key)}
-                    className={`px-2 py-2 rounded-lg text-xs sm:text-sm font-black uppercase tracking-wider transition-colors ${
+                    className={`h-11 px-2 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-[0.14em] transition-colors ${
                       isActive
-                        ? 'bg-green-600 text-white shadow-md shadow-green-900/30'
-                        : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/40'
+                        ? 'bg-brand-500 text-emerald-950 shadow-glow'
+                        : 'text-mist hover:text-snow hover:bg-card2'
                     }`}
                   >
                     {option.label}
@@ -256,62 +258,62 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
 
           {isLoading ? (
             <div className="py-16 text-center">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-500 mx-auto"></div>
-              <p className="text-xs text-gray-400 mt-3 font-bold uppercase tracking-widest">Loading history…</p>
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand-400 mx-auto"></div>
+              <p className="text-[11px] font-semibold text-mist uppercase tracking-[0.14em] mt-3">Loading history…</p>
             </div>
           ) : error ? (
-            <div className="py-12 text-center text-red-400 text-sm">{error}</div>
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm text-center">{error}</div>
           ) : (
             <>
               {/* Stat cards */}
               <div className="grid grid-cols-4 gap-1 sm:gap-3 mb-3">
-                <div className="bg-gradient-to-br from-green-900/40 to-green-900/20 rounded-lg sm:rounded-2xl p-1.5 sm:p-4 border border-green-800/30">
-                  <p className="text-[8px] sm:text-[10px] font-bold text-green-400/70 uppercase tracking-wider leading-tight">Days Logged</p>
-                  <p className="text-xs sm:text-2xl font-black text-green-400 mt-0.5 sm:mt-1">
+                <div className="bg-card2 rounded-lg sm:rounded-2xl p-1.5 sm:p-4 border border-line">
+                  <p className="text-[8px] sm:text-[10px] font-semibold text-mist uppercase tracking-[0.14em] leading-tight">Days Logged</p>
+                  <p className="font-display text-xs sm:text-2xl font-bold tabular-nums text-brand-400 mt-0.5 sm:mt-1">
                     {summary.daysCount}
-                    <span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-bold text-green-400/60">/ {dayCount}</span>
+                    <span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-semibold text-mist">/ {dayCount}</span>
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-blue-900/40 to-blue-900/20 rounded-lg sm:rounded-2xl p-1.5 sm:p-4 border border-blue-800/30">
-                  <p className="text-[8px] sm:text-[10px] font-bold text-blue-400/70 uppercase tracking-wider leading-tight">Daily Avg</p>
-                  <p className="text-xs sm:text-2xl font-black text-blue-400 mt-0.5 sm:mt-1">
+                <div className="bg-card2 rounded-lg sm:rounded-2xl p-1.5 sm:p-4 border border-line">
+                  <p className="text-[8px] sm:text-[10px] font-semibold text-mist uppercase tracking-[0.14em] leading-tight">Daily Avg</p>
+                  <p className="font-display text-xs sm:text-2xl font-bold tabular-nums text-sky-400 mt-0.5 sm:mt-1">
                     {summary.avg.toLocaleString()}
-                    <span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-bold text-blue-400/60">kcal</span>
+                    <span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-semibold text-mist">kcal</span>
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-amber-900/40 to-amber-900/20 rounded-lg sm:rounded-2xl p-1.5 sm:p-4 border border-amber-800/30">
-                  <p className="text-[8px] sm:text-[10px] font-bold text-amber-400/70 uppercase tracking-wider leading-tight">Highest</p>
-                  <p className="text-xs sm:text-2xl font-black text-amber-400 mt-0.5 sm:mt-1">
+                <div className="bg-card2 rounded-lg sm:rounded-2xl p-1.5 sm:p-4 border border-line">
+                  <p className="text-[8px] sm:text-[10px] font-semibold text-mist uppercase tracking-[0.14em] leading-tight">Highest</p>
+                  <p className="font-display text-xs sm:text-2xl font-bold tabular-nums text-amber-400 mt-0.5 sm:mt-1">
                     {summary.max.toLocaleString()}
-                    <span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-bold text-amber-400/60">kcal</span>
+                    <span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-semibold text-mist">kcal</span>
                   </p>
                 </div>
-                <div className="bg-gradient-to-br from-purple-900/40 to-purple-900/20 rounded-lg sm:rounded-2xl p-1.5 sm:p-4 border border-purple-800/30">
-                  <p className="text-[8px] sm:text-[10px] font-bold text-purple-400/70 uppercase tracking-wider leading-tight">Total</p>
-                  <p className="text-xs sm:text-2xl font-black text-purple-400 mt-0.5 sm:mt-1">
+                <div className="bg-card2 rounded-lg sm:rounded-2xl p-1.5 sm:p-4 border border-line">
+                  <p className="text-[8px] sm:text-[10px] font-semibold text-mist uppercase tracking-[0.14em] leading-tight">Total</p>
+                  <p className="font-display text-xs sm:text-2xl font-bold tabular-nums text-violet-400 mt-0.5 sm:mt-1">
                     {summary.total.toLocaleString()}
-                    <span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-bold text-purple-400/60">kcal</span>
+                    <span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-semibold text-mist">kcal</span>
                   </p>
                 </div>
               </div>
 
               {summary.daysCount === 0 ? (
-                <div className="py-12 text-center bg-gray-900/40 rounded-2xl border border-gray-700/50">
-                  <p className="text-gray-400 text-sm">No food logs in this range yet.</p>
-                  <p className="text-gray-500 text-xs mt-1">Try a wider time range to see more data.</p>
+                <div className="py-12 text-center bg-card2 rounded-2xl border border-line">
+                  <p className="text-fog text-sm">No food logs in this range yet.</p>
+                  <p className="text-mist text-xs mt-1">Try a wider time range to see more data.</p>
                 </div>
               ) : (
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-5 border border-gray-700/50 shadow-xl">
+                <div className="bg-card2 rounded-2xl p-5 border border-line shadow-card">
                   <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Calories per day</h4>
+                    <h4 className="text-[11px] font-semibold text-mist uppercase tracking-[0.14em]">Calories per day</h4>
                     {dailyTarget != null && (
-                      <div className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-900/30 text-blue-400">
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold uppercase tracking-[0.14em] bg-sky-500/10 border border-sky-500/30 text-sky-400">
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v8" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h8" />
                         </svg>
-                        {dailyTarget.toLocaleString()} <span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-bold text-blue-400/60">kcal</span>
+                        {dailyTarget.toLocaleString()} <span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-semibold text-sky-400/60">kcal</span>
                       </div>
                     )}
                   </div>
@@ -319,28 +321,28 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
                     <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <defs>
                         <linearGradient id="calorieGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#10B981" stopOpacity={0.45} />
-                          <stop offset="50%" stopColor="#10B981" stopOpacity={0.15} />
-                          <stop offset="100%" stopColor="#10B981" stopOpacity={0} />
+                          <stop offset="0%" stopColor="#34D399" stopOpacity={0.45} />
+                          <stop offset="50%" stopColor="#34D399" stopOpacity={0.15} />
+                          <stop offset="100%" stopColor="#34D399" stopOpacity={0} />
                         </linearGradient>
                         <linearGradient id="calorieLineGradient" x1="0" y1="0" x2="1" y2="0">
                           <stop offset="0%" stopColor="#34D399" />
-                          <stop offset="100%" stopColor="#10B981" />
+                          <stop offset="100%" stopColor="#34D399" />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" strokeOpacity={0.5} vertical={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#313D37" strokeOpacity={0.5} vertical={false} />
                       <XAxis
                         dataKey="date"
-                        stroke="#4B5563"
-                        tick={{ fill: '#6B7280', fontSize: 11 }}
+                        stroke="#313D37"
+                        tick={{ fill: '#7F8C86', fontSize: 11 }}
                         tickLine={false}
                         axisLine={false}
                         interval={0}
                         tickFormatter={(_value: string, index: number) => xAxisLabels[index] ?? ''}
                       />
                       <YAxis
-                        stroke="#4B5563"
-                        tick={{ fill: '#6B7280', fontSize: 11 }}
+                        stroke="#313D37"
+                        tick={{ fill: '#7F8C86', fontSize: 11 }}
                         tickLine={false}
                         axisLine={false}
                         domain={[0, 'dataMax + 200']}
@@ -348,14 +350,14 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
                       />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: 'rgba(17, 24, 39, 0.95)',
-                          border: '1px solid #374151',
+                          backgroundColor: '#1A211D',
+                          border: '1px solid #313D37',
                           borderRadius: '12px',
                           boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
                           padding: '12px 16px',
                         }}
-                        labelStyle={{ color: '#9CA3AF', fontSize: 12, marginBottom: 4 }}
-                        itemStyle={{ color: '#10B981', fontWeight: 'bold', fontSize: 16 }}
+                        labelStyle={{ color: '#7F8C86', fontSize: 12, marginBottom: 4 }}
+                        itemStyle={{ color: '#34D399', fontWeight: 'bold', fontSize: 16 }}
                         formatter={(value: number | null) =>
                           value == null ? ['—', 'Calories'] : [`${value.toLocaleString()} kcal`, 'Calories']
                         }
@@ -370,18 +372,18 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
                             year: 'numeric',
                           });
                         }}
-                        cursor={{ stroke: '#10B981', strokeWidth: 1, strokeDasharray: '5 5' }}
+                        cursor={{ stroke: '#34D399', strokeWidth: 1, strokeDasharray: '5 5' }}
                       />
                       {dailyTarget != null && (
                         <ReferenceLine
                           y={dailyTarget}
-                          stroke="#3B82F6"
+                          stroke="#38BDF8"
                           strokeWidth={2}
                           strokeDasharray="5 5"
                           label={{
                             value: `Target: ${dailyTarget.toLocaleString()}`,
                             position: 'right',
-                            fill: '#60A5FA',
+                            fill: '#38BDF8',
                             fontSize: 11,
                             fontWeight: 'bold',
                           }}
@@ -406,7 +408,7 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
                           }
                           return (
                             <g key={`dot-${index}`}>
-                              <circle cx={cx} cy={cy} r={8} fill="#F59E0B" stroke="#111827" strokeWidth={2} />
+                              <circle cx={cx} cy={cy} r={8} fill="#FBBF24" stroke="#0A0E0C" strokeWidth={2} />
                               <text
                                 x={cx}
                                 y={cy}
@@ -414,7 +416,7 @@ const CalorieHistoryModal: React.FC<CalorieHistoryModalProps> = ({ isOpen, onClo
                                 dominantBaseline="central"
                                 fontSize={9}
                                 fontWeight="bold"
-                                fill="#111827"
+                                fill="#0A0E0C"
                               >
                                 M
                               </text>

@@ -138,47 +138,50 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-2xl max-w-2xl w-full max-h-[72.9vh] flex flex-col">
-        <div className="flex justify-between items-center p-6 pb-4">
-          <h2 className="text-2xl font-black text-gray-100">
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 ww-backdrop-in">
+      <div className="bg-card border border-line rounded-t-3xl sm:rounded-3xl shadow-pop w-full max-w-2xl max-h-[90dvh] flex flex-col p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300">
+        {/* mobile grab handle */}
+        <div className="w-10 h-1 rounded-full bg-line2 mx-auto mb-4 sm:hidden" />
+        <div className="flex justify-between items-center pb-4">
+          <h2 className="font-display text-xl font-bold text-snow">
             {isNewUser ? 'Complete Your Profile' : 'Edit Profile'}
           </h2>
           {!isNewUser && (
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-200 text-2xl leading-none"
+              className="w-11 h-11 -mr-2 flex items-center justify-center rounded-xl text-mist hover:text-snow hover:bg-card2 transition-colors"
+              aria-label="Close"
             >
-              ×
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 pb-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto -mx-1 px-1">
           {isNewUser && (
-            <p className="text-gray-400 mb-6">
+            <p className="text-fog text-sm mb-6">
               Welcome! Let's set up your profile to calculate your daily calorie targets.
             </p>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Display Name */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-400 mb-2">
+              <label className="block text-[11px] font-semibold text-mist uppercase tracking-[0.14em] mb-1.5">
                 Display Name
               </label>
               <input
                 type="text"
                 value={formData.displayName}
                 onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                className="w-full p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
+                className="w-full h-12 px-4 rounded-2xl bg-canvas/60 border border-line text-snow placeholder-mist focus:border-brand-500/60 focus:ring-4 focus:ring-brand-500/10 outline-none transition"
                 placeholder="First Name"
               />
             </div>
 
             {/* Age */}
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
+              <label className="block text-[11px] font-semibold text-mist uppercase tracking-[0.14em] mb-1.5">
                 Age
               </label>
               <input
@@ -187,20 +190,20 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                 max="100"
                 value={formData.age}
                 onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) })}
-                className="w-full p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
+                className="w-full h-12 px-4 rounded-2xl bg-canvas/60 border border-line text-snow placeholder-mist focus:border-brand-500/60 focus:ring-4 focus:ring-brand-500/10 outline-none transition"
                 required
               />
             </div>
 
             {/* Gender */}
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
+              <label className="block text-[11px] font-semibold text-mist uppercase tracking-[0.14em] mb-1.5">
                 Gender
               </label>
               <select
                 value={formData.gender}
                 onChange={(e) => setFormData({ ...formData, gender: e.target.value as Gender })}
-                className="w-full p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
+                className="w-full h-12 px-4 rounded-2xl bg-canvas/60 border border-line text-snow placeholder-mist focus:border-brand-500/60 focus:ring-4 focus:ring-brand-500/10 outline-none transition"
               >
                 <option value={Gender.MALE}>Male</option>
                 <option value={Gender.FEMALE}>Female</option>
@@ -209,7 +212,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
             {/* Weight */}
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
+              <label className="block text-[11px] font-semibold text-mist uppercase tracking-[0.14em] mb-1.5">
                 Weight (lbs)
               </label>
               <input
@@ -218,14 +221,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                 max="500"
                 value={formData.weightLbs}
                 onChange={(e) => setFormData({ ...formData, weightLbs: parseInt(e.target.value) })}
-                className="w-full p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
+                className="w-full h-12 px-4 rounded-2xl bg-canvas/60 border border-line text-snow placeholder-mist focus:border-brand-500/60 focus:ring-4 focus:ring-brand-500/10 outline-none transition"
                 required
               />
             </div>
 
             {/* Height */}
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
+              <label className="block text-[11px] font-semibold text-mist uppercase tracking-[0.14em] mb-1.5">
                 Height
               </label>
               <div className="flex gap-2">
@@ -235,7 +238,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   max="8"
                   value={formData.heightFt}
                   onChange={(e) => setFormData({ ...formData, heightFt: parseInt(e.target.value) })}
-                  className="flex-1 p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
+                  className="flex-1 min-w-0 h-12 px-4 rounded-2xl bg-canvas/60 border border-line text-snow placeholder-mist focus:border-brand-500/60 focus:ring-4 focus:ring-brand-500/10 outline-none transition"
                   placeholder="ft"
                   required
                 />
@@ -245,7 +248,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   max="11"
                   value={formData.heightIn}
                   onChange={(e) => setFormData({ ...formData, heightIn: parseInt(e.target.value) })}
-                  className="flex-1 p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
+                  className="flex-1 min-w-0 h-12 px-4 rounded-2xl bg-canvas/60 border border-line text-snow placeholder-mist focus:border-brand-500/60 focus:ring-4 focus:ring-brand-500/10 outline-none transition"
                   placeholder="in"
                   required
                 />
@@ -254,13 +257,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
             {/* Activity Level */}
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
+              <label className="block text-[11px] font-semibold text-mist uppercase tracking-[0.14em] mb-1.5">
                 Activity Level
               </label>
               <select
                 value={formData.activityLevel}
                 onChange={(e) => setFormData({ ...formData, activityLevel: e.target.value as ActivityLevel })}
-                className="w-full p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
+                className="w-full h-12 px-4 rounded-2xl bg-canvas/60 border border-line text-snow placeholder-mist focus:border-brand-500/60 focus:ring-4 focus:ring-brand-500/10 outline-none transition"
               >
                 <option value={ActivityLevel.SEDENTARY}>Sedentary</option>
                 <option value={ActivityLevel.LIGHT}>Light</option>
@@ -268,7 +271,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                 <option value={ActivityLevel.ACTIVE}>Active</option>
                 <option value={ActivityLevel.VERY_ACTIVE}>Very Active</option>
               </select>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-mist mt-1.5">
                 {formData.activityLevel === ActivityLevel.SEDENTARY && (
                   <>Little to no exercise. You work a desk job and don't engage in regular physical activity. Golf with a cart would fall here.</>
                 )}
@@ -289,13 +292,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
             {/* Weight Goal */}
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
+              <label className="block text-[11px] font-semibold text-mist uppercase tracking-[0.14em] mb-1.5">
                 Weight Goal
               </label>
               <select
                 value={formData.weightGoal}
                 onChange={(e) => setFormData({ ...formData, weightGoal: e.target.value as WeightGoal })}
-                className="w-full p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
+                className="w-full h-12 px-4 rounded-2xl bg-canvas/60 border border-line text-snow placeholder-mist focus:border-brand-500/60 focus:ring-4 focus:ring-brand-500/10 outline-none transition"
               >
                 <option value={WeightGoal.LOSE_FAST}>Lose 2 lbs per week</option>
                 <option value={WeightGoal.LOSE_ONE_HALF}>Lose 1.5 lbs per week</option>
@@ -309,7 +312,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
             {/* Target Weight */}
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
+              <label className="block text-[11px] font-semibold text-mist uppercase tracking-[0.14em] mb-1.5">
                 Target Weight (lbs)
               </label>
               <input
@@ -318,25 +321,25 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                 max="500"
                 value={formData.targetWeightLbs || ''}
                 onChange={(e) => setFormData({ ...formData, targetWeightLbs: e.target.value ? parseInt(e.target.value) : undefined })}
-                className="w-full p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
+                className="w-full h-12 px-4 rounded-2xl bg-canvas/60 border border-line text-snow placeholder-mist focus:border-brand-500/60 focus:ring-4 focus:ring-brand-500/10 outline-none transition"
                 placeholder="Optional"
               />
               {calculateIdealWeight(formData) && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Ideal Weight (Miller's Formula): <span className="text-blue-400 font-semibold">{calculateIdealWeight(formData)} lbs</span>
+                <p className="text-xs text-mist mt-1.5">
+                  Ideal Weight (Miller's Formula): <span className="text-sky-400 font-semibold">{calculateIdealWeight(formData)} lbs</span>
                 </p>
               )}
             </div>
 
             {/* Timezone */}
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
+              <label className="block text-[11px] font-semibold text-mist uppercase tracking-[0.14em] mb-1.5">
                 Timezone
               </label>
               <select
                 value={formData.timezone}
                 onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
-                className="w-full p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
+                className="w-full h-12 px-4 rounded-2xl bg-canvas/60 border border-line text-snow placeholder-mist focus:border-brand-500/60 focus:ring-4 focus:ring-brand-500/10 outline-none transition"
               >
                 {timezones.map(tz => (
                   <option key={tz.value} value={tz.value}>{tz.label}</option>
@@ -346,29 +349,29 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
 
             {/* Weigh Day */}
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
+              <label className="block text-[11px] font-semibold text-mist uppercase tracking-[0.14em] mb-1.5">
                 Weigh-In Day
               </label>
               <select
                 value={formData.weighDay}
                 onChange={(e) => setFormData({ ...formData, weighDay: parseInt(e.target.value) })}
-                className="w-full p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none"
+                className="w-full h-12 px-4 rounded-2xl bg-canvas/60 border border-line text-snow placeholder-mist focus:border-brand-500/60 focus:ring-4 focus:ring-brand-500/10 outline-none transition"
               >
                 {weekDays.map(day => (
                   <option key={day.value} value={day.value}>{day.label}</option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-mist mt-1.5">
                 Your weekly progress will start on this day
               </p>
             </div>
           </div>
 
           {/* Daily Calorie Target */}
-          <div className="mt-6 p-4 bg-gray-700 rounded-xl">
-            <p className="text-sm text-gray-400">
-              Calculated Daily Calorie Target: 
-              <span className="text-green-400 font-bold ml-2">
+          <div className="mt-6 p-4 bg-card2 border border-line2 rounded-2xl">
+            <p className="text-sm text-fog">
+              Calculated Daily Calorie Target:
+              <span className="font-display text-brand-400 font-bold tabular-nums ml-2">
                 {calculateDailyCalories(formData)} kcal
               </span>
             </p>
@@ -380,7 +383,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-3 bg-gray-700 text-gray-300 rounded-xl font-bold hover:bg-gray-600"
+                className="flex-1 h-12 px-5 rounded-2xl bg-card2 border border-line2 text-fog font-semibold text-sm hover:text-snow hover:border-line2 transition-all duration-200 active:scale-[0.98]"
               >
                 Cancel
               </button>
@@ -388,7 +391,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             <button
               type="submit"
               disabled={isSaving}
-              className="flex-1 py-3 bg-green-600 text-white rounded-xl font-black uppercase tracking-widest text-sm hover:bg-green-700 disabled:opacity-50"
+              className="flex-1 h-12 px-6 rounded-2xl bg-brand-500 hover:bg-brand-400 text-emerald-950 font-bold text-sm transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none shadow-glow"
             >
               {isSaving ? 'Saving...' : (isNewUser ? 'Get Started' : 'Save Changes')}
             </button>

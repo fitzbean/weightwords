@@ -13,6 +13,18 @@ import { getLocalDateKey } from './utils/dateUtils';
 
 const MAINTENANCE_DAYS_STORAGE_KEY = 'weightwords_maintenance_days';
 
+const Logo: React.FC = () => (
+  <div className="flex items-center gap-2.5 min-w-0">
+    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-glow shrink-0">
+      <svg className="w-5 h-5 text-emerald-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+    </div>
+    <span className="font-display text-lg font-bold tracking-tight text-snow whitespace-nowrap">
+      {APP_CONFIG.app.name}<span className="text-brand-400">{APP_CONFIG.app.nameHighlight}</span>
+    </span>
+    <span className="hidden xs:inline-block sm:inline-block text-[10px] font-bold uppercase tracking-[0.14em] text-brand-300 bg-brand-500/10 border border-brand-500/20 px-1.5 py-0.5 rounded-md">{APP_CONFIG.app.tagline}</span>
+  </div>
+);
+
 const loadMaintenanceDays = (userId: string | undefined): Set<string> => {
   if (!userId || typeof window === 'undefined') return new Set();
   try {
@@ -372,37 +384,32 @@ const App: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-canvas">
+        <div className="animate-spin rounded-full h-12 w-12 border-2 border-line border-t-brand-400"></div>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-900 text-gray-100">
-        <nav className="bg-gray-800 border-b border-gray-700 py-4 px-6 sticky top-0 z-50 shadow-sm">
+      <div className="min-h-screen bg-canvas text-snow">
+        <nav className="bg-canvas/80 backdrop-blur-xl border-b border-line py-3 px-4 sm:px-6 sticky top-0 z-50">
           <div className="max-w-6xl mx-auto flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <div className="bg-green-600 text-white p-1.5 rounded-lg shadow-md shadow-green-900">
-                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
-              </div>
-              <span className="text-l font-black text-gray-100 tracking-tight">{APP_CONFIG.app.name.toUpperCase()}<span className="text-green-500">{APP_CONFIG.app.nameHighlight.toUpperCase()}</span> <span className="text-xs bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded ml-1 font-bold uppercase">{APP_CONFIG.app.tagline}</span></span>
-            </div>
+            <Logo />
           </div>
         </nav>
-        
-        <div className="py-8 px-4">
+
+        <div className="py-12 sm:py-16 px-4">
           <div className="animate-in fade-in duration-500 translate-y-0">
-            <div className="text-center mb-12 max-w-2xl mx-auto">
-                <h1 className="text-4xl md:text-6xl font-black text-gray-100 mb-6 leading-tight tracking-tight">
+            <div className="text-center mb-10 sm:mb-14 max-w-2xl mx-auto">
+                <h1 className="font-display text-4xl md:text-6xl font-bold text-snow mb-5 leading-[1.1] tracking-tight">
                   {APP_CONFIG.hero.title}<br/>
-                  <span className="text-green-500">{APP_CONFIG.hero.titleHighlight}</span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 to-brand-500">{APP_CONFIG.hero.titleHighlight}</span>
                 </h1>
-                <p className="text-lg text-gray-400 font-medium">{APP_CONFIG.hero.description}</p>
+                <p className="text-base sm:text-lg text-fog max-w-md mx-auto">{APP_CONFIG.hero.description}</p>
             </div>
-            <AuthForm 
-              view={authView} 
+            <AuthForm
+              view={authView}
               onViewChange={setAuthView}
               onAuthSuccess={(user) => setUser(user)}
             />
@@ -413,37 +420,36 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
-      <nav className="bg-gray-800 border-b border-gray-700 py-3 px-3 sm:py-4 sm:px-6 sticky top-0 z-50 shadow-sm">
+    <div className="min-h-screen bg-canvas text-snow">
+      <nav className="bg-canvas/80 backdrop-blur-xl border-b border-line py-2.5 px-3 sm:py-3 sm:px-6 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto flex justify-between items-center gap-2 sm:gap-4">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="bg-green-600 text-white p-1.5 rounded-lg shadow-md shadow-green-900">
-               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+          <div className="hidden sm:block"><Logo /></div>
+          <div className="sm:hidden flex items-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shrink-0">
+              <svg className="w-4.5 h-4.5 text-emerald-950" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
             </div>
-            <span className="text-base sm:text-l font-black text-gray-100 tracking-tight whitespace-nowrap">{APP_CONFIG.app.name.toUpperCase()}<span className="text-green-500">{APP_CONFIG.app.nameHighlight.toUpperCase()}</span> <span className="text-[10px] sm:text-xs bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded ml-1 font-bold uppercase">{APP_CONFIG.app.tagline}</span></span>
           </div>
-          
+
           {profile && (
-            <div className="flex items-center gap-1 sm:gap-4 flex-shrink-0">
-               <div className="flex items-center gap-0.5 sm:gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+               <div className="flex items-center gap-0.5 bg-card border border-line rounded-full p-1">
                   <button
                     onClick={() => {
                       const newDate = new Date(selectedDate);
                       newDate.setDate(newDate.getDate() - 1);
                       setSelectedDate(newDate);
                     }}
-                    className="p-1 text-gray-400 hover:text-gray-200 transition-colors"
+                    aria-label="Previous day"
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-mist hover:text-snow hover:bg-card2 transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
-                  <div className="text-right">
-                    <p className="text-xs sm:text-sm font-bold text-gray-300 cursor-pointer hover:text-gray-200 transition-colors whitespace-nowrap">
-                      <span className="sm:hidden">{selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                      <span className="hidden sm:inline">{selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-                    </p>
-                  </div>
+                  <p className="px-1 font-display text-xs sm:text-sm font-semibold text-fog whitespace-nowrap tabular-nums">
+                    <span className="sm:hidden">{selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    <span className="hidden sm:inline">{selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                  </p>
                   {selectedDate.getTime() !== getToday().getTime() && (
                     <button
                       onClick={() => {
@@ -451,7 +457,8 @@ const App: React.FC = () => {
                         newDate.setDate(newDate.getDate() + 1);
                         setSelectedDate(newDate);
                       }}
-                      className="p-1 text-gray-400 hover:text-gray-200 transition-colors"
+                      aria-label="Next day"
+                      className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-mist hover:text-snow hover:bg-card2 transition-colors"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -461,34 +468,32 @@ const App: React.FC = () => {
                   {selectedDate.getTime() !== getToday().getTime() && (
                     <button
                       onClick={() => setSelectedDate(getToday())}
-                      className="px-0 py-1 text-[9px] sm:text-[10px] font-black text-green-500 hover:text-green-400 transition-colors"
+                      className="h-8 sm:h-9 px-2.5 rounded-full text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-brand-300 bg-brand-500/10 hover:bg-brand-500/20 transition-colors"
                     >
-                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
+                      Today
                     </button>
                   )}
                </div>
-               <div className="hidden sm:block h-8 w-px bg-gray-700"></div>
                <div className="relative user-menu">
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="w-8 h-8 rounded-full bg-gray-700 border border-gray-600 flex items-center justify-center hover:bg-gray-600 transition-colors"
+                    aria-label="Account menu"
+                    className="w-10 h-10 rounded-full bg-card border border-line flex items-center justify-center hover:border-brand-500/50 hover:bg-card2 transition-colors"
                   >
-                    <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-4.5 h-4.5 text-brand-400" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"></path>
                     </svg>
                   </button>
-                  
+
                   {showUserMenu && (
-                    <div className="absolute right-0 mt-2 w-56 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-2 z-50">
-                      <div className="px-4 py-2 border-b border-gray-700 bg-gray-800/50">
-                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Signed in as</p>
-                        <p className="text-xs font-bold text-green-400 truncate">{user?.email}</p>
+                    <div className="absolute right-0 mt-2 w-64 bg-card rounded-2xl shadow-pop border border-line py-2 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                      <div className="px-4 py-2.5 border-b border-line">
+                        <p className="text-[10px] font-semibold text-mist uppercase tracking-[0.14em]">Signed in as</p>
+                        <p className="text-xs font-semibold text-brand-400 truncate mt-0.5">{user?.email}</p>
                       </div>
                       <button
                         onClick={handleEditProfile}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 flex items-center gap-3"
+                        className="w-full text-left px-4 py-3 text-sm font-medium text-fog hover:text-snow hover:bg-card2 flex items-center gap-3 transition-colors"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
@@ -500,7 +505,7 @@ const App: React.FC = () => {
                           setShowUserMenu(false);
                           setShowSpouseModal(true);
                         }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 flex items-center gap-3"
+                        className="w-full text-left px-4 py-3 text-sm font-medium text-fog hover:text-snow hover:bg-card2 flex items-center gap-3 transition-colors"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
@@ -508,7 +513,7 @@ const App: React.FC = () => {
                         <div className="flex-1">
                           <div>{profile?.spouseId ? 'Remove Spouse' : 'Add Spouse'}</div>
                           {profile?.spouseId && spouseEmail && (
-                            <div className="text-xs text-gray-400 font-normal">{spouseEmail}</div>
+                            <div className="text-xs text-mist font-normal">{spouseEmail}</div>
                           )}
                         </div>
                       </button>
@@ -516,7 +521,7 @@ const App: React.FC = () => {
                         <div className="relative">
                           <button
                             onClick={handleSpouseTodayClick}
-                            className={`w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 flex items-center gap-3 ${showSpouseTodayMenu ? 'bg-gray-700' : ''}`}
+                            className={`w-full text-left px-4 py-3 text-sm font-medium text-fog hover:text-snow hover:bg-card2 flex items-center gap-3 transition-colors ${showSpouseTodayMenu ? 'bg-card2 text-snow' : ''}`}
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
@@ -527,21 +532,21 @@ const App: React.FC = () => {
                             </svg>
                           </button>
                           {showSpouseTodayMenu && (
-                            <div className="absolute sm:right-full sm:top-0 sm:mr-1 right-0 top-full mt-1 w-64 sm:w-64 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-2 max-h-80 overflow-y-auto z-50">
-                              <div className="px-3 py-2 border-b border-gray-700 flex justify-between items-center">
-                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                            <div className="absolute sm:right-full sm:top-0 sm:mr-1 right-0 top-full mt-1 w-64 sm:w-64 bg-card rounded-2xl shadow-pop border border-line py-2 max-h-80 overflow-y-auto z-50">
+                              <div className="px-3 py-2 border-b border-line flex justify-between items-center">
+                                <p className="text-[10px] font-semibold text-mist uppercase tracking-[0.14em]">
                                   {spouseProfile?.displayName || spouseEmail}'s Log
                                 </p>
-                                <span className="text-[10px] font-bold text-gray-400">
+                                <span className="text-[10px] font-bold text-fog tabular-nums">
                                   {spouseFoods.reduce((sum, f) => sum + f.calories, 0)} kcal
                                 </span>
                               </div>
                               {isLoadingSpouseFoods ? (
                                 <div className="px-4 py-6 text-center">
-                                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500 mx-auto"></div>
+                                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-line border-t-brand-400 mx-auto"></div>
                                 </div>
                               ) : spouseFoods.length === 0 ? (
-                                <div className="px-4 py-4 text-center text-gray-500 text-sm">
+                                <div className="px-4 py-4 text-center text-mist text-sm">
                                   No foods logged on this day
                                 </div>
                               ) : (
@@ -549,14 +554,14 @@ const App: React.FC = () => {
                                   <button
                                     key={food.id}
                                     onClick={() => handleAddSpouseFood(food)}
-                                    className="w-full text-left px-3 py-2 hover:bg-gray-700 transition-colors flex items-center gap-2"
+                                    className="w-full text-left px-3 py-2.5 hover:bg-card2 transition-colors flex items-center gap-2"
                                   >
-                                    <svg className="w-4 h-4 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg className="w-4 h-4 text-brand-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
                                     </svg>
                                     <div className="flex-1 min-w-0">
-                                      <div className="text-sm text-gray-200 font-medium truncate">{food.name}</div>
-                                      <div className="text-xs text-gray-500">
+                                      <div className="text-sm text-snow font-medium truncate">{food.name}</div>
+                                      <div className="text-xs text-mist tabular-nums">
                                         {food.calories} kcal • P:{food.protein}g C:{food.carbs}g F:{food.fat}g • Fiber:{food.fiber}g
                                       </div>
                                     </div>
@@ -572,7 +577,7 @@ const App: React.FC = () => {
                           setShowUserMenu(false);
                           setShowWeighInModal(true);
                         }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 flex items-center gap-3"
+                        className="w-full text-left px-4 py-3 text-sm font-medium text-fog hover:text-snow hover:bg-card2 flex items-center gap-3 transition-colors"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path>
@@ -584,7 +589,7 @@ const App: React.FC = () => {
                           setShowUserMenu(false);
                           setShowCalorieHistoryModal(true);
                         }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 flex items-center gap-3"
+                        className="w-full text-left px-4 py-3 text-sm font-medium text-fog hover:text-snow hover:bg-card2 flex items-center gap-3 transition-colors"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
@@ -604,9 +609,9 @@ const App: React.FC = () => {
                               toggleMaintenanceDay(selectedDate);
                               setShowUserMenu(false);
                             }}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 flex items-center gap-3"
+                            className="w-full text-left px-4 py-3 text-sm font-medium text-fog hover:text-snow hover:bg-card2 flex items-center gap-3 transition-colors"
                           >
-                            <svg className={`w-4 h-4 ${isMaint ? 'text-yellow-400' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                            <svg className={`w-4 h-4 ${isMaint ? 'text-amber-400' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                               {/* Balance scale icon */}
                               <path d="M12 3v18" />
                               <path d="M5 21h14" />
@@ -616,25 +621,25 @@ const App: React.FC = () => {
                             </svg>
                             <div className="flex-1">
                               <div>{isMaint ? 'Maintenance Day' : 'Maintenance Day'}</div>
-                              <div className="text-xs text-gray-400 font-normal">{dayLabel}</div>
+                              <div className="text-xs text-mist font-normal">{dayLabel}</div>
                             </div>
                             {isMaint ? (
-                              <span className="text-[10px] font-black uppercase tracking-widest text-yellow-400 bg-yellow-900/30 px-1.5 py-0.5 rounded">On</span>
+                              <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">On</span>
                             ) : (
-                              <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-700/30 px-1.5 py-0.5 rounded">Off</span>
+                              <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-mist bg-card2 border border-line px-2 py-0.5 rounded-md">Off</span>
                             )}
                           </button>
                         );
                       })()}
                       {profile?.isAdmin && (
                         <>
-                          <hr className="my-1 border-gray-700" />
+                          <hr className="my-1 border-line" />
                           <button
                             onClick={() => {
                               setShowUserMenu(false);
                               setShowAdminModal(true);
                             }}
-                            className="w-full text-left px-4 py-2 text-sm text-purple-400 hover:bg-gray-700 flex items-center gap-3"
+                            className="w-full text-left px-4 py-3 text-sm font-medium text-violet-400 hover:bg-card2 flex items-center gap-3 transition-colors"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
@@ -643,10 +648,10 @@ const App: React.FC = () => {
                           </button>
                         </>
                       )}
-                      <hr className="my-1 border-gray-700" />
+                      <hr className="my-1 border-line" />
                       <button
                         onClick={handleLogout}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-700 flex items-center gap-3"
+                        className="w-full text-left px-4 py-3 text-sm font-medium text-fog hover:text-snow hover:bg-card2 flex items-center gap-3 transition-colors"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
@@ -661,7 +666,7 @@ const App: React.FC = () => {
         </div>
       </nav>
 
-      <main className="py-8 px-4">
+      <main className="py-5 sm:py-8 px-3 sm:px-4 pb-[max(2rem,env(safe-area-inset-bottom))]">
         {user ? (
           <Dashboard 
             profile={impersonatedUser?.profile || profile} 
@@ -680,15 +685,15 @@ const App: React.FC = () => {
           />
         ) : (
           <div className="animate-in fade-in duration-500 translate-y-0">
-            <div className="text-center mb-12 max-w-2xl mx-auto">
-                <h1 className="text-4xl md:text-6xl font-black text-gray-100 mb-6 leading-tight tracking-tight">
+            <div className="text-center mb-10 sm:mb-14 max-w-2xl mx-auto">
+                <h1 className="font-display text-4xl md:text-6xl font-bold text-snow mb-5 leading-[1.1] tracking-tight">
                   {APP_CONFIG.hero.title}<br/>
-                  <span className="text-green-500">{APP_CONFIG.hero.titleHighlight}</span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 to-brand-500">{APP_CONFIG.hero.titleHighlight}</span>
                 </h1>
-                <p className="text-lg text-gray-400 font-medium">{APP_CONFIG.hero.description}</p>
+                <p className="text-base sm:text-lg text-fog max-w-md mx-auto">{APP_CONFIG.hero.description}</p>
             </div>
-            <AuthForm 
-              view={authView} 
+            <AuthForm
+              view={authView}
               onViewChange={setAuthView}
               onAuthSuccess={() => {}} // Auth state is handled by useEffect
             />
@@ -725,8 +730,8 @@ const App: React.FC = () => {
         maintenanceDays={maintenanceDays}
       />
 
-      <footer className="mt-20 border-t border-gray-800 py-12 text-center">
-         <p className="text-gray-600 text-xs font-bold uppercase tracking-widest">© {new Date().getFullYear()} {APP_CONFIG.app.name}{APP_CONFIG.app.nameHighlight} • USA Units Enabled</p>
+      <footer className="mt-16 border-t border-line py-10 text-center">
+         <p className="text-mist/70 text-[11px] font-semibold uppercase tracking-[0.14em]">© {new Date().getFullYear()} {APP_CONFIG.app.name}{APP_CONFIG.app.nameHighlight} • USA Units Enabled</p>
       </footer>
     </div>
   );

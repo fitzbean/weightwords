@@ -121,49 +121,52 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[80vh] flex flex-col">
-        <div className="flex justify-between items-center p-4 pb-0">
-          <h2 className="text-2xl font-black text-gray-100 mb-4">Weigh-ins</h2>
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 ww-backdrop-in">
+      <div className="bg-card border border-line rounded-t-3xl sm:rounded-3xl shadow-pop w-full max-w-xl max-h-[90dvh] flex flex-col p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] animate-in fade-in slide-in-from-bottom-4 sm:zoom-in-95 duration-300">
+        {/* mobile grab handle */}
+        <div className="w-10 h-1 rounded-full bg-line2 mx-auto mb-4 sm:hidden" />
+        <div className="flex justify-between items-center pb-4">
+          <h2 className="font-display text-xl font-bold text-snow">Weigh-ins</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-200 text-2xl leading-none"
+            className="w-11 h-11 -mr-2 flex items-center justify-center rounded-xl text-mist hover:text-snow hover:bg-card2 transition-colors"
+            aria-label="Close"
           >
-            ×
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-6 pb-6">
+        <div className="flex-1 overflow-y-auto -mx-1 px-1">
 
         {weighIns.length > 0 && (
           <div className="mb-4">
             <div className="grid grid-cols-3 gap-1 sm:gap-3 mb-3">
-              <div className="bg-gradient-to-br from-green-900/40 to-green-900/20 rounded-lg sm:rounded-2xl p-1.5 sm:p-4 border border-green-800/30">
+              <div className="bg-card2 border border-line2 rounded-lg sm:rounded-2xl p-1.5 sm:p-4">
                 <div className="flex items-center gap-1 sm:gap-2">
-                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-brand-500/15 rounded-lg flex items-center justify-center">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
                     </svg>
                   </div>
                   <div>
-                    <p className="text-[8px] sm:text-[10px] font-bold text-green-400/70 uppercase tracking-wider leading-tight">Current</p>
-                    <p className="text-xs sm:text-2xl font-black text-green-400 mt-0.5 sm:mt-1">
-                      {weighIns[weighIns.length - 1].weightLbs}<span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-bold text-green-400/60">lbs</span>
+                    <p className="text-[8px] sm:text-[10px] font-semibold text-mist uppercase tracking-[0.14em] leading-tight">Current</p>
+                    <p className="font-display text-xs sm:text-2xl font-bold tabular-nums text-brand-400 mt-0.5 sm:mt-1">
+                      {weighIns[weighIns.length - 1].weightLbs}<span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-bold text-brand-400/60">lbs</span>
                     </p>
                   </div>
                 </div>
               </div>
               {weightChange !== null && (
-                <div className={`bg-gradient-to-br ${weightChange >= 0 ? 'from-red-900/40 to-red-900/20 border-red-800/30' : 'from-emerald-900/40 to-emerald-900/20 border-emerald-800/30'} rounded-lg sm:rounded-2xl p-1.5 sm:p-4 border`}>
+                <div className="bg-card2 border border-line2 rounded-lg sm:rounded-2xl p-1.5 sm:p-4">
                   <div className="flex items-center gap-1 sm:gap-2">
-                    <div className={`w-6 h-6 sm:w-8 sm:h-8 ${weightChange >= 0 ? 'bg-red-500/20' : 'bg-emerald-500/20'} rounded-lg flex items-center justify-center`}>
-                      <svg className={`w-3 h-3 sm:w-4 sm:h-4 ${weightChange >= 0 ? 'text-red-400' : 'text-emerald-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                    <div className={`w-6 h-6 sm:w-8 sm:h-8 ${weightChange >= 0 ? 'bg-rose-500/15' : 'bg-brand-500/15'} rounded-lg flex items-center justify-center`}>
+                      <svg className={`w-3 h-3 sm:w-4 sm:h-4 ${weightChange >= 0 ? 'text-rose-400' : 'text-brand-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
                           d={weightChange >= 0 ? "M5 10l7-7m0 0l7 7m-7-7v18" : "M19 14l-7 7m0 0l-7-7m7 7V3"} />
                       </svg>
                     </div>
                     <div>
-                      <p className={`text-[8px] sm:text-[10px] font-bold ${weightChange >= 0 ? 'text-red-400/70' : 'text-emerald-400/70'} uppercase tracking-wider leading-tight`}>Last</p>
-                      <p className={`text-xs sm:text-2xl font-black ${weightChange >= 0 ? 'text-red-400' : 'text-emerald-400'} mt-0.5 sm:mt-1`}>
+                      <p className="text-[8px] sm:text-[10px] font-semibold text-mist uppercase tracking-[0.14em] leading-tight">Last</p>
+                      <p className={`font-display text-xs sm:text-2xl font-bold tabular-nums ${weightChange >= 0 ? 'text-rose-400' : 'text-brand-400'} mt-0.5 sm:mt-1`}>
                         {weightChange >= 0 ? '+' : ''}{Math.abs(weightChange).toFixed(1)}<span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-bold opacity-60">lbs</span>
                       </p>
                     </div>
@@ -176,16 +179,16 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
                 const totalLost = Math.max(0, startingWeight - currentWeight);
                 const hasLostWeight = totalLost > 0;
                 return (
-                  <div className={`bg-gradient-to-br ${hasLostWeight ? 'from-blue-900/40 to-blue-900/20 border-blue-800/30' : 'from-amber-900/40 to-amber-900/20 border-amber-800/30'} rounded-lg sm:rounded-2xl p-1.5 sm:p-4 border`}>
+                  <div className="bg-card2 border border-line2 rounded-lg sm:rounded-2xl p-1.5 sm:p-4">
                     <div className="flex items-center gap-1 sm:gap-2">
-                      <div className={`w-6 h-6 sm:w-8 sm:h-8 ${hasLostWeight ? 'bg-blue-500/20' : 'bg-amber-500/20'} rounded-lg flex items-center justify-center`}>
-                        <svg className={`w-3 h-3 sm:w-4 sm:h-4 ${hasLostWeight ? 'text-blue-400' : 'text-amber-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className={`w-6 h-6 sm:w-8 sm:h-8 ${hasLostWeight ? 'bg-sky-500/15' : 'bg-amber-500/15'} rounded-lg flex items-center justify-center`}>
+                        <svg className={`w-3 h-3 sm:w-4 sm:h-4 ${hasLostWeight ? 'text-sky-400' : 'text-amber-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                         </svg>
                       </div>
                       <div>
-                        <p className={`text-[8px] sm:text-[10px] font-bold ${hasLostWeight ? 'text-blue-400/70' : 'text-amber-400/70'} uppercase tracking-wider leading-tight`}>TOTAL</p>
-                        <p className={`text-xs sm:text-2xl font-black ${hasLostWeight ? 'text-blue-400' : 'text-amber-400'} mt-0.5 sm:mt-1`}>
+                        <p className="text-[8px] sm:text-[10px] font-semibold text-mist uppercase tracking-[0.14em] leading-tight">Total</p>
+                        <p className={`font-display text-xs sm:text-2xl font-bold tabular-nums ${hasLostWeight ? 'text-sky-400' : 'text-amber-400'} mt-0.5 sm:mt-1`}>
                           {totalLost.toFixed(1)}<span className="text-[8px] sm:text-xs ml-0.5 sm:ml-1 font-bold opacity-60">lbs</span>
                         </p>
                       </div>
@@ -193,33 +196,33 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
                   </div>
                 );
               })() : (
-                <div className="bg-gradient-to-br from-purple-900/40 to-purple-900/20 rounded-lg sm:rounded-2xl p-1.5 sm:p-4 border border-purple-800/30">
+                <div className="bg-card2 border border-line2 rounded-lg sm:rounded-2xl p-1.5 sm:p-4">
                   <div className="flex items-center gap-1 sm:gap-2">
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-violet-500/15 rounded-lg flex items-center justify-center">
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                       </svg>
                     </div>
                     <div>
-                      <p className="text-[8px] sm:text-[10px] font-bold text-purple-400/70 uppercase tracking-wider leading-tight">Entries</p>
-                      <p className="text-xs sm:text-2xl font-black text-purple-400 mt-0.5 sm:mt-1">{weighIns.length}</p>
+                      <p className="text-[8px] sm:text-[10px] font-semibold text-mist uppercase tracking-[0.14em] leading-tight">Entries</p>
+                      <p className="font-display text-xs sm:text-2xl font-bold tabular-nums text-violet-400 mt-0.5 sm:mt-1">{weighIns.length}</p>
                     </div>
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-3 sm:p-5 border border-gray-700/50 shadow-xl">
+            <div className="bg-canvas/60 rounded-2xl p-3 sm:p-5 border border-line shadow-card">
               <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <h4 className="text-xs sm:text-sm font-bold text-gray-400 uppercase tracking-wider">Weight History</h4>
+                <h4 className="text-[11px] font-semibold text-mist uppercase tracking-[0.14em]">Weight History</h4>
                 <div className="flex items-center gap-2">
                   {weighIns.length >= 2 && (() => {
                     const totalChange = weighIns[weighIns.length - 1].weightLbs - weighIns[0].weightLbs;
                     return (
-                      <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${
-                        totalChange <= 0 
-                          ? 'bg-green-900/30 text-green-400' 
-                          : 'bg-red-900/30 text-red-400'
+                      <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold tabular-nums ${
+                        totalChange <= 0
+                          ? 'bg-brand-500/10 text-brand-400'
+                          : 'bg-rose-500/10 text-rose-400'
                       }`}>
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
@@ -235,10 +238,10 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
                     );
                   })()}
                   {weightChange !== null && (
-                    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${
-                      weightChange <= 0 
-                        ? 'bg-green-900/30 text-green-400' 
-                        : 'bg-red-900/30 text-red-400'
+                    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold tabular-nums ${
+                      weightChange <= 0
+                        ? 'bg-brand-500/10 text-brand-400'
+                        : 'bg-rose-500/10 text-rose-400'
                     }`}>
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
@@ -258,67 +261,63 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
                 <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -30, bottom: 0}}>
                   <defs>
                     <linearGradient id="weightGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#10B981" stopOpacity={0.4} />
-                      <stop offset="50%" stopColor="#10B981" stopOpacity={0.15} />
-                      <stop offset="100%" stopColor="#10B981" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#34D399" />
-                      <stop offset="100%" stopColor="#10B981" />
+                      <stop offset="0%" stopColor="#34D399" stopOpacity={0.35} />
+                      <stop offset="50%" stopColor="#34D399" stopOpacity={0.12} />
+                      <stop offset="100%" stopColor="#34D399" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" strokeOpacity={0.5} vertical={false} />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="#4B5563"
-                    tick={{ fill: '#6B7280', fontSize: 9, sm: 11 }}
+                  <CartesianGrid strokeDasharray="3 3" stroke="#313D37" strokeOpacity={0.6} vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    stroke="#313D37"
+                    tick={{ fill: '#7F8C86', fontSize: 9 }}
                     tickLine={false}
                     axisLine={false}
                   />
-                  <YAxis 
-                    stroke="#4B5563"
-                    tick={{ fill: '#6B7280', fontSize: 9, sm: 11 }}
+                  <YAxis
+                    stroke="#313D37"
+                    tick={{ fill: '#7F8C86', fontSize: 9 }}
                     tickLine={false}
                     axisLine={false}
                     domain={['dataMin - 3', 'dataMax + 3']}
                     tickFormatter={(value) => `${value}`}
                   />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(17, 24, 39, 0.95)', 
-                      border: '1px solid #374151',
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1A211D',
+                      border: '1px solid #313D37',
                       borderRadius: '12px',
                       boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
                       padding: '8px 12px'
                     }}
-                    labelStyle={{ color: '#9CA3AF', fontSize: 10, sm: 12, marginBottom: 4 }}
-                    itemStyle={{ color: '#10B981', fontWeight: 'bold', fontSize: 12, sm: 16 }}
+                    labelStyle={{ color: '#7F8C86', fontSize: 10, marginBottom: 4 }}
+                    itemStyle={{ color: '#34D399', fontWeight: 'bold', fontSize: 12 }}
                     formatter={(value: number) => [`${value} lbs`, 'Weight']}
-                    cursor={{ stroke: '#10B981', strokeWidth: 1, strokeDasharray: '5 5' }}
+                    cursor={{ stroke: '#34D399', strokeWidth: 1, strokeDasharray: '5 5' }}
                   />
                   {profile?.targetWeightLbs && (
-                    <ReferenceLine 
-                      y={profile.targetWeightLbs} 
-                      stroke="#3B82F6" 
+                    <ReferenceLine
+                      y={profile.targetWeightLbs}
+                      stroke="#38BDF8"
                       strokeWidth={2}
                       strokeDasharray="5 5"
-                      label={{ 
-                        value: `Target: ${profile.targetWeightLbs} lbs`, 
+                      label={{
+                        value: `Target: ${profile.targetWeightLbs} lbs`,
                         position: 'right',
-                        fill: '#60A5FA',
-                        fontSize: 9, sm: 11,
+                        fill: '#38BDF8',
+                        fontSize: 9,
                         fontWeight: 'bold'
                       }}
                     />
                   )}
-                  <Area 
-                    type="monotone" 
-                    dataKey="weight" 
-                    stroke="url(#lineGradient)"
+                  <Area
+                    type="monotone"
+                    dataKey="weight"
+                    stroke="#34D399"
                     strokeWidth={2}
                     fill="url(#weightGradient)"
-                    dot={{ fill: '#10B981', stroke: '#064E3B', strokeWidth: 2, r: 3 }}
-                    activeDot={{ r: 5, fill: '#34D399', stroke: '#fff', strokeWidth: 2 }}
+                    dot={{ fill: '#34D399', stroke: '#0A0E0C', strokeWidth: 2, r: 3 }}
+                    activeDot={{ r: 5, fill: '#34D399', stroke: '#EFF3F1', strokeWidth: 2 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -327,10 +326,10 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
         )}
 
         <form onSubmit={handleAddWeighIn} className="mb-6">
-          <h3 className="text-base sm:text-lg font-bold text-gray-100 mb-1 sm:mb-4">Add Weigh-in</h3>
-          <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-2 sm:mb-4">
+          <h3 className="font-display text-base sm:text-lg font-bold text-snow mb-2 sm:mb-4">Add Weigh-in</h3>
+          <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-4">
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1">
+              <label className="block text-[11px] font-semibold text-mist uppercase tracking-[0.14em] mb-1.5">
                 Weight (lbs)
               </label>
               <input
@@ -339,12 +338,12 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
                 value={newWeight}
                 onChange={(e) => setNewWeight(e.target.value)}
                 placeholder="150.5"
-                className="w-full p-2 sm:p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none text-sm"
+                className="w-full h-12 px-4 rounded-2xl bg-canvas/60 border border-line text-snow placeholder-mist focus:border-brand-500/60 focus:ring-4 focus:ring-brand-500/10 outline-none transition text-sm"
                 required
               />
             </div>
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1">
+              <label className="block text-[11px] font-semibold text-mist uppercase tracking-[0.14em] mb-1.5">
                 Date
               </label>
               <input
@@ -352,18 +351,18 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 max={new Date().toISOString().split('T')[0]}
-                className="w-full p-2 sm:p-3 bg-gray-700 text-gray-100 rounded-xl border border-gray-600 focus:border-green-500 outline-none text-sm"
+                className="w-full h-12 px-4 rounded-2xl bg-canvas/60 border border-line text-snow placeholder-mist focus:border-brand-500/60 focus:ring-4 focus:ring-brand-500/10 outline-none transition text-sm"
                 required
               />
             </div>
           </div>
           {error && (
-            <p className="text-red-400 text-xs sm:text-sm mb-3 sm:mb-4">{error}</p>
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm mb-3 sm:mb-4">{error}</div>
           )}
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-2.5 sm:py-3 bg-green-600 text-white rounded-xl font-black uppercase tracking-widest text-xs sm:text-sm hover:bg-green-700 disabled:opacity-50"
+            className="w-full h-12 px-6 rounded-2xl bg-brand-500 hover:bg-brand-400 text-emerald-950 font-bold text-sm transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none shadow-glow"
           >
             {isLoading ? 'Adding...' : 'Add Weigh-in'}
           </button>
@@ -479,37 +478,37 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
             const projections = getProjections();
             
             return (
-              <div className="mb-2 sm:mb-4 p-2.5 sm:p-4 bg-gradient-to-br from-blue-900/20 to-blue-900/10 border border-blue-800/30 rounded-xl">
+              <div className="mb-2 sm:mb-4 p-2.5 sm:p-4 bg-sky-500/5 border border-sky-500/20 rounded-2xl">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5 sm:gap-2">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                     </svg>
-                    <span className="text-xs sm:text-sm font-bold text-blue-400">Target: {targetWeight} lbs</span>
+                    <span className="text-xs sm:text-sm font-bold text-sky-400">Target: {targetWeight} lbs</span>
                   </div>
-                  <span className={`text-xs sm:text-sm font-bold ${isAboveTarget ? 'text-blue-400' : 'text-amber-400'}`}>
+                  <span className={`text-xs sm:text-sm font-bold tabular-nums ${isAboveTarget ? 'text-sky-400' : 'text-amber-400'}`}>
                     {isAboveTarget ? `${Math.abs(remaining).toFixed(1)} lbs to go` : `${Math.abs(remaining).toFixed(1)} lbs over`}
                   </span>
                 </div>
                 {weighIns.length >= 2 && percentProgress > 0 && percentProgress < 200 && (
                   <div className="mb-2">
-                    <div className="w-full bg-gray-700/50 rounded-full h-1.5 sm:h-2 mb-1">
-                      <div 
-                        className="bg-gradient-to-r from-blue-500 to-blue-400 h-1.5 sm:h-2 rounded-full transition-all duration-500"
+                    <div className="w-full bg-card2 rounded-full h-1.5 sm:h-2 mb-1">
+                      <div
+                        className="bg-sky-400 h-1.5 sm:h-2 rounded-full transition-all duration-500"
                         style={{ width: `${Math.min(Math.max(percentProgress, 0), 100)}%` }}
                       />
                     </div>
-                    <p className="text-[10px] sm:text-xs text-gray-400">
+                    <p className="text-[10px] sm:text-xs text-fog">
                       {percentProgress >= 100 ? '🎉 Target reached!' : `${percentProgress.toFixed(0)}% progress from start`}
                     </p>
                     {percentProgress < 100 && projections && (
                       <div className="mt-1.5 sm:mt-2 space-y-1">
                         {projections.scheduledDate && (
-                          <p className="text-[9px] sm:text-[10px] text-white-400/80">
-                            <span className="text-[9px] sm:text-[10px] text-yellow-400/80 font-bold">Current Progress Goal</span>
-                            On pace for <span className="font-bold text-blue-400/80">{formatDateWithSuffix(projections.scheduledDate)}</span> —
+                          <p className="text-[9px] sm:text-[10px] text-fog/80">
+                            <span className="text-[9px] sm:text-[10px] text-amber-400/80 font-bold">Current Progress Goal — </span>
+                            On pace for <span className="font-bold text-sky-400/80">{formatDateWithSuffix(projections.scheduledDate)}</span> —
                             {projections.daysAheadBase !== null && projections.daysAheadBase !== 0 && (
-                              <span className={`ml-1 font-black ${projections.daysAheadBase > 0 ? 'text-green-400' : 'text-amber-400'}`}>
+                              <span className={`ml-1 font-bold ${projections.daysAheadBase > 0 ? 'text-brand-400' : 'text-amber-400'}`}>
                                 {projections.daysAheadBase > 0 ? `${projections.daysAheadBase} days ahead schedule!` : `${Math.abs(projections.daysAheadBase)} days behind schedule!`}
                               </span>
                             )}
@@ -520,12 +519,12 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
                   </div>
                 )}
                 {idealWeight && (
-                  <div className="pt-1.5 sm:pt-2 border-t border-blue-800/20">
-                    <p className="text-[9px] sm:text-[10px] text-white-400/60">
-                      <span className="text-[9px] sm:text-[10px] text-yellow-400/80 font-bold">Miller's Formula (Ideal Body Weight)</span>
-                      Your ideal weight is <span className="font-bold text-blue-400/80">{idealWeight} lbs</span>
+                  <div className="pt-1.5 sm:pt-2 border-t border-sky-500/15">
+                    <p className="text-[9px] sm:text-[10px] text-fog/70">
+                      <span className="text-[9px] sm:text-[10px] text-amber-400/80 font-bold">Miller's Formula (Ideal Body Weight) — </span>
+                      Your ideal weight is <span className="font-bold text-sky-400/80">{idealWeight} lbs</span>
                       {projections?.idealWeightDate && (
-                        <> — Est. reach by <span className="font-bold text-blue-400/80">{formatDateWithSuffix(projections.idealWeightDate)}</span></>
+                        <> — Est. reach by <span className="font-bold text-sky-400/80">{formatDateWithSuffix(projections.idealWeightDate)}</span></>
                       )}
                     </p>
                   </div>
@@ -536,13 +535,13 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
 
         {weighIns.length > 0 && (
           <div>
-            <h3 className="text-base sm:text-lg font-bold text-gray-100 mb-2 sm:mb-4">History</h3>
+            <h3 className="font-display text-base sm:text-lg font-bold text-snow mb-2 sm:mb-4">History</h3>
             <div className="space-y-1.5 sm:space-y-2 max-h-48 sm:max-h-60 overflow-y-auto">
               {weighIns.slice().reverse().map((wi) => (
-                <div key={wi.id} className="flex items-center justify-between bg-gray-700 rounded-lg p-2 sm:p-3">
+                <div key={wi.id} className="flex items-center justify-between bg-card2 border border-line rounded-xl p-2 sm:p-3">
                   <div>
-                    <span className="text-gray-100 font-medium text-sm sm:text-base">{wi.weightLbs} lbs</span> 
-                    <span className="text-gray-400 text-xs sm:text-sm"> on 
+                    <span className="text-snow font-semibold tabular-nums text-sm sm:text-base">{wi.weightLbs} lbs</span>
+                    <span className="text-mist text-xs sm:text-sm"> on
                       {" " + new Date(wi.date + 'T00:00:00').toLocaleDateString('en-US', { 
                         weekday: 'short', 
                         year: 'numeric', 
@@ -553,7 +552,8 @@ const WeighInModal: React.FC<WeighInModalProps> = ({ isOpen, onClose, userId, pr
                   </div>
                   <button
                     onClick={() => handleDeleteWeighIn(wi.id)}
-                    className="p-1 sm:p-1.5 text-gray-400 opacity-60 hover:opacity-100 transition-all rounded-md hover:bg-red-900/40"
+                    className="w-11 h-11 flex items-center justify-center rounded-xl text-mist hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                    aria-label="Delete weigh-in"
                   >
                     <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                   </button>
