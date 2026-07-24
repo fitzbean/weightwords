@@ -11,6 +11,7 @@ interface LiveFoodModalProps {
   onSetSpouseSharing: (enabled: boolean) => void;
   hasSpouse?: boolean;
   voice?: string;
+  context?: string;
 }
 
 interface TranscriptTurn {
@@ -27,7 +28,7 @@ const STATUS_LABEL: Record<LiveStatus, string> = {
   closed: 'Session ended',
 };
 
-const LiveFoodModal: React.FC<LiveFoodModalProps> = ({ isOpen, onClose, onFoodLogged, onConfirmEntries, onSetSpouseSharing, hasSpouse, voice }) => {
+const LiveFoodModal: React.FC<LiveFoodModalProps> = ({ isOpen, onClose, onFoodLogged, onConfirmEntries, onSetSpouseSharing, hasSpouse, voice, context }) => {
   const serviceRef = useRef<GeminiLiveService | null>(null);
   const [status, setStatus] = useState<LiveStatus>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +92,7 @@ const LiveFoodModal: React.FC<LiveFoodModalProps> = ({ isOpen, onClose, onFoodLo
         onClose();
       },
       onError: (msg) => setError(msg),
-    }, { voice, hasSpouse });
+    }, { voice, hasSpouse, context });
 
     return () => {
       service.stop();

@@ -371,6 +371,31 @@ const totalFat = entries.reduce((sum, entry) => sum + (entry.fat || 0), 0);
     }
   };
 
+  // Snapshot of the selected day handed to the live assistant so it can react
+  // naturally to what's already been eaten and how much room is left.
+  const buildLiveContext = (): string => {
+    const isToday = externalSelectedDate.toDateString() === new Date().toDateString();
+    const lines: string[] = [];
+    if (profile?.displayName) lines.push(`Name: ${profile.displayName}`);
+    lines.push(`Day: ${isToday ? 'today' : externalSelectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`);
+    lines.push(`Calorie target: ${dailyCalorieTarget} kcal${isSelectedMaintenance ? ' (maintenance day)' : ''}`);
+    lines.push(`Eaten so far: ${Math.round(totalCalories)} kcal`);
+    lines.push(
+      caloriesRemaining >= 0
+        ? `Calories remaining: ${Math.round(caloriesRemaining)} kcal`
+        : `Over target by: ${Math.round(Math.abs(caloriesRemaining))} kcal`
+    );
+    lines.push(`Protein so far: ${Math.round(totalProtein)}/${targetProtein} g`);
+    if (entries.length === 0) {
+      lines.push('Foods logged so far: nothing yet.');
+    } else {
+      lines.push(
+        `Foods logged so far (${entries.length}): ${entries.map(e => `${e.name} (${e.calories} kcal)`).join(', ')}`
+      );
+    }
+    return lines.join('\n');
+  };
+
   // Items arriving from the live voice session flow into the same breakdown
   // pipeline as typed/scanned entries, so the user still reviews and confirms.
   const handleLiveFoodLogged = (items: FoodItemEstimate[]) => {
@@ -1861,6 +1886,7 @@ const useFavoritedBreakdown = (favorite: FavoritedBreakdown) => {
         onSetSpouseSharing={updateSpouseSharing}
         hasSpouse={!!profile?.spouseId}
         voice={liveVoice}
+        context={showLiveModal ? buildLiveContext() : undefined}
       />
 
       {/* Previous Day Warning Modal */}

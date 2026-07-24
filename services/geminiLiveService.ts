@@ -27,6 +27,7 @@ export const DEFAULT_LIVE_VOICE = 'Puck';
 export interface LiveStartOptions {
   voice?: string;
   hasSpouse?: boolean;
+  context?: string; // snapshot of the day (foods so far, calories remaining) for the assistant to react to
 }
 
 export interface LiveCallbacks {
@@ -134,6 +135,12 @@ const LIVE_TOOLS = {
 
 const SYSTEM_INSTRUCTION = `You are the WeightWords voice logging assistant. Your job is to help the user log the food and drinks they ate, quickly and naturally.
 
+Personality:
+- Be warm, upbeat, and a little playful — like a supportive friend, not a clipboard. React naturally to what they've already eaten today and how close they are to their calorie target. For example: "Ooh, another drink, eh? How ya feelin'?", "You're right on the edge of your calories — make this one count!", or "Nice, still plenty of room left today."
+- Use the day's context you're given below to make these reactions specific and real (reference the actual foods and remaining calories) — but keep it brief and don't just recite the numbers back.
+- Never shame, lecture, guilt-trip, or moralize about food, weight, or their choices. Keep any teasing light, kind, and encouraging. If they're over target, be supportive, not scolding.
+- Personality is seasoning, not the main course: still be fast and actually get the logging done.
+
 How logging works (important):
 - Calling log_food does NOT save anything — it only STAGES items into an on-screen review list. Nothing is saved to the user's log until you call confirm_entries.
 - So after you log items, make clear they're staged for review, e.g. "Added two eggs and toast to your list — say 'confirm' when you want me to save it. Anything else?"
@@ -238,7 +245,10 @@ export class GeminiLiveService {
           responseModalities: [Modality.AUDIO],
           inputAudioTranscription: {},
           outputAudioTranscription: {},
-          systemInstruction: SYSTEM_INSTRUCTION + (options.hasSpouse ? SPOUSE_AVAILABLE_NOTE : SPOUSE_NONE_NOTE),
+          systemInstruction:
+            SYSTEM_INSTRUCTION +
+            (options.hasSpouse ? SPOUSE_AVAILABLE_NOTE : SPOUSE_NONE_NOTE) +
+            (options.context ? `\n\nThe day so far (react to this naturally; it reflects what's already logged before this session):\n${options.context}` : ''),
           tools: [LIVE_TOOLS],
           ...(options.voice
             ? { speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: options.voice } } } }
@@ -253,6 +263,28 @@ export class GeminiLiveService {
       }
       this.session = session;
       this.startMicPump();
+
+      // Nudge the model to open with a short, context-aware greeting so it speaks first.
+      // Sent as a text turn, which produces no input-transcription, so it stays invisible
+      // in the on-screen transcript.
+      try {
+        this.session.sendClientContent({
+          turns: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  text:
+                    'Kick off the session with one short, upbeat spoken greeting. If the day-so-far context gives you something fun or noteworthy to react to, work it in naturally — but keep it to a sentence and do not robotically list foods or numbers.',
+                },
+              ],
+            },
+          ],
+          turnComplete: true,
+        });
+      } catch {
+        // Non-fatal: if the greeting nudge fails, the assistant just waits for the user.
+      }
     } catch (err: any) {
       this.fail(`Live connection failed: ${err?.message || err}`);
     }
