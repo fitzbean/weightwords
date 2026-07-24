@@ -8,7 +8,7 @@ const corsHeaders = {
 
 // Single-shot TTS model used only to synthesize a short voice sample.
 const TTS_MODEL = 'gemini-3.1-flash-tts-preview';
-const SAMPLE_TEXT = "Hey! I'm your WeightWords logging buddy — tell me what you ate and I'll take care of the rest.";
+const SAMPLE_TEXT = "Hey! Ready to log some food?";
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
