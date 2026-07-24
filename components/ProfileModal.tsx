@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, Gender, ActivityLevel, WeightGoal } from '../types';
+import { LIVE_VOICES, DEFAULT_LIVE_VOICE } from '../services/geminiLiveService';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -7,15 +8,24 @@ interface ProfileModalProps {
   onSave: (profile: UserProfile) => Promise<void>;
   initialData?: UserProfile | null;
   isNewUser?: boolean;
+  liveVoice?: string;
+  onLiveVoiceChange?: (voice: string) => void;
 }
 
-const ProfileModal: React.FC<ProfileModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  onSave, 
-  initialData, 
-  isNewUser = false 
+const ProfileModal: React.FC<ProfileModalProps> = ({
+  isOpen,
+  onClose,
+  onSave,
+  initialData,
+  isNewUser = false,
+  liveVoice = DEFAULT_LIVE_VOICE,
+  onLiveVoiceChange
 }) => {
+  const [voice, setVoice] = useState<string>(liveVoice);
+
+  useEffect(() => {
+    setVoice(liveVoice);
+  }, [liveVoice]);
   const [formData, setFormData] = useState({
     displayName: initialData?.displayName || '',
     age: initialData?.age || 25,
@@ -76,6 +86,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
+
+    // Persist the AI voice preference (stored per-user in localStorage, not the DB).
+    onLiveVoiceChange?.(voice);
 
     try {
       await onSave({
@@ -363,6 +376,25 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
               </select>
               <p className="text-xs text-mist mt-1.5">
                 Your weekly progress will start on this day
+              </p>
+            </div>
+
+            {/* AI Voice (Live logging) */}
+            <div className="md:col-span-2">
+              <label className="block text-[11px] font-semibold text-mist uppercase tracking-[0.14em] mb-1.5">
+                AI Voice
+              </label>
+              <select
+                value={voice}
+                onChange={(e) => setVoice(e.target.value)}
+                className="w-full h-12 px-4 rounded-2xl bg-canvas/60 border border-line text-snow placeholder-mist focus:border-brand-500/60 focus:ring-4 focus:ring-brand-500/10 outline-none transition"
+              >
+                {LIVE_VOICES.map((v) => (
+                  <option key={v.name} value={v.name}>{v.name} — {v.vibe}</option>
+                ))}
+              </select>
+              <p className="text-xs text-mist mt-1.5">
+                Voice used by the live voice-logging assistant (the broadcast icon).
               </p>
             </div>
           </div>

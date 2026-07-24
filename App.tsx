@@ -10,8 +10,28 @@ import CalorieHistoryModal from './components/CalorieHistoryModal';
 import { supabase, getCurrentUser, getProfile, updateProfile, signOut, onAuthStateChange, getSpouseInfo, getFoodLogs, getMaintenanceDays, addMaintenanceDay, removeMaintenanceDay, syncMaintenanceDaysFromLocalStorage } from './services/supabaseService';
 import { APP_CONFIG } from './appConfig';
 import { getLocalDateKey } from './utils/dateUtils';
+import { DEFAULT_LIVE_VOICE } from './services/geminiLiveService';
 
 const MAINTENANCE_DAYS_STORAGE_KEY = 'weightwords_maintenance_days';
+const LIVE_VOICE_STORAGE_KEY = 'weightwords_live_voice';
+
+const loadLiveVoice = (userId: string | undefined): string => {
+  if (!userId || typeof window === 'undefined') return DEFAULT_LIVE_VOICE;
+  try {
+    return window.localStorage.getItem(`${LIVE_VOICE_STORAGE_KEY}:${userId}`) || DEFAULT_LIVE_VOICE;
+  } catch {
+    return DEFAULT_LIVE_VOICE;
+  }
+};
+
+const saveLiveVoice = (userId: string | undefined, voice: string) => {
+  if (!userId || typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(`${LIVE_VOICE_STORAGE_KEY}:${userId}`, voice);
+  } catch {
+    // ignore storage errors
+  }
+};
 
 const Logo: React.FC = () => (
   <div className="flex items-center gap-2.5 min-w-0">
@@ -82,6 +102,20 @@ const App: React.FC = () => {
 
   // Maintenance Day state (per-date flags stored in localStorage per user)
   const [maintenanceDays, setMaintenanceDays] = useState<Set<string>>(new Set());
+
+  // Preferred AI voice for the live logging feature (per-user, localStorage).
+  const [liveVoice, setLiveVoice] = useState<string>(DEFAULT_LIVE_VOICE);
+
+  useEffect(() => {
+    const effectiveUserId = impersonatedUser?.id || user?.id;
+    setLiveVoice(loadLiveVoice(effectiveUserId));
+  }, [user?.id, impersonatedUser?.id]);
+
+  const handleLiveVoiceChange = (voice: string) => {
+    const effectiveUserId = impersonatedUser?.id || user?.id;
+    setLiveVoice(voice);
+    saveLiveVoice(effectiveUserId, voice);
+  };
 
   // Load maintenance days from DB whenever the effective user changes
   useEffect(() => {
@@ -682,6 +716,7 @@ const App: React.FC = () => {
             itemToAdd={itemToAdd}
             onItemAdded={() => setItemToAdd(null)}
             maintenanceDays={maintenanceDays}
+            liveVoice={liveVoice}
           />
         ) : (
           <div className="animate-in fade-in duration-500 translate-y-0">
@@ -707,6 +742,8 @@ const App: React.FC = () => {
         onSave={handleSaveProfile}
         initialData={profile}
         isNewUser={isNewUser}
+        liveVoice={liveVoice}
+        onLiveVoiceChange={handleLiveVoiceChange}
       />
 
       <WeighInModal

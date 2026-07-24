@@ -8,6 +8,7 @@ import { getWeekDates, getLocalDateKey } from '../utils/dateUtils';
 import { FoodCategory, CATEGORIES, groupFavoritesByCategory } from '../utils/foodCategories';
 import { sttService } from '../services/sttService';
 import NutritionLabelScanner from './NutritionLabelScanner';
+import LiveFoodModal from './LiveFoodModal';
 
 interface DashboardProps {
   profile: UserProfile | null;
@@ -23,6 +24,7 @@ interface DashboardProps {
   itemToAdd?: FoodItemEstimate | null;
   onItemAdded?: () => void;
   maintenanceDays?: Set<string>;
+  liveVoice?: string;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ 
@@ -38,7 +40,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   impersonatedUserId,
   itemToAdd,
   onItemAdded,
-  maintenanceDays = new Set<string>()
+  maintenanceDays = new Set<string>(),
+  liveVoice
 }) => {
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [foodInput, setFoodInput] = useState('');
@@ -57,6 +60,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [itemInsight, setItemInsight] = useState<ItemInsight | null>(null);
   const [isLoadingInsight, setIsLoadingInsight] = useState(false);
   const [showLabelScanner, setShowLabelScanner] = useState(false);
+  const [showLiveModal, setShowLiveModal] = useState(false);
   const [breakdownItems, setBreakdownItems] = useState<FoodItemEstimate[]>([]);
   const [calorieOverrides, setCalorieOverrides] = useState<(number | null)[]>([]);
   const [portionSizes, setPortionSizes] = useState<Record<number, number>>({});
@@ -351,6 +355,21 @@ const totalFat = entries.reduce((sum, entry) => sum + (entry.fat || 0), 0);
     } finally {
       setIsEstimating(false);
     }
+  };
+
+  // Items arriving from the live voice session flow into the same breakdown
+  // pipeline as typed/scanned entries, so the user still reviews and confirms.
+  const handleLiveFoodLogged = (items: FoodItemEstimate[]) => {
+    if (!items.length) return;
+    appendBreakdownItems(items);
+    setLastEstimate(prev => {
+      const combined = prev ? [...prev.items, ...items] : [...items];
+      return {
+        items: combined,
+        totalCalories: combined.reduce((sum, i) => sum + i.calories, 0),
+        confidence: prev?.confidence ?? 1,
+      };
+    });
   };
 
   const handleLabelScan = async (nutritionText: string) => {
@@ -821,6 +840,17 @@ const useFavoritedBreakdown = (favorite: FavoritedBreakdown) => {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+              </button>
+              <button
+                onClick={() => setShowLiveModal(true)}
+                className="w-12 h-12 shrink-0 flex items-center justify-center rounded-2xl bg-card2 border border-line2 text-brand-400 hover:text-brand-300 hover:border-brand-500/40 transition-all active:scale-95"
+                title="Live voice logging"
+              >
+                {/* Broadcast / live icon */}
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.5 8.5a5 5 0 000 7m7-7a5 5 0 010 7M5.6 5.6a9 9 0 000 12.8m12.8-12.8a9 9 0 010 12.8" />
                 </svg>
               </button>
               <button
@@ -1795,6 +1825,14 @@ const useFavoritedBreakdown = (favorite: FavoritedBreakdown) => {
         onClose={() => setShowLabelScanner(false)}
         onScan={handleLabelScan}
         onScanEstimate={handleLabelScanEstimate}
+      />
+
+      {/* Live Voice Logging Modal */}
+      <LiveFoodModal
+        isOpen={showLiveModal}
+        onClose={() => setShowLiveModal(false)}
+        onFoodLogged={handleLiveFoodLogged}
+        voice={liveVoice}
       />
 
       {/* Previous Day Warning Modal */}
