@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, Gender, ActivityLevel, WeightGoal } from '../types';
 import { LIVE_VOICES, DEFAULT_LIVE_VOICE } from '../services/geminiLiveService';
+import { previewVoice, stopVoicePreview } from '../services/voicePreview';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -22,10 +23,28 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   onLiveVoiceChange
 }) => {
   const [voice, setVoice] = useState<string>(liveVoice);
+  const [previewing, setPreviewing] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
 
   useEffect(() => {
     setVoice(liveVoice);
   }, [liveVoice]);
+
+  // Stop any playing sample when the modal unmounts.
+  useEffect(() => () => stopVoicePreview(), []);
+
+  const handlePreviewVoice = async () => {
+    if (previewing) return;
+    setPreviewing(true);
+    setPreviewError(null);
+    try {
+      await previewVoice(voice);
+    } catch (e: any) {
+      setPreviewError(e?.message || 'Could not play preview.');
+    } finally {
+      setPreviewing(false);
+    }
+  };
   const [formData, setFormData] = useState({
     displayName: initialData?.displayName || '',
     age: initialData?.age || 25,
@@ -384,18 +403,47 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
               <label className="block text-[11px] font-semibold text-mist uppercase tracking-[0.14em] mb-1.5">
                 AI Voice
               </label>
-              <select
-                value={voice}
-                onChange={(e) => setVoice(e.target.value)}
-                className="w-full h-12 px-4 rounded-2xl bg-canvas/60 border border-line text-snow placeholder-mist focus:border-brand-500/60 focus:ring-4 focus:ring-brand-500/10 outline-none transition"
-              >
-                {LIVE_VOICES.map((v) => (
-                  <option key={v.name} value={v.name}>{v.name} — {v.vibe}</option>
-                ))}
-              </select>
-              <p className="text-xs text-mist mt-1.5">
-                Voice used by the live voice-logging assistant (the broadcast icon).
-              </p>
+              <div className="flex gap-2">
+                <select
+                  value={voice}
+                  onChange={(e) => setVoice(e.target.value)}
+                  className="flex-1 min-w-0 h-12 px-4 rounded-2xl bg-canvas/60 border border-line text-snow placeholder-mist focus:border-brand-500/60 focus:ring-4 focus:ring-brand-500/10 outline-none transition"
+                >
+                  <optgroup label="Female voices">
+                    {LIVE_VOICES.filter(v => v.sex === 'female').map((v) => (
+                      <option key={v.name} value={v.name}>{v.name} — {v.vibe}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Male voices">
+                    {LIVE_VOICES.filter(v => v.sex === 'male').map((v) => (
+                      <option key={v.name} value={v.name}>{v.name} — {v.vibe}</option>
+                    ))}
+                  </optgroup>
+                </select>
+                <button
+                  type="button"
+                  onClick={handlePreviewVoice}
+                  disabled={previewing}
+                  className="h-12 px-4 shrink-0 rounded-2xl bg-card2 border border-line2 text-fog font-semibold text-sm hover:text-snow hover:border-brand-500/40 transition-all active:scale-[0.98] disabled:opacity-60 flex items-center gap-2"
+                  title="Hear a sample of this voice"
+                >
+                  {previewing ? (
+                    <svg className="animate-spin h-4 w-4 text-brand-400" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    </svg>
+                  )}
+                  <span>{previewing ? 'Playing' : 'Preview'}</span>
+                </button>
+              </div>
+              {previewError ? (
+                <p className="text-xs text-rose-300 mt-1.5">{previewError}</p>
+              ) : (
+                <p className="text-xs text-mist mt-1.5">
+                  Voice used by the live voice-logging assistant. Tap Preview to hear it.
+                </p>
+              )}
             </div>
           </div>
 

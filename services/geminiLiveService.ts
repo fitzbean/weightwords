@@ -10,16 +10,40 @@ const OUTPUT_SAMPLE_RATE = 24000;
 
 export type LiveStatus = 'idle' | 'connecting' | 'listening' | 'speaking' | 'error' | 'closed';
 
-// Prebuilt Gemini Live voices (the stable, documented set) with a short vibe label.
-export const LIVE_VOICES: { name: string; vibe: string }[] = [
-  { name: 'Puck', vibe: 'Upbeat' },
-  { name: 'Charon', vibe: 'Informative' },
-  { name: 'Kore', vibe: 'Firm' },
-  { name: 'Fenrir', vibe: 'Excitable' },
-  { name: 'Aoede', vibe: 'Breezy' },
-  { name: 'Leda', vibe: 'Youthful' },
-  { name: 'Orus', vibe: 'Steady' },
-  { name: 'Zephyr', vibe: 'Bright' },
+// All 30 prebuilt Gemini voices with their documented vibe (ai.google.dev) and the
+// male/female classification from Google Cloud's Gemini-TTS docs.
+export type VoiceSex = 'female' | 'male';
+export const LIVE_VOICES: { name: string; vibe: string; sex: VoiceSex }[] = [
+  { name: 'Zephyr', vibe: 'Bright', sex: 'female' },
+  { name: 'Kore', vibe: 'Firm', sex: 'female' },
+  { name: 'Leda', vibe: 'Youthful', sex: 'female' },
+  { name: 'Aoede', vibe: 'Breezy', sex: 'female' },
+  { name: 'Callirrhoe', vibe: 'Easy-going', sex: 'female' },
+  { name: 'Autonoe', vibe: 'Bright', sex: 'female' },
+  { name: 'Despina', vibe: 'Smooth', sex: 'female' },
+  { name: 'Erinome', vibe: 'Clear', sex: 'female' },
+  { name: 'Laomedeia', vibe: 'Upbeat', sex: 'female' },
+  { name: 'Achernar', vibe: 'Soft', sex: 'female' },
+  { name: 'Gacrux', vibe: 'Mature', sex: 'female' },
+  { name: 'Pulcherrima', vibe: 'Forward', sex: 'female' },
+  { name: 'Vindemiatrix', vibe: 'Gentle', sex: 'female' },
+  { name: 'Sulafat', vibe: 'Warm', sex: 'female' },
+  { name: 'Puck', vibe: 'Upbeat', sex: 'male' },
+  { name: 'Charon', vibe: 'Informative', sex: 'male' },
+  { name: 'Fenrir', vibe: 'Excitable', sex: 'male' },
+  { name: 'Orus', vibe: 'Firm', sex: 'male' },
+  { name: 'Enceladus', vibe: 'Breathy', sex: 'male' },
+  { name: 'Iapetus', vibe: 'Clear', sex: 'male' },
+  { name: 'Umbriel', vibe: 'Easy-going', sex: 'male' },
+  { name: 'Algieba', vibe: 'Smooth', sex: 'male' },
+  { name: 'Algenib', vibe: 'Gravelly', sex: 'male' },
+  { name: 'Rasalgethi', vibe: 'Informative', sex: 'male' },
+  { name: 'Alnilam', vibe: 'Firm', sex: 'male' },
+  { name: 'Schedar', vibe: 'Even', sex: 'male' },
+  { name: 'Achird', vibe: 'Friendly', sex: 'male' },
+  { name: 'Zubenelgenubi', vibe: 'Casual', sex: 'male' },
+  { name: 'Sadachbia', vibe: 'Lively', sex: 'male' },
+  { name: 'Sadaltager', vibe: 'Knowledgeable', sex: 'male' },
 ];
 
 export const DEFAULT_LIVE_VOICE = 'Puck';
