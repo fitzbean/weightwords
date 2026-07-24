@@ -90,6 +90,11 @@ const Dashboard: React.FC<DashboardProps> = ({
     async () => ({ count: 0, spouse: false })
   );
 
+  // Latest-ref for the voice "log a favorite by name" action (matches against current favorites).
+  const liveLogFavoriteRef = useRef<
+    (name: string) => Promise<{ matched: boolean; name?: string; count?: number; calories?: number }>
+  >(async () => ({ matched: false }));
+
   const appendBreakdownItems = (items: FoodItemEstimate[]) => {
     if (!items.length) return;
     setBreakdownItems(prev => [...prev, ...items]);
@@ -393,6 +398,15 @@ const totalFat = entries.reduce((sum, entry) => sum + (entry.fat || 0), 0);
         `Foods logged so far (${entries.length}): ${entries.map(e => `${e.name} (${e.calories} kcal)`).join(', ')}`
       );
     }
+    if (favoritedBreakdowns.length > 0) {
+      const MAX = 40;
+      const names = favoritedBreakdowns
+        .slice(0, MAX)
+        .map(f => `${f.name} (${f.totalCalories} kcal)`)
+        .join(', ');
+      const extra = favoritedBreakdowns.length > MAX ? `, and ${favoritedBreakdowns.length - MAX} more` : '';
+      lines.push(`Saved favorites (use log_favorite by name): ${names}${extra}`);
+    }
     return lines.join('\n');
   };
 
@@ -503,6 +517,22 @@ calories: finalCalories,
     const spouse = spouseSharingRef.current && !!profile?.spouseId;
     await saveEntryForDate(externalSelectedDate);
     return { count, spouse };
+  };
+
+  // Voice "log a favorite": match the spoken name against saved favorites and stage its
+  // exact stored breakdown. Reassigned each render so it sees the current favorites list.
+  liveLogFavoriteRef.current = async (spoken: string) => {
+    const norm = spoken.trim().toLowerCase();
+    if (!norm) return { matched: false };
+    const exact = favoritedBreakdowns.find(f => f.name.trim().toLowerCase() === norm);
+    const loose = favoritedBreakdowns.find(f => {
+      const fn = f.name.trim().toLowerCase();
+      return fn.includes(norm) || norm.includes(fn);
+    });
+    const fav = exact || loose;
+    if (!fav || !fav.breakdown?.length) return { matched: false };
+    handleLiveFoodLogged(fav.breakdown);
+    return { matched: true, name: fav.name, count: fav.breakdown.length, calories: fav.totalCalories };
   };
 
   const addEntry = async () => {
@@ -1882,6 +1912,7 @@ const useFavoritedBreakdown = (favorite: FavoritedBreakdown) => {
         isOpen={showLiveModal}
         onClose={() => setShowLiveModal(false)}
         onFoodLogged={handleLiveFoodLogged}
+        onLogFavorite={(name) => liveLogFavoriteRef.current(name)}
         onConfirmEntries={() => liveConfirmRef.current()}
         onSetSpouseSharing={updateSpouseSharing}
         hasSpouse={!!profile?.spouseId}

@@ -7,6 +7,7 @@ interface LiveFoodModalProps {
   isOpen: boolean;
   onClose: () => void;
   onFoodLogged: (items: FoodItemEstimate[]) => void;
+  onLogFavorite: (name: string) => Promise<{ matched: boolean; name?: string; count?: number; calories?: number }>;
   onConfirmEntries: () => Promise<{ count: number; spouse: boolean }>;
   onSetSpouseSharing: (enabled: boolean) => void;
   hasSpouse?: boolean;
@@ -28,7 +29,7 @@ const STATUS_LABEL: Record<LiveStatus, string> = {
   closed: 'Session ended',
 };
 
-const LiveFoodModal: React.FC<LiveFoodModalProps> = ({ isOpen, onClose, onFoodLogged, onConfirmEntries, onSetSpouseSharing, hasSpouse, voice, context }) => {
+const LiveFoodModal: React.FC<LiveFoodModalProps> = ({ isOpen, onClose, onFoodLogged, onLogFavorite, onConfirmEntries, onSetSpouseSharing, hasSpouse, voice, context }) => {
   const serviceRef = useRef<GeminiLiveService | null>(null);
   const [status, setStatus] = useState<LiveStatus>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +85,7 @@ const LiveFoodModal: React.FC<LiveFoodModalProps> = ({ isOpen, onClose, onFoodLo
         onFoodLogged(items);
         setLoggedCount((c) => c + items.length);
       },
+      onLogFavorite: onLogFavorite,
       onConfirmEntries: onConfirmEntries,
       onSetSpouseSharing: onSetSpouseSharing,
       onEnd: () => {

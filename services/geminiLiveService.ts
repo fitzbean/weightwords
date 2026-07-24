@@ -35,6 +35,8 @@ export interface LiveCallbacks {
   onUserTranscript?: (text: string) => void;   // incremental transcript of what the user says
   onModelTranscript?: (text: string) => void;  // incremental transcript of what the assistant says
   onFoodLogged?: (items: FoodItemEstimate[]) => void;
+  // Stage a saved favorite by name using its exact stored nutrition. Resolves with whether a match was found.
+  onLogFavorite?: (name: string) => Promise<{ matched: boolean; name?: string; count?: number; calories?: number }>;
   // Save the currently staged items. Resolves with how many were saved and whether they were mirrored to a spouse.
   onConfirmEntries?: () => Promise<{ count: number; spouse: boolean }>;
   // Toggle whether staged items are also logged to the linked spouse.
@@ -107,6 +109,18 @@ const LIVE_TOOLS = {
       },
     },
     {
+      name: 'log_favorite',
+      description:
+        'Stage a SAVED FAVORITE by name, using its exact stored nutrition (do not re-estimate). Use this instead of log_food when the user names something that matches one of their saved favorites listed in the day context (e.g. "add my cheese stick", "log the usual breakfast"). If no favorite matches, this reports matched=false — then fall back to log_food with your own estimate.',
+      parameters: {
+        type: Type.OBJECT,
+        properties: {
+          name: { type: Type.STRING, description: 'The favorite name as the user referred to it.' },
+        },
+        required: ['name'],
+      },
+    },
+    {
       name: 'confirm_entries',
       description:
         'Save (commit) the food items currently staged in the review list to the user\'s log. Call this when the user asks to confirm or save (e.g. "confirm", "save it", "save those", "log it", "yes, save them", "add them to my log"). Staged items are NOT saved until this is called.',
@@ -148,7 +162,8 @@ How logging works (important):
 
 Guidelines:
 - Keep spoken replies short and conversational — one sentence is ideal.
-- When the user names something they ate or drank, estimate its nutrition and call log_food. Log items as they're mentioned; don't wait for a long list.
+- The user has SAVED FAVORITES (listed in the day context below) — named foods/meals with exact stored nutrition. If they mention something that matches a favorite (e.g. "add my cheese stick", "log the usual"), call log_favorite with that name so the saved values are used exactly, and you can acknowledge it's a favorite ("Your cheese stick, coming right up"). If log_favorite reports no match, just estimate it with log_food instead.
+- Otherwise, when the user names something they ate or drank, estimate its nutrition and call log_food. Log items as they're mentioned; don't wait for a long list.
 - If a portion is ambiguous, assume a typical single serving rather than interrogating the user; you may note the assumption briefly.
 - Do not read out full macro breakdowns unless asked; the app shows those on screen.
 - If the user asks to also log something for their spouse/partner (e.g. "log this for my wife too", "add it for both of us"), call set_spouse_sharing with enabled=true; if they say user-only, call it with enabled=false. The mirroring takes effect when you confirm.
@@ -401,6 +416,21 @@ export class GeminiLiveService {
           name: call.name,
           // Make the staged-not-saved state explicit so the model phrases it correctly.
           response: { status: 'staged', staged_count: items.length, note: 'Not saved yet — call confirm_entries to save.' },
+        });
+      } else if (call.name === 'log_favorite') {
+        const name = String(call.args?.name ?? '').trim();
+        let result: { matched: boolean; name?: string; count?: number; calories?: number } = { matched: false };
+        try {
+          result = (await this.callbacks.onLogFavorite?.(name)) ?? result;
+        } catch {
+          result = { matched: false };
+        }
+        responses.push({
+          id: call.id,
+          name: call.name,
+          response: result.matched
+            ? { status: 'staged', matched: true, favorite: result.name, staged_count: result.count, calories: result.calories, note: 'Favorite staged with saved nutrition — call confirm_entries to save.' }
+            : { status: 'no_match', matched: false, note: 'No saved favorite matched — use log_food to estimate instead.' },
         });
       } else if (call.name === 'confirm_entries') {
         let result = { count: 0, spouse: false };
