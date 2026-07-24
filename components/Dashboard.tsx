@@ -1103,10 +1103,23 @@ const useFavoritedBreakdown = (favorite: FavoritedBreakdown) => {
                   {breakdownItems.map((item, idx) => (
                     <div
                       key={idx}
-                      className="bg-card p-3.5 sm:p-4 rounded-2xl flex justify-between items-center border border-line hover:border-brand-500/40 transition-all"
+                      className="relative bg-card p-3.5 sm:p-4 rounded-2xl border border-line hover:border-brand-500/40 transition-all"
                     >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeBreakdownItem(idx);
+                        }}
+                        className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center text-mist hover:text-rose-400 transition-colors rounded-lg hover:bg-rose-500/10 z-10"
+                        title="Remove item"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                      </button>
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pr-8">
                       <div
-                        className="flex-1 cursor-pointer"
+                        className="flex-1 min-w-0 cursor-pointer"
                         onClick={() => handleItemClick(item)}
                       >
                         <p className="font-semibold text-snow text-sm sm:text-base">
@@ -1125,7 +1138,7 @@ const useFavoritedBreakdown = (favorite: FavoritedBreakdown) => {
                           <span className="text-[11px] text-amber-400/80 font-semibold tabular-nums">F {Math.round(item.fat * (portionSizes[idx] || 1))}g</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                         <select
                           value={portionSizes[idx] || 1}
                           onChange={(e) => {
@@ -1190,18 +1203,7 @@ const useFavoritedBreakdown = (favorite: FavoritedBreakdown) => {
                             </select>
                           </div>
                         </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeBreakdownItem(idx);
-                          }}
-                          className="w-9 h-9 flex items-center justify-center text-mist hover:text-rose-400 transition-colors rounded-lg hover:bg-rose-500/10"
-                          title="Remove item"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path>
-                          </svg>
-                        </button>
+                      </div>
                       </div>
                     </div>
                   ))}
