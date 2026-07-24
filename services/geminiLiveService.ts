@@ -26,6 +26,7 @@ export const DEFAULT_LIVE_VOICE = 'Puck';
 
 export interface LiveStartOptions {
   voice?: string;
+  hasSpouse?: boolean;
 }
 
 export interface LiveCallbacks {
@@ -33,6 +34,10 @@ export interface LiveCallbacks {
   onUserTranscript?: (text: string) => void;   // incremental transcript of what the user says
   onModelTranscript?: (text: string) => void;  // incremental transcript of what the assistant says
   onFoodLogged?: (items: FoodItemEstimate[]) => void;
+  // Save the currently staged items. Resolves with how many were saved and whether they were mirrored to a spouse.
+  onConfirmEntries?: () => Promise<{ count: number; spouse: boolean }>;
+  // Toggle whether staged items are also logged to the linked spouse.
+  onSetSpouseSharing?: (enabled: boolean) => void;
   onTurnComplete?: () => void;
   onEnd?: () => void; // model signalled the conversation is over (after its goodbye finishes)
   onError?: (message: string) => void;
@@ -71,7 +76,7 @@ const base64PCM16ToFloat32 = (base64: string): Float32Array => {
 };
 
 // The food-logging tool the model calls to push items into the app.
-const LOG_FOOD_TOOL = {
+const LIVE_TOOLS = {
   functionDeclarations: [
     {
       name: 'log_food',
@@ -101,9 +106,27 @@ const LOG_FOOD_TOOL = {
       },
     },
     {
+      name: 'confirm_entries',
+      description:
+        'Save (commit) the food items currently staged in the review list to the user\'s log. Call this when the user asks to confirm or save (e.g. "confirm", "save it", "save those", "log it", "yes, save them", "add them to my log"). Staged items are NOT saved until this is called.',
+      parameters: { type: Type.OBJECT, properties: {} },
+    },
+    {
+      name: 'set_spouse_sharing',
+      description:
+        'Turn on or off mirroring: when on, staged items are also logged to the user\'s linked spouse/partner when confirmed. Call with enabled=true when the user asks to log for their spouse/partner too (e.g. "add this for my wife too", "log it for both of us"), and enabled=false if they change their mind.',
+      parameters: {
+        type: Type.OBJECT,
+        properties: {
+          enabled: { type: Type.BOOLEAN, description: 'true to also log to the spouse on confirm; false to log only for the user.' },
+        },
+        required: ['enabled'],
+      },
+    },
+    {
       name: 'end_session',
       description:
-        'End the live logging session. Call this immediately after you give a short goodbye/sign-off, once the user has indicated they are finished (e.g. "I\'m done", "that\'s everything", "nothing else", "goodbye").',
+        'End the live logging session. Call this immediately after you give a short goodbye/sign-off, once the user has indicated they are finished (e.g. "I\'m done", "that\'s everything", "nothing else", "goodbye"). Do not call it while food is still staged and unconfirmed unless the user has declined to save.',
       parameters: { type: Type.OBJECT, properties: {} },
     },
   ],
@@ -111,13 +134,25 @@ const LOG_FOOD_TOOL = {
 
 const SYSTEM_INSTRUCTION = `You are the WeightWords voice logging assistant. Your job is to help the user log the food and drinks they ate, quickly and naturally.
 
+How logging works (important):
+- Calling log_food does NOT save anything — it only STAGES items into an on-screen review list. Nothing is saved to the user's log until you call confirm_entries.
+- So after you log items, make clear they're staged for review, e.g. "Added two eggs and toast to your list — say 'confirm' when you want me to save it. Anything else?"
+- When the user asks to confirm or save (e.g. "confirm", "save it", "log those", "yes save them"), call confirm_entries, then confirm out loud how many were saved.
+
 Guidelines:
 - Keep spoken replies short and conversational — one sentence is ideal.
-- When the user names something they ate or drank, estimate its nutrition and call the log_food tool. Then briefly confirm out loud, e.g. "Got it — two eggs and toast, about 320 calories. Anything else?"
-- If a portion is ambiguous, assume a typical single serving rather than interrogating the user; you can note the assumption briefly.
-- Log items as the user mentions them; don't wait for them to finish a long list.
+- When the user names something they ate or drank, estimate its nutrition and call log_food. Log items as they're mentioned; don't wait for a long list.
+- If a portion is ambiguous, assume a typical single serving rather than interrogating the user; you may note the assumption briefly.
 - Do not read out full macro breakdowns unless asked; the app shows those on screen.
-- When the user indicates they are finished (e.g. "I'm done", "that's everything", "nothing else", "goodbye"), give a short friendly sign-off out loud AND call the end_session tool in the same turn. Always call end_session when wrapping up — do not just say goodbye without it.`;
+- If the user asks to also log something for their spouse/partner (e.g. "log this for my wife too", "add it for both of us"), call set_spouse_sharing with enabled=true; if they say user-only, call it with enabled=false. The mirroring takes effect when you confirm.
+
+Wrapping up:
+- When the user indicates they're finished (e.g. "I'm done", "that's everything", "goodbye"): if there are items you logged this session that you have NOT yet confirmed, first ASK whether they'd like you to save them before signing off. Only proceed once they answer.
+- If they say yes, call confirm_entries; if they decline, leave the items staged.
+- Then give a short friendly sign-off out loud AND call end_session in the same turn. Always call end_session when wrapping up — do not just say goodbye without it.`;
+
+const SPOUSE_AVAILABLE_NOTE = `\n\nThis user has a spouse/partner linked, so set_spouse_sharing is available if they ask to log for both of them.`;
+const SPOUSE_NONE_NOTE = `\n\nThis user has no spouse/partner linked. If they ask to log for a spouse, briefly let them know they'd need to link a partner in their profile first, and do not call set_spouse_sharing.`;
 
 export class GeminiLiveService {
   private session: Session | null = null;
@@ -203,8 +238,8 @@ export class GeminiLiveService {
           responseModalities: [Modality.AUDIO],
           inputAudioTranscription: {},
           outputAudioTranscription: {},
-          systemInstruction: SYSTEM_INSTRUCTION,
-          tools: [LOG_FOOD_TOOL],
+          systemInstruction: SYSTEM_INSTRUCTION + (options.hasSpouse ? SPOUSE_AVAILABLE_NOTE : SPOUSE_NONE_NOTE),
+          tools: [LIVE_TOOLS],
           ...(options.voice
             ? { speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: options.voice } } } }
             : {}),
@@ -307,13 +342,13 @@ export class GeminiLiveService {
       }
     }
 
-    // The model wants to log food.
+    // The model invoked one or more tools (log/confirm/spouse/end).
     if (msg.toolCall?.functionCalls?.length) {
-      this.handleToolCalls(msg.toolCall.functionCalls);
+      void this.handleToolCalls(msg.toolCall.functionCalls);
     }
   }
 
-  private handleToolCalls(calls: Array<{ id?: string; name?: string; args?: Record<string, unknown> }>): void {
+  private async handleToolCalls(calls: Array<{ id?: string; name?: string; args?: Record<string, unknown> }>): Promise<void> {
     const responses: Array<{ id?: string; name?: string; response: Record<string, unknown> }> = [];
 
     for (const call of calls) {
@@ -332,8 +367,27 @@ export class GeminiLiveService {
         responses.push({
           id: call.id,
           name: call.name,
-          response: { status: 'logged', count: items.length },
+          // Make the staged-not-saved state explicit so the model phrases it correctly.
+          response: { status: 'staged', staged_count: items.length, note: 'Not saved yet — call confirm_entries to save.' },
         });
+      } else if (call.name === 'confirm_entries') {
+        let result = { count: 0, spouse: false };
+        try {
+          result = (await this.callbacks.onConfirmEntries?.()) ?? result;
+        } catch {
+          // Save failed downstream; report nothing saved.
+        }
+        responses.push({
+          id: call.id,
+          name: call.name,
+          response: result.count > 0
+            ? { status: 'saved', saved_count: result.count, also_logged_to_spouse: result.spouse }
+            : { status: 'nothing_to_save', note: 'No items were staged.' },
+        });
+      } else if (call.name === 'set_spouse_sharing') {
+        const enabled = call.args?.enabled === true;
+        this.callbacks.onSetSpouseSharing?.(enabled);
+        responses.push({ id: call.id, name: call.name, response: { status: 'ok', spouse_sharing: enabled } });
       } else if (call.name === 'end_session') {
         // Let the goodbye finish playing, then close (handled on turnComplete).
         this.endRequested = true;

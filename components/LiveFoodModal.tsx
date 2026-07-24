@@ -7,6 +7,9 @@ interface LiveFoodModalProps {
   isOpen: boolean;
   onClose: () => void;
   onFoodLogged: (items: FoodItemEstimate[]) => void;
+  onConfirmEntries: () => Promise<{ count: number; spouse: boolean }>;
+  onSetSpouseSharing: (enabled: boolean) => void;
+  hasSpouse?: boolean;
   voice?: string;
 }
 
@@ -24,7 +27,7 @@ const STATUS_LABEL: Record<LiveStatus, string> = {
   closed: 'Session ended',
 };
 
-const LiveFoodModal: React.FC<LiveFoodModalProps> = ({ isOpen, onClose, onFoodLogged, voice }) => {
+const LiveFoodModal: React.FC<LiveFoodModalProps> = ({ isOpen, onClose, onFoodLogged, onConfirmEntries, onSetSpouseSharing, hasSpouse, voice }) => {
   const serviceRef = useRef<GeminiLiveService | null>(null);
   const [status, setStatus] = useState<LiveStatus>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -80,13 +83,15 @@ const LiveFoodModal: React.FC<LiveFoodModalProps> = ({ isOpen, onClose, onFoodLo
         onFoodLogged(items);
         setLoggedCount((c) => c + items.length);
       },
+      onConfirmEntries: onConfirmEntries,
+      onSetSpouseSharing: onSetSpouseSharing,
       onEnd: () => {
         // Model wrapped up the conversation — tear down and close the modal.
         service.stop();
         onClose();
       },
       onError: (msg) => setError(msg),
-    }, { voice });
+    }, { voice, hasSpouse });
 
     return () => {
       service.stop();

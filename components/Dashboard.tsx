@@ -76,6 +76,20 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [addToSpouseFood, setAddToSpouseFood] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<FoodCategory | null>(null);
 
+  // Spouse-sharing intent as a ref so the (async) save reads a synchronous value,
+  // avoiding a stale-state race when the voice assistant toggles it then confirms.
+  const spouseSharingRef = useRef(false);
+  const updateSpouseSharing = (enabled: boolean) => {
+    spouseSharingRef.current = enabled;
+    setAddToSpouseFood(enabled);
+  };
+
+  // Latest-ref for the voice "confirm" action: the modal captures the callback once,
+  // but this always runs against the current staged items.
+  const liveConfirmRef = useRef<() => Promise<{ count: number; spouse: boolean }>>(
+    async () => ({ count: 0, spouse: false })
+  );
+
   const appendBreakdownItems = (items: FoodItemEstimate[]) => {
     if (!items.length) return;
     setBreakdownItems(prev => [...prev, ...items]);
@@ -425,7 +439,7 @@ calories: finalCalories,
         date: getDateString(date),
       };
     });
-    const entries = addToSpouseFood && profile?.spouseId
+    const entries = spouseSharingRef.current && profile?.spouseId
       ? [
           ...ownEntries,
           ...ownEntries.map(entry => ({
@@ -440,7 +454,7 @@ calories: finalCalories,
     resetBreakdownItems();
     setPortionSizes({});
     setShowPreviousDayWarning(false);
-    setAddToSpouseFood(false);
+    updateSpouseSharing(false);
 
     const { error } = await supabase
       .from('food_logs')
@@ -453,6 +467,17 @@ calories: finalCalories,
     
     await loadEntries();
     await loadWeeklyData();
+  };
+
+  // Voice "confirm": save whatever is staged to the selected date, reporting the count
+  // and whether it was mirrored to the spouse. Reassigned each render so the callback the
+  // live modal captured once always sees the current staged items.
+  liveConfirmRef.current = async () => {
+    const count = breakdownItems.length;
+    if (!count || !lastEstimate) return { count: 0, spouse: false };
+    const spouse = spouseSharingRef.current && !!profile?.spouseId;
+    await saveEntryForDate(externalSelectedDate);
+    return { count, spouse };
   };
 
   const addEntry = async () => {
@@ -1136,7 +1161,7 @@ const useFavoritedBreakdown = (favorite: FavoritedBreakdown) => {
                     <input
                       type="checkbox"
                       checked={addToSpouseFood}
-                      onChange={(e) => setAddToSpouseFood(e.target.checked)}
+                      onChange={(e) => updateSpouseSharing(e.target.checked)}
                       className="w-5 h-5 accent-emerald-500 shrink-0"
                     />
                   </label>
@@ -1154,7 +1179,7 @@ const useFavoritedBreakdown = (favorite: FavoritedBreakdown) => {
                             setLastEstimate(null);
                             resetBreakdownItems();
                             setPortionSizes({});
-                            setAddToSpouseFood(false);
+                            updateSpouseSharing(false);
                         }}
                         className="px-6 py-3.5 bg-card2 text-fog rounded-2xl font-semibold text-sm border border-line2 hover:text-snow transition-all active:scale-[0.98]"
                     >
@@ -1832,6 +1857,9 @@ const useFavoritedBreakdown = (favorite: FavoritedBreakdown) => {
         isOpen={showLiveModal}
         onClose={() => setShowLiveModal(false)}
         onFoodLogged={handleLiveFoodLogged}
+        onConfirmEntries={() => liveConfirmRef.current()}
+        onSetSpouseSharing={updateSpouseSharing}
+        hasSpouse={!!profile?.spouseId}
         voice={liveVoice}
       />
 
